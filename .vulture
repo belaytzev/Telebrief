@@ -1,0 +1,25 @@
+# Vulture configuration for detecting unused code
+# https://github.com/jendrikseipp/vulture
+
+[vulture]
+# Minimum confidence (0-100) for reporting unused code
+min_confidence = 80
+
+# Paths to check
+paths = src
+
+# Exclude patterns
+exclude =
+    .venv/,
+    venv/,
+    __pycache__/,
+    *.egg-info/,
+    build/,
+    dist/,
+    .git/,
+    sessions/,
+    logs/
+
+# Whitelist file for intentionally unused code
+# Create whitelist.py if needed with patterns like:
+# _.some_function  # unused function (whitelisted)
