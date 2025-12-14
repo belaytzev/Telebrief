@@ -140,12 +140,17 @@ class Summarizer:
                     {"role": "system", "content": SYSTEM_PROMPT},
                     {"role": "user", "content": prompt},
                 ],
-                temperature=self.temperature,
-                max_tokens=self.max_tokens,
             )
 
+            self.logger.debug(f"API response for {channel_name}: {response}")
+            self.logger.debug(f"Response choices: {response.choices}")
+
             content = response.choices[0].message.content
+            self.logger.debug(f"Raw content for {channel_name}: {repr(content)}")
+            self.logger.debug(f"Content type: {type(content)}, is None: {content is None}")
+
             summary = content.strip() if content else ""
+            self.logger.debug(f"Final summary for {channel_name}: {len(summary)} chars")
             return summary
 
         except Exception as e:
@@ -195,12 +200,17 @@ class Summarizer:
                     {"role": "system", "content": SYSTEM_PROMPT},
                     {"role": "user", "content": prompt},
                 ],
-                temperature=self.temperature,
-                max_tokens=self.max_tokens,
             )
 
+            self.logger.debug(f"API response for overview: {response}")
+            self.logger.debug(f"Response choices: {response.choices}")
+
             content = response.choices[0].message.content
+            self.logger.debug(f"Raw content for overview: {repr(content)}")
+            self.logger.debug(f"Content type: {type(content)}, is None: {content is None}")
+
             overview = content.strip() if content else ""
+            self.logger.debug(f"Final overview: {len(overview)} chars")
             return overview
 
         except Exception as e:

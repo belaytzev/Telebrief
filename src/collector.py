@@ -51,6 +51,13 @@ class MessageCollector:
         await self.client.start()
         self.logger.info("Connected to Telegram User API")
 
+        # Cache all dialogs to populate entity cache
+        try:
+            dialogs = await self.client.get_dialogs()
+            self.logger.info(f"Cached {len(dialogs)} dialogs for entity resolution")
+        except Exception as e:
+            self.logger.warning(f"Could not cache dialogs: {e}")
+
     async def disconnect(self):
         """Disconnect from Telegram."""
         await self.client.disconnect()
@@ -95,6 +102,17 @@ class MessageCollector:
                 except Exception as retry_error:
                     self.logger.error(f"Retry failed for {channel_config.name}: {retry_error}")
                     all_messages[channel_config.name] = []
+            except ValueError as e:
+                # Entity resolution error
+                if "Could not find the input entity" in str(e):
+                    self.logger.error(
+                        f"✗ {channel_config.name}: Channel not found. "
+                        f"Make sure you've joined this channel with your Telegram account "
+                        f"and the channel ID ({channel_config.id}) is correct."
+                    )
+                else:
+                    self.logger.error(f"✗ {channel_config.name}: {e}")
+                all_messages[channel_config.name] = []
             except Exception as e:
                 self.logger.error(f"✗ {channel_config.name}: Error fetching messages: {e}")
                 all_messages[channel_config.name] = []

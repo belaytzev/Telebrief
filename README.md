@@ -97,8 +97,21 @@ settings:
 ```
 
 **Finding Channel IDs:**
-- Public channels: `@channelname`
-- Private channels: Use [@RawDataBot](https://t.me/RawDataBot) - forward a message from the channel
+
+**For public channels:**
+- Use `@channelname` format (e.g., `@techcrunch`)
+
+**For private channels/groups:**
+1. Forward a message from the channel to [@RawDataBot](https://t.me/RawDataBot)
+2. Copy the full chat ID from the response (should start with `-100`)
+3. Example: If bot shows `"id": -1001234567890`, use exactly that number
+
+**IMPORTANT Channel ID Format:**
+- ✅ Correct: `id: -1001234567890` (integer with `-100` prefix, no quotes)
+- ❌ Wrong: `id: "-1001234567890"` (quoted)
+- ❌ Wrong: `id: -1234567890` (missing `-100` prefix)
+
+**Note:** Channels, supergroups, and megagroups always have IDs starting with `-100`. Small group chats have shorter IDs without this prefix.
 
 ### .env
 
@@ -215,6 +228,12 @@ sudo systemctl status telebrief
 
 💡 **Ultra-affordable pricing - perfect for personal daily digests!**
 
+**GPT-5-nano API Differences:**
+- ❌ Does NOT support: `temperature`, `top_p`, `logprobs`, `max_completion_tokens`
+- ✅ Uses instead: `max_output_tokens` (for token limits)
+- ✅ Optional: `reasoning.effort` (none/low/medium/high) and `text.verbosity` (low/medium/high)
+- These differences are automatically handled by the app
+
 Configure settings in `config.yaml` to customize your digest generation.
 
 ---
@@ -239,6 +258,43 @@ sudo systemctl restart telebrief
 - Verify bot token in `.env`
 - Check your user ID matches `target_user_id` in config
 - Ensure bot privacy is disabled (via @BotFather: `/setprivacy`)
+
+### Channel access errors?
+
+**Error: "Cannot get entity by phone number as a bot"**
+- Make sure numeric channel IDs don't have quotes: `id: -1001234567890` not `id: "-1001234567890"`
+
+**Error: "Invalid object ID for a chat... megagroups are channels"**
+- Channel ID is missing the `-100` prefix
+- Use @RawDataBot to get the complete ID (e.g., `-1001234567890`, not `-1234567890`)
+- Channels/supergroups/megagroups must have IDs starting with `-100`
+
+**Error: "Could not find the input entity for PeerChannel"**
+- **You must join the channel** with your Telegram account (the same account that authenticated the app)
+- Open Telegram and search for the channel, then click "Join"
+- After joining, restart the application
+- Verify the channel ID is correct using @RawDataBot
+
+**Error: Empty AI summaries / no content in digest**
+- **Root cause**: GPT-5 models require `max_output_tokens` instead of `max_completion_tokens`
+- The app has been updated to use the correct parameter
+- If you see empty digests, update to the latest version
+
+**Error: "Unsupported parameter: 'temperature'" or 'max_completion_tokens'**
+- GPT-5 models (gpt-5-nano, gpt-5-mini, gpt-5.1) have different API parameters
+- They do NOT support: `temperature`, `top_p`, `logprobs`, `max_completion_tokens`
+- They use: `max_output_tokens`, optional `reasoning.effort`, `text.verbosity`
+- The app has been updated to use correct parameters
+
+**Error: "The API access for bot users is restricted"**
+- Some groups disable message history access even for members
+- Try using the channel's direct link or check group settings
+- Verify you're actually a member of the group/channel
+
+**Error: "Channel is private or not accessible"**
+- Ensure you've joined the channel/group with your Telegram account
+- For private channels, you must be a member to access messages
+- Check that the channel ID is correct (use @RawDataBot)
 
 ### Authentication errors?
 
