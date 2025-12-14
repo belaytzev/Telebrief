@@ -211,3 +211,4 @@ sessions/*.session
 sessions/*.session-journal
 logs/*.log
 backup/
+config.yaml
