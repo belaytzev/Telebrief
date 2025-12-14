@@ -1,0 +1,31 @@
+# Telegram channels/chats to monitor
+channels:
+  - id: "@channelname"
+    name: "Example Channel"
+  # Add your channels here
+  # Format for public channels: "@channelname"
+  # Format for private chats: -1001234567890 (numeric ID)
+
+# Application settings
+settings:
+  # Scheduling
+  schedule_time: "08:00"   # UTC time for daily digest
+  timezone: "UTC"
+  lookback_hours: 24       # Message collection window
+
+  # OpenAI
+  openai_model: "gpt-4-turbo-preview"
+  openai_temperature: 0.7
+  max_tokens_per_summary: 500
+
+  # Output
+  output_language: "russian"
+  use_emojis: true
+  include_statistics: true
+
+  # Telegram Bot
+  target_user_id: 0  # Your Telegram user ID (get from @userinfobot)
+
+  # Safety limits
+  max_messages_per_channel: 500
+  api_timeout: 30

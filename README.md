@@ -1,2 +1,380 @@
 # Telebrief
-Personal digests from Telegram channels and chats: summarizes threads, extracts key points, and delivers a clean daily/weekly brief with links and context.
+
+**Automated Telegram Digest Generator powered by GPT-4**
+
+Telebrief collects messages from your Telegram channels (in any language), generates AI-powered summaries, and delivers beautiful daily digests **in Russian** directly to your Telegram account.
+
+---
+
+## Features
+
+✅ **Multi-language Support** - Reads channels in ANY language (English, Russian, Ukrainian, Chinese, etc.)
+✅ **Russian Output Only** - All summaries generated in Russian regardless of source language
+✅ **GPT-4 Powered** - High-quality AI summarization using OpenAI's latest models
+✅ **Scheduled & On-Demand** - Daily automatic digests + instant generation via bot commands
+✅ **Private Channel Support** - Access your private chats and channels
+✅ **Smart Formatting** - Markdown with emojis, bullet points, and clickable message links
+✅ **Secure** - Single-user only, credentials stored safely
+
+---
+
+## Quick Start
+
+### Prerequisites
+
+Before you begin, gather these credentials:
+
+1. **Telegram App Credentials** (from https://my.telegram.org)
+   - `api_id` and `api_hash`
+
+2. **Telegram Bot Token** (from @BotFather on Telegram)
+   - Create bot: `/newbot`
+
+3. **OpenAI API Key** (from https://platform.openai.com)
+   - GPT-4 access required
+
+4. **Your Telegram User ID** (from @userinfobot on Telegram)
+
+### Installation
+
+```bash
+# 1. Clone or download the project
+cd telebrief
+
+# 2. Create virtual environment
+python3 -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# 3. Install dependencies
+pip install -r requirements.txt
+
+# 4. Configure credentials
+cp .env.example .env
+# Edit .env with your API credentials
+nano .env
+
+# 5. Configure channels
+nano config.yaml
+# Add your Telegram channels
+
+# 6. Run the application
+python main.py
+```
+
+### First Run
+
+On first run, Telethon will ask for phone verification:
+
+```
+Please enter your phone (or bot token): +1234567890
+Please enter the code you received: 12345
+```
+
+This creates a session file that persists authentication.
+
+---
+
+## Configuration
+
+### config.yaml
+
+Add your Telegram channels to monitor:
+
+```yaml
+channels:
+  - id: "@techcrunch"
+    name: "TechCrunch"
+  - id: "@cryptonews"
+    name: "Crypto News"
+  - id: -1001234567890  # Private chat ID
+    name: "Private Group"
+
+settings:
+  schedule_time: "08:00"  # UTC time for daily digest
+  timezone: "UTC"
+  openai_model: "gpt-4-turbo-preview"
+  target_user_id: 123456789  # Your Telegram ID
+```
+
+**Finding Channel IDs:**
+- Public channels: `@channelname`
+- Private channels: Use [@RawDataBot](https://t.me/RawDataBot) - forward a message from the channel
+
+### .env
+
+```bash
+TELEGRAM_API_ID=12345678
+TELEGRAM_API_HASH=your_hash_here
+TELEGRAM_BOT_TOKEN=123456789:ABC...
+OPENAI_API_KEY=sk-proj-...
+LOG_LEVEL=INFO
+```
+
+---
+
+## Usage
+
+### Automatic Mode
+
+Once running, Telebrief automatically generates and sends digests daily at your configured time (default: 8 AM UTC).
+
+### Bot Commands
+
+Open Telegram and message your bot:
+
+| Command | Description |
+|---------|-------------|
+| `/digest` | Generate digest for last 24 hours instantly |
+| `/status` | Show configuration and next scheduled run |
+| `/help` | Display help message |
+
+### Running as Service (Linux VPS)
+
+Create systemd service:
+
+```bash
+sudo nano /etc/systemd/system/telebrief.service
+```
+
+```ini
+[Unit]
+Description=Telebrief Digest Generator
+After=network.target
+
+[Service]
+Type=simple
+User=YOUR_USERNAME
+WorkingDirectory=/home/YOUR_USERNAME/telebrief
+Environment=PATH=/home/YOUR_USERNAME/telebrief/venv/bin
+ExecStart=/home/YOUR_USERNAME/telebrief/venv/bin/python main.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Enable and start:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable telebrief
+sudo systemctl start telebrief
+sudo systemctl status telebrief
+```
+
+---
+
+## Example Output
+
+```markdown
+# 📊 Ежедневный дайджест - 14 декабря 2025
+
+## 🎯 Краткий обзор
+
+Сегодня основные темы: запуск Python 3.13 с улучшениями производительности
+обсуждался в нескольких технических каналах, криптовалютный рынок показал
+высокую волатильность на фоне новостей о регулировании.
+
+---
+
+## 💻 TechCrunch
+
+- 🚀 **Python 3.13 релиз**: Официально выпущена новая версия с JIT-компиляцией
+- 🤖 **OpenAI анонсировала GPT-5**: Следующее поколение модели ожидается в Q1 2026
+- 📱 **Apple vs EU**: Новые требования по interoperability
+
+## 💰 Crypto News
+
+- 📈 **Bitcoin волатильность**: Цена колебалась между $43K и $46K
+- ⚠️ **SEC предупреждение**: Новая схема мошенничества
+- 🔐 **Ethereum upgrade**: Успешно завершен тестнет
+
+---
+📈 **Статистика**: 20 каналов, 1,847 сообщений обработано
+```
+
+---
+
+## Cost Estimation
+
+With default configuration (~20 channels, medium activity):
+
+- **GPT-4-turbo**: ~$2-3/day = **$60-90/month**
+- **GPT-3.5-turbo**: ~$0.40/day = **$12/month**
+
+Adjust model in `config.yaml` to manage costs.
+
+---
+
+## Troubleshooting
+
+### Digest not received?
+
+```bash
+# Check logs
+tail -f logs/telebrief.log
+
+# Check service status (if using systemd)
+sudo systemctl status telebrief
+
+# Restart
+sudo systemctl restart telebrief
+```
+
+### Bot not responding?
+
+- Verify bot token in `.env`
+- Check your user ID matches `target_user_id` in config
+- Ensure bot privacy is disabled (via @BotFather: `/setprivacy`)
+
+### Authentication errors?
+
+```bash
+# Remove session and re-authenticate
+rm sessions/user.session
+python main.py
+# Follow phone verification prompts
+```
+
+### Import errors?
+
+```bash
+# Ensure virtual environment is activated
+source venv/bin/activate
+
+# Reinstall dependencies
+pip install -r requirements.txt --upgrade
+```
+
+---
+
+## Project Structure
+
+```
+telebrief/
+├── main.py                 # Application entry point
+├── config.yaml            # Channel configuration
+├── .env                   # API credentials (not in git)
+├── requirements.txt       # Python dependencies
+├── SPECIFICATION.md       # Technical specification
+├── README.md              # This file
+├── src/
+│   ├── config_loader.py   # Configuration management
+│   ├── collector.py       # Message collection (Telethon)
+│   ├── summarizer.py      # AI summarization (OpenAI)
+│   ├── formatter.py       # Markdown formatting
+│   ├── sender.py          # Bot message delivery
+│   ├── core.py            # Core digest generation
+│   ├── scheduler.py       # Daily scheduling
+│   ├── bot_commands.py    # Bot command handlers
+│   └── utils.py           # Utility functions
+├── logs/
+│   └── telebrief.log      # Application logs
+└── sessions/
+    └── user.session       # Telegram session (not in git)
+```
+
+---
+
+## Security
+
+- **Credentials**: Stored in `.env` (never commit to git)
+- **Session files**: Contain auth tokens (gitignored, back them up securely)
+- **User verification**: Bot only responds to configured `target_user_id`
+- **Private channels**: Requires user credentials to access
+
+---
+
+## Development & Testing
+
+### Running Tests
+
+```bash
+# Install development dependencies
+pip install -r requirements-dev.txt
+
+# Run all tests with coverage
+make test
+
+# Run linters
+make lint
+
+# Auto-format code
+make format
+```
+
+### Available Make Commands
+
+```bash
+make help          # Show all available commands
+make install-dev   # Install dev dependencies
+make test          # Run tests with coverage
+make test-fast     # Run tests without coverage
+make lint          # Run all linters (black, flake8, mypy, pylint)
+make format        # Auto-format code
+make clean         # Remove build artifacts
+make pre-commit    # Install pre-commit hooks
+```
+
+### Pre-commit Hooks
+
+```bash
+# Install hooks
+pre-commit install
+
+# Run manually
+pre-commit run --all-files
+```
+
+### Code Quality
+
+The project uses:
+- **pytest** for testing (70%+ coverage required)
+- **Black** for code formatting
+- **Flake8** for linting
+- **MyPy** for type checking
+- **Pylint** for code analysis
+
+### CI/CD
+
+GitHub Actions runs on every push/PR:
+- Linting (Black, Flake8, MyPy, Pylint)
+- Tests (Python 3.10, 3.11, 3.12)
+- Security scans (Bandit, Safety)
+- Build verification
+
+See [TESTING.md](TESTING.md) for comprehensive testing guide.
+
+---
+
+## FAQ
+
+**Q: Can I use this for non-Russian output?**
+A: Yes! Edit the prompts in `src/summarizer.py` to change output language.
+
+**Q: How many channels can I monitor?**
+A: Tested up to 50 channels. Performance depends on message volume.
+
+**Q: Can multiple users receive digests?**
+A: Currently single-user only. Multi-user support would require database and additional auth logic.
+
+**Q: Does it work with group chats?**
+A: Yes! Add group chat IDs to `config.yaml` the same way as channels.
+
+**Q: Can I customize the digest format?**
+A: Yes! Edit `src/formatter.py` to change Markdown structure, emojis, and sections.
+
+---
+
+## Credits
+
+**Built with:**
+- [Telethon](https://github.com/LonamiWebs/Telethon) - Telegram User API
+- [python-telegram-bot](https://github.com/python-telegram-bot/python-telegram-bot) - Bot API
+- [OpenAI API](https://openai.com) - GPT-4 Summarization
+- [APScheduler](https://github.com/agronholm/apscheduler) - Task Scheduling
+
+---
+
+**Happy digesting! 📊🤖**
