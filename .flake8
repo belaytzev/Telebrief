@@ -18,12 +18,12 @@ exclude =
     sessions
 
 # Error codes to ignore
-ignore =
-    E203,  # whitespace before ':'
-    E501,  # line too long (handled by black)
-    W503,  # line break before binary operator
-    D100,  # Missing docstring in public module
-    D104,  # Missing docstring in public package
+# E203 - whitespace before ':'
+# E501 - line too long (handled by black)
+# W503 - line break before binary operator
+# D* - All docstring style warnings (using Google style, enforced by pylint instead)
+# I100 - Import order (enforced by isort instead)
+ignore = E203,E501,W503,D,I100
 
 # Docstring conventions
 docstring-convention = google

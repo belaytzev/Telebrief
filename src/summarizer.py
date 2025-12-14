@@ -2,13 +2,14 @@
 AI-powered summarizer using OpenAI API with Russian output.
 """
 
+import asyncio
 import logging
-from typing import Dict, List
+from typing import Any, Dict, List
+
 from openai import AsyncOpenAI
 
-from src.config_loader import Config
 from src.collector import Message
-
+from src.config_loader import Config
 
 # Russian system prompt
 SYSTEM_PROMPT = """
@@ -41,10 +42,7 @@ class Summarizer:
         self.temperature = config.settings.openai_temperature
         self.max_tokens = config.settings.max_tokens_per_summary
 
-    async def summarize_all(
-        self,
-        messages_by_channel: Dict[str, List[Message]]
-    ) -> Dict[str, any]:
+    async def summarize_all(self, messages_by_channel: Dict[str, List[Message]]) -> Dict[str, Any]:
         """
         Generate complete digest with per-channel summaries and overview.
 
@@ -57,17 +55,11 @@ class Summarizer:
         self.logger.info("Starting summarization process")
 
         # Filter out empty channels
-        non_empty_channels = {
-            name: msgs for name, msgs in messages_by_channel.items()
-            if msgs
-        }
+        non_empty_channels = {name: msgs for name, msgs in messages_by_channel.items() if msgs}
 
         if not non_empty_channels:
             self.logger.warning("No messages to summarize")
-            return {
-                'channel_summaries': {},
-                'overview': "Нет сообщений за указанный период."
-            }
+            return {"channel_summaries": {}, "overview": "Нет сообщений за указанный период."}
 
         # Step 1: Generate per-channel summaries
         self.logger.info(f"Generating summaries for {len(non_empty_channels)} channels")
@@ -77,14 +69,10 @@ class Summarizer:
         self.logger.info("Generating combined overview")
         overview = await self._generate_overview(channel_summaries)
 
-        return {
-            'channel_summaries': channel_summaries,
-            'overview': overview
-        }
+        return {"channel_summaries": channel_summaries, "overview": overview}
 
     async def _summarize_per_channel(
-        self,
-        messages_by_channel: Dict[str, List[Message]]
+        self, messages_by_channel: Dict[str, List[Message]]
     ) -> Dict[str, str]:
         """
         Generate summary for each channel.
@@ -108,11 +96,7 @@ class Summarizer:
 
         return summaries
 
-    async def _summarize_channel(
-        self,
-        channel_name: str,
-        messages: List[Message]
-    ) -> str:
+    async def _summarize_channel(self, channel_name: str, messages: List[Message]) -> str:
         """
         Generate summary for a single channel.
 
@@ -154,13 +138,14 @@ class Summarizer:
                 model=self.model,
                 messages=[
                     {"role": "system", "content": SYSTEM_PROMPT},
-                    {"role": "user", "content": prompt}
+                    {"role": "user", "content": prompt},
                 ],
                 temperature=self.temperature,
-                max_tokens=self.max_tokens
+                max_tokens=self.max_tokens,
             )
 
-            summary = response.choices[0].message.content.strip()
+            content = response.choices[0].message.content
+            summary = content.strip() if content else ""
             return summary
 
         except Exception as e:
@@ -178,10 +163,9 @@ class Summarizer:
             Combined overview in Russian
         """
         # Format summaries for prompt
-        summaries_text = "\n\n".join([
-            f"**{name}:**\n{summary}"
-            for name, summary in channel_summaries.items()
-        ])
+        summaries_text = "\n\n".join(
+            [f"**{name}:**\n{summary}" for name, summary in channel_summaries.items()]
+        )
 
         prompt = f"""
 Создай общий ежедневный дайджест на русском языке на основе следующих резюме по каналам.
@@ -209,13 +193,14 @@ class Summarizer:
                 model=self.model,
                 messages=[
                     {"role": "system", "content": SYSTEM_PROMPT},
-                    {"role": "user", "content": prompt}
+                    {"role": "user", "content": prompt},
                 ],
                 temperature=self.temperature,
-                max_tokens=self.max_tokens
+                max_tokens=self.max_tokens,
             )
 
-            overview = response.choices[0].message.content.strip()
+            content = response.choices[0].message.content
+            overview = content.strip() if content else ""
             return overview
 
         except Exception as e:
@@ -235,7 +220,7 @@ class Summarizer:
         formatted = []
 
         for i, msg in enumerate(messages, 1):
-            timestamp = msg.timestamp.strftime('%H:%M')
+            timestamp = msg.timestamp.strftime("%H:%M")
             text = msg.text[:500] if len(msg.text) > 500 else msg.text  # Truncate long messages
             formatted.append(f"{i}. [{timestamp}] {msg.sender}: {text}")
 
@@ -244,10 +229,9 @@ class Summarizer:
 
 async def main():
     """Test summarizer."""
-    import asyncio
+    from src.collector import MessageCollector
     from src.config_loader import load_config
     from src.utils import setup_logging
-    from src.collector import MessageCollector
 
     config = load_config()
     logger = setup_logging(config.log_level)
@@ -265,15 +249,15 @@ async def main():
     print("\n" + "=" * 50)
     print("OVERVIEW:")
     print("=" * 50)
-    print(result['overview'])
+    print(result["overview"])
 
     print("\n" + "=" * 50)
     print("CHANNEL SUMMARIES:")
     print("=" * 50)
-    for channel, summary in result['channel_summaries'].items():
+    for channel, summary in result["channel_summaries"].items():
         print(f"\n{channel}:")
         print(summary)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     asyncio.run(main())

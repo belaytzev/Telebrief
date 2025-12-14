@@ -21,12 +21,16 @@ def test_sender_initialization(sample_config, mock_logger):
 @pytest.mark.asyncio
 async def test_send_digest_success(sample_config, mock_logger):
     """Test successful digest sending."""
-    sender = DigestSender(sample_config, mock_logger)
+    with patch("src.sender.Bot") as mock_bot_class:
+        mock_bot = MagicMock()
+        mock_bot.send_message = AsyncMock()
+        mock_bot_class.return_value = mock_bot
 
-    with patch.object(sender.bot, "send_message", new=AsyncMock()):
+        sender = DigestSender(sample_config, mock_logger)
         result = await sender.send_digest("Test digest", user_id=123456789)
 
     assert result is True
+    assert mock_bot.send_message.called
 
 
 @pytest.mark.unit
@@ -44,10 +48,14 @@ async def test_send_digest_unauthorized(sample_config, mock_logger):
 @pytest.mark.asyncio
 async def test_send_digest_error(sample_config, mock_logger):
     """Test error handling in digest sending."""
-    sender = DigestSender(sample_config, mock_logger)
+    from telegram.error import TelegramError
 
-    with patch.object(sender.bot, "send_message",
-                     new=AsyncMock(side_effect=Exception("API Error"))):
+    with patch("src.sender.Bot") as mock_bot_class:
+        mock_bot = MagicMock()
+        mock_bot.send_message = AsyncMock(side_effect=TelegramError("API Error"))
+        mock_bot_class.return_value = mock_bot
+
+        sender = DigestSender(sample_config, mock_logger)
         result = await sender.send_digest("Test digest", user_id=123456789)
 
     assert result is False
@@ -57,13 +65,16 @@ async def test_send_digest_error(sample_config, mock_logger):
 @pytest.mark.asyncio
 async def test_send_long_digest(sample_config, mock_logger):
     """Test sending long digest that needs splitting."""
-    sender = DigestSender(sample_config, mock_logger)
-
     # Create a long digest
     long_digest = "A" * 5000
 
-    send_message_mock = AsyncMock()
-    with patch.object(sender.bot, "send_message", new=send_message_mock):
+    with patch("src.sender.Bot") as mock_bot_class:
+        mock_bot = MagicMock()
+        send_message_mock = AsyncMock()
+        mock_bot.send_message = send_message_mock
+        mock_bot_class.return_value = mock_bot
+
+        sender = DigestSender(sample_config, mock_logger)
         result = await sender.send_digest(long_digest, user_id=123456789)
 
     assert result is True
@@ -75,12 +86,16 @@ async def test_send_long_digest(sample_config, mock_logger):
 @pytest.mark.asyncio
 async def test_send_message_success(sample_config, mock_logger):
     """Test sending simple message."""
-    sender = DigestSender(sample_config, mock_logger)
+    with patch("src.sender.Bot") as mock_bot_class:
+        mock_bot = MagicMock()
+        mock_bot.send_message = AsyncMock()
+        mock_bot_class.return_value = mock_bot
 
-    with patch.object(sender.bot, "send_message", new=AsyncMock()):
+        sender = DigestSender(sample_config, mock_logger)
         result = await sender.send_message("Test message", user_id=123456789)
 
     assert result is True
+    assert mock_bot.send_message.called
 
 
 @pytest.mark.unit

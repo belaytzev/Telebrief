@@ -4,19 +4,16 @@ Core digest generation function.
 
 import logging
 from datetime import datetime
+from typing import Optional
 
-from src.config_loader import Config
 from src.collector import MessageCollector
-from src.summarizer import Summarizer
+from src.config_loader import Config
 from src.formatter import DigestFormatter
 from src.sender import DigestSender
+from src.summarizer import Summarizer
 
 
-async def generate_digest(
-    config: Config,
-    logger: logging.Logger,
-    hours: int = 24
-) -> str:
+async def generate_digest(config: Config, logger: logging.Logger, hours: int = 24) -> str:
     """
     Core digest generation function.
     Used by both scheduler and bot commands.
@@ -43,8 +40,10 @@ async def generate_digest(
         collector = MessageCollector(config, logger)
 
         await collector.connect()
-        messages_by_channel = await collector.fetch_messages(hours=hours)
-        await collector.disconnect()
+        try:
+            messages_by_channel = await collector.fetch_messages(hours=hours)
+        finally:
+            await collector.disconnect()
 
         total_messages = sum(len(msgs) for msgs in messages_by_channel.values())
         logger.info(f"Collected {total_messages} messages from {len(messages_by_channel)} channels")
@@ -54,8 +53,8 @@ async def generate_digest(
         summarizer = Summarizer(config, logger)
         summary_result = await summarizer.summarize_all(messages_by_channel)
 
-        channel_summaries = summary_result['channel_summaries']
-        overview = summary_result['overview']
+        channel_summaries = summary_result["channel_summaries"]
+        overview = summary_result["overview"]
 
         logger.info(f"Generated summaries for {len(channel_summaries)} channels")
 
@@ -66,7 +65,7 @@ async def generate_digest(
             overview=overview,
             channel_summaries=channel_summaries,
             messages_by_channel=messages_by_channel,
-            hours=hours
+            hours=hours,
         )
 
         # Calculate execution time
@@ -84,10 +83,7 @@ async def generate_digest(
 
 
 async def generate_and_send_digest(
-    config: Config,
-    logger: logging.Logger,
-    hours: int = 24,
-    user_id: int = None
+    config: Config, logger: logging.Logger, hours: int = 24, user_id: Optional[int] = None
 ) -> bool:
     """
     Generate and send digest.

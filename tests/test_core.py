@@ -12,16 +12,16 @@ from src.core import generate_and_send_digest, generate_digest
 async def test_generate_digest_success(sample_config, mock_logger, sample_messages):
     """Test successful digest generation."""
     # Mock all components
-    with patch("src.core.MessageCollector") as mock_collector_class, \
-         patch("src.core.Summarizer") as mock_summarizer_class, \
-         patch("src.core.DigestFormatter") as mock_formatter_class:
+    with (
+        patch("src.core.MessageCollector") as mock_collector_class,
+        patch("src.core.Summarizer") as mock_summarizer_class,
+        patch("src.core.DigestFormatter") as mock_formatter_class,
+    ):
 
         # Set up mocks
         mock_collector = MagicMock()
         mock_collector.connect = AsyncMock()
-        mock_collector.fetch_messages = AsyncMock(
-            return_value={"Test Channel": sample_messages}
-        )
+        mock_collector.fetch_messages = AsyncMock(return_value={"Test Channel": sample_messages})
         mock_collector.disconnect = AsyncMock()
         mock_collector_class.return_value = mock_collector
 
@@ -57,9 +57,7 @@ async def test_generate_digest_collector_error(sample_config, mock_logger):
     with patch("src.core.MessageCollector") as mock_collector_class:
         mock_collector = MagicMock()
         mock_collector.connect = AsyncMock()
-        mock_collector.fetch_messages = AsyncMock(
-            side_effect=Exception("Collection failed")
-        )
+        mock_collector.fetch_messages = AsyncMock(side_effect=Exception("Collection failed"))
         mock_collector.disconnect = AsyncMock()
         mock_collector_class.return_value = mock_collector
 
@@ -74,17 +72,17 @@ async def test_generate_digest_collector_error(sample_config, mock_logger):
 @pytest.mark.asyncio
 async def test_generate_and_send_digest_success(sample_config, mock_logger, sample_messages):
     """Test successful digest generation and sending."""
-    with patch("src.core.MessageCollector") as mock_collector_class, \
-         patch("src.core.Summarizer") as mock_summarizer_class, \
-         patch("src.core.DigestFormatter") as mock_formatter_class, \
-         patch("src.core.DigestSender") as mock_sender_class:
+    with (
+        patch("src.core.MessageCollector") as mock_collector_class,
+        patch("src.core.Summarizer") as mock_summarizer_class,
+        patch("src.core.DigestFormatter") as mock_formatter_class,
+        patch("src.core.DigestSender") as mock_sender_class,
+    ):
 
         # Set up mocks
         mock_collector = MagicMock()
         mock_collector.connect = AsyncMock()
-        mock_collector.fetch_messages = AsyncMock(
-            return_value={"Test Channel": sample_messages}
-        )
+        mock_collector.fetch_messages = AsyncMock(return_value={"Test Channel": sample_messages})
         mock_collector.disconnect = AsyncMock()
         mock_collector_class.return_value = mock_collector
 
@@ -119,17 +117,17 @@ async def test_generate_and_send_digest_success(sample_config, mock_logger, samp
 @pytest.mark.asyncio
 async def test_generate_and_send_digest_send_failure(sample_config, mock_logger, sample_messages):
     """Test handling of send failure."""
-    with patch("src.core.MessageCollector") as mock_collector_class, \
-         patch("src.core.Summarizer") as mock_summarizer_class, \
-         patch("src.core.DigestFormatter") as mock_formatter_class, \
-         patch("src.core.DigestSender") as mock_sender_class:
+    with (
+        patch("src.core.MessageCollector") as mock_collector_class,
+        patch("src.core.Summarizer") as mock_summarizer_class,
+        patch("src.core.DigestFormatter") as mock_formatter_class,
+        patch("src.core.DigestSender") as mock_sender_class,
+    ):
 
         # Set up mocks (same as success case)
         mock_collector = MagicMock()
         mock_collector.connect = AsyncMock()
-        mock_collector.fetch_messages = AsyncMock(
-            return_value={"Test Channel": sample_messages}
-        )
+        mock_collector.fetch_messages = AsyncMock(return_value={"Test Channel": sample_messages})
         mock_collector.disconnect = AsyncMock()
         mock_collector_class.return_value = mock_collector
 
@@ -152,9 +150,7 @@ async def test_generate_and_send_digest_send_failure(sample_config, mock_logger,
         mock_sender_class.return_value = mock_sender
 
         # Run function
-        result = await generate_and_send_digest(
-            sample_config, mock_logger, hours=24
-        )
+        result = await generate_and_send_digest(sample_config, mock_logger, hours=24)
 
         # Should return False
         assert result is False

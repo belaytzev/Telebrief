@@ -3,22 +3,23 @@ Message collector using Telethon to fetch messages from Telegram channels.
 """
 
 import asyncio
-from datetime import datetime, timedelta
-from typing import List, Dict, Any
-from dataclasses import dataclass
 import logging
+from dataclasses import dataclass
+from datetime import datetime
+from typing import Dict, List
 
 from telethon import TelegramClient
+from telethon.errors import ChannelPrivateError, FloodWaitError
 from telethon.tl.types import Message as TelegramMessage
-from telethon.errors import FloodWaitError, ChannelPrivateError
 
-from src.config_loader import Config, ChannelConfig
+from src.config_loader import ChannelConfig, Config
 from src.utils import get_lookback_time
 
 
 @dataclass
 class Message:
     """Represents a collected message."""
+
     text: str
     sender: str
     timestamp: datetime
@@ -42,9 +43,7 @@ class MessageCollector:
         self.config = config
         self.logger = logger
         self.client = TelegramClient(
-            'sessions/user',
-            config.telegram_api_id,
-            config.telegram_api_hash
+            "sessions/user", config.telegram_api_id, config.telegram_api_hash
         )
 
     async def connect(self):
@@ -67,21 +66,18 @@ class MessageCollector:
         Returns:
             Dictionary mapping channel names to lists of messages
         """
-        self.logger.info(f"Fetching messages from {len(self.config.channels)} channels (last {hours}h)")
+        self.logger.info(
+            f"Fetching messages from {len(self.config.channels)} channels (last {hours}h)"
+        )
 
         lookback_time = get_lookback_time(hours)
         all_messages = {}
 
         for channel_config in self.config.channels:
             try:
-                messages = await self._fetch_channel_messages(
-                    channel_config,
-                    lookback_time
-                )
+                messages = await self._fetch_channel_messages(channel_config, lookback_time)
                 all_messages[channel_config.name] = messages
-                self.logger.info(
-                    f"✓ {channel_config.name}: {len(messages)} messages"
-                )
+                self.logger.info(f"✓ {channel_config.name}: {len(messages)} messages")
             except ChannelPrivateError:
                 self.logger.warning(
                     f"✗ {channel_config.name}: Channel is private or not accessible"
@@ -94,18 +90,13 @@ class MessageCollector:
                 await asyncio.sleep(e.seconds)
                 # Retry once
                 try:
-                    messages = await self._fetch_channel_messages(
-                        channel_config,
-                        lookback_time
-                    )
+                    messages = await self._fetch_channel_messages(channel_config, lookback_time)
                     all_messages[channel_config.name] = messages
                 except Exception as retry_error:
                     self.logger.error(f"Retry failed for {channel_config.name}: {retry_error}")
                     all_messages[channel_config.name] = []
             except Exception as e:
-                self.logger.error(
-                    f"✗ {channel_config.name}: Error fetching messages: {e}"
-                )
+                self.logger.error(f"✗ {channel_config.name}: Error fetching messages: {e}")
                 all_messages[channel_config.name] = []
 
         total_messages = sum(len(msgs) for msgs in all_messages.values())
@@ -114,9 +105,7 @@ class MessageCollector:
         return all_messages
 
     async def _fetch_channel_messages(
-        self,
-        channel_config: ChannelConfig,
-        lookback_time: datetime
+        self, channel_config: ChannelConfig, lookback_time: datetime
     ) -> List[Message]:
         """
         Fetch messages from a single channel.
@@ -137,9 +126,7 @@ class MessageCollector:
 
             # Fetch messages
             async for message in self.client.iter_messages(
-                entity,
-                limit=max_messages,
-                offset_date=datetime.utcnow()
+                entity, limit=max_messages, offset_date=datetime.utcnow()
             ):
                 # Stop if message is older than lookback time
                 if message.date < lookback_time.replace(tzinfo=message.date.tzinfo):
@@ -155,7 +142,7 @@ class MessageCollector:
                         continue
                 else:
                     text = message.text
-                    media_type = self._get_media_type(message) if message.media else None
+                    media_type = self._get_media_type(message) if message.media else ""
 
                 # Get sender name
                 sender = await self._get_sender_name(message)
@@ -163,15 +150,17 @@ class MessageCollector:
                 # Generate message link
                 link = await self._generate_message_link(entity, message.id)
 
-                messages.append(Message(
-                    text=text,
-                    sender=sender,
-                    timestamp=message.date,
-                    link=link,
-                    channel_name=channel_config.name,
-                    has_media=message.media is not None,
-                    media_type=media_type or ""
-                ))
+                messages.append(
+                    Message(
+                        text=text,
+                        sender=sender,
+                        timestamp=message.date,
+                        link=link,
+                        channel_name=channel_config.name,
+                        has_media=message.media is not None,
+                        media_type=media_type or "",
+                    )
+                )
 
         except Exception as e:
             self.logger.error(f"Error fetching from {channel_config.name}: {e}")
@@ -194,23 +183,23 @@ class MessageCollector:
 
         media_type = type(message.media).__name__
 
-        if 'Photo' in media_type:
+        if "Photo" in media_type:
             return "Фото"
-        elif 'Video' in media_type or 'Document' in media_type:
-            if hasattr(message.media, 'document'):
-                mime = getattr(message.media.document, 'mime_type', '')
-                if 'video' in mime:
+        elif "Video" in media_type or "Document" in media_type:
+            if hasattr(message.media, "document"):
+                mime = getattr(message.media.document, "mime_type", "")
+                if "video" in mime:
                     return "Видео"
-                elif 'audio' in mime:
+                elif "audio" in mime:
                     return "Аудио"
                 else:
                     return "Документ"
             return "Видео"
-        elif 'Voice' in media_type or 'Audio' in media_type:
+        elif "Voice" in media_type or "Audio" in media_type:
             return "Голосовое сообщение"
-        elif 'Poll' in media_type:
+        elif "Poll" in media_type:
             return "Опрос"
-        elif 'Geo' in media_type or 'Location' in media_type:
+        elif "Geo" in media_type or "Location" in media_type:
             return "Геолокация"
         else:
             return "Медиа"
@@ -228,14 +217,14 @@ class MessageCollector:
         try:
             if message.sender:
                 sender = await message.get_sender()
-                if hasattr(sender, 'first_name'):
-                    name = sender.first_name
-                    if hasattr(sender, 'last_name') and sender.last_name:
+                if hasattr(sender, "first_name"):
+                    name = str(sender.first_name)
+                    if hasattr(sender, "last_name") and sender.last_name:
                         name += f" {sender.last_name}"
                     return name
-                elif hasattr(sender, 'title'):
-                    return sender.title
-                elif hasattr(sender, 'username'):
+                elif hasattr(sender, "title"):
+                    return str(sender.title)
+                elif hasattr(sender, "username"):
                     return f"@{sender.username}"
             return "Unknown"
         except Exception:
@@ -254,13 +243,13 @@ class MessageCollector:
         """
         try:
             # For public channels/groups
-            if hasattr(entity, 'username') and entity.username:
+            if hasattr(entity, "username") and entity.username:
                 return f"https://t.me/{entity.username}/{message_id}"
             # For private channels/groups
-            elif hasattr(entity, 'id'):
+            elif hasattr(entity, "id"):
                 # Format: https://t.me/c/CHANNEL_ID/MESSAGE_ID
                 # Remove -100 prefix from channel ID
-                channel_id = str(entity.id).replace('-100', '')
+                channel_id = str(entity.id).replace("-100", "")
                 return f"https://t.me/c/{channel_id}/{message_id}"
             else:
                 return "#"
@@ -291,5 +280,5 @@ async def main():
         await collector.disconnect()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     asyncio.run(main())

@@ -2,9 +2,9 @@
 Markdown formatter for digest output.
 """
 
-from datetime import datetime
-from typing import Dict, List
 import logging
+from datetime import datetime, timedelta
+from typing import Dict, List
 
 from src.collector import Message
 from src.config_loader import Config
@@ -31,7 +31,7 @@ class DigestFormatter:
         overview: str,
         channel_summaries: Dict[str, str],
         messages_by_channel: Dict[str, List[Message]],
-        hours: int = 24
+        hours: int = 24,
     ) -> str:
         """
         Create formatted digest.
@@ -66,9 +66,7 @@ class DigestFormatter:
                 continue
 
             section = self._create_channel_section(
-                channel_name,
-                summary,
-                messages_by_channel.get(channel_name, [])
+                channel_name, summary, messages_by_channel.get(channel_name, [])
             )
             parts.append(section)
 
@@ -92,13 +90,21 @@ class DigestFormatter:
         Returns:
             Header string
         """
-        date_str = datetime.utcnow().strftime('%d %B %Y')
+        date_str = datetime.utcnow().strftime("%d %B %Y")
         # Translate month to Russian
         months_ru = {
-            'January': 'января', 'February': 'февраля', 'March': 'марта',
-            'April': 'апреля', 'May': 'мая', 'June': 'июня',
-            'July': 'июля', 'August': 'августа', 'September': 'сентября',
-            'October': 'октября', 'November': 'ноября', 'December': 'декабря'
+            "January": "января",
+            "February": "февраля",
+            "March": "марта",
+            "April": "апреля",
+            "May": "мая",
+            "June": "июня",
+            "July": "июля",
+            "August": "августа",
+            "September": "сентября",
+            "October": "октября",
+            "November": "ноября",
+            "December": "декабря",
         }
         for eng, rus in months_ru.items():
             date_str = date_str.replace(eng, rus)
@@ -108,10 +114,7 @@ class DigestFormatter:
         return f"# {emoji} Ежедневный дайджест - {date_str}\n"
 
     def _create_channel_section(
-        self,
-        channel_name: str,
-        summary: str,
-        messages: List[Message]
+        self, channel_name: str, summary: str, messages: List[Message]
     ) -> str:
         """
         Create section for a single channel.
@@ -127,11 +130,7 @@ class DigestFormatter:
         # Pick emoji based on channel name keywords
         emoji = self._pick_emoji(channel_name)
 
-        section_parts = [
-            f"## {emoji} {channel_name}\n",
-            summary,
-            "\n"
-        ]
+        section_parts = [f"## {emoji} {channel_name}\n", summary, "\n"]
 
         return "\n".join(section_parts)
 
@@ -151,38 +150,34 @@ class DigestFormatter:
         name_lower = channel_name.lower()
 
         # Tech/Dev
-        if any(word in name_lower for word in ['tech', 'dev', 'code', 'программ', 'разработ']):
+        if any(word in name_lower for word in ["tech", "dev", "code", "программ", "разработ"]):
             return "💻"
         # Crypto/Finance
-        elif any(word in name_lower for word in ['crypto', 'bitcoin', 'финанс', 'крипто']):
+        elif any(word in name_lower for word in ["crypto", "bitcoin", "финанс", "крипто"]):
             return "💰"
         # News
-        elif any(word in name_lower for word in ['news', 'новост']):
+        elif any(word in name_lower for word in ["news", "новост"]):
             return "📰"
         # Business
-        elif any(word in name_lower for word in ['business', 'бизнес', 'startup']):
+        elif any(word in name_lower for word in ["business", "бизнес", "startup"]):
             return "💼"
         # Science
-        elif any(word in name_lower for word in ['science', 'research', 'наук']):
+        elif any(word in name_lower for word in ["science", "research", "наук"]):
             return "🔬"
         # AI/ML
-        elif any(word in name_lower for word in ['ai', 'ml', 'artificial', 'ии', 'искусственн']):
+        elif any(word in name_lower for word in ["ai", "ml", "artificial", "ии", "искусственн"]):
             return "🤖"
         # Design
-        elif any(word in name_lower for word in ['design', 'дизайн', 'ui', 'ux']):
+        elif any(word in name_lower for word in ["design", "дизайн", "ui", "ux"]):
             return "🎨"
         # Marketing
-        elif any(word in name_lower for word in ['marketing', 'маркетинг', 'smm']):
+        elif any(word in name_lower for word in ["marketing", "маркетинг", "smm"]):
             return "📈"
         # Default
         else:
             return "📺"
 
-    def _create_statistics(
-        self,
-        messages_by_channel: Dict[str, List[Message]],
-        hours: int
-    ) -> str:
+    def _create_statistics(self, messages_by_channel: Dict[str, List[Message]], hours: int) -> str:
         """
         Create statistics footer.
 
@@ -198,11 +193,11 @@ class DigestFormatter:
 
         # Time range
         end_time = datetime.utcnow()
-        start_time = end_time.replace(hour=end_time.hour - hours, minute=0, second=0)
+        start_time = end_time - timedelta(hours=hours)
 
         stats_parts = [
             "---\n",
-            f"📈 **Статистика**: {active_channels} каналов, {total_messages} сообщений обработано"
+            f"📈 **Статистика**: {active_channels} каналов, {total_messages} сообщений обработано",
         ]
 
         if hours == 24:
@@ -243,23 +238,20 @@ def main():
 - 📈 Bitcoin волатильность: цена колебалась между $43K и $46K
 - ⚠️ SEC предупреждение о новой схеме мошенничества
 - 🔐 Ethereum upgrade успешно завершен
-        """
+        """,
     }
 
-    messages_by_channel = {
-        "TechCrunch": [],
-        "Crypto News": []
-    }
+    messages_by_channel: dict[str, list] = {"TechCrunch": [], "Crypto News": []}
 
     digest = formatter.create_digest(
         overview=overview,
         channel_summaries=channel_summaries,
         messages_by_channel=messages_by_channel,
-        hours=24
+        hours=24,
     )
 
     print(digest)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

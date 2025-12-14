@@ -42,12 +42,11 @@ async def test_summarize_all_success(sample_config, mock_logger, sample_messages
 
     # Mock OpenAI API
     mock_response = MagicMock()
-    mock_response.choices = [
-        MagicMock(message=MagicMock(content="Test summary"))
-    ]
+    mock_response.choices = [MagicMock(message=MagicMock(content="Test summary"))]
 
-    with patch.object(summarizer.client.chat.completions, "create",
-                     new=AsyncMock(return_value=mock_response)):
+    with patch.object(
+        summarizer.client.chat.completions, "create", new=AsyncMock(return_value=mock_response)
+    ):
         result = await summarizer.summarize_all(messages_by_channel)
 
     assert "channel_summaries" in result
@@ -63,8 +62,11 @@ async def test_summarize_channel_error(sample_config, mock_logger, sample_messag
     summarizer = Summarizer(sample_config, mock_logger)
 
     # Mock OpenAI API to raise exception
-    with patch.object(summarizer.client.chat.completions, "create",
-                     new=AsyncMock(side_effect=Exception("API Error"))):
+    with patch.object(
+        summarizer.client.chat.completions,
+        "create",
+        new=AsyncMock(side_effect=Exception("API Error")),
+    ):
         with pytest.raises(Exception, match="API Error"):
             await summarizer._summarize_channel("Test Channel", sample_messages)
 
@@ -84,8 +86,9 @@ def test_format_messages_for_prompt(sample_config, mock_logger, sample_messages)
 @pytest.mark.unit
 def test_format_messages_truncate_long(sample_config, mock_logger):
     """Test message truncation in formatting."""
-    from src.collector import Message
     from datetime import datetime
+
+    from src.collector import Message
 
     summarizer = Summarizer(sample_config, mock_logger)
 

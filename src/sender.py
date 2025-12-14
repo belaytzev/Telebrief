@@ -3,11 +3,11 @@ Telegram bot sender for delivering digests.
 """
 
 import logging
-from typing import List
+from typing import Optional
 
 from telegram import Bot
-from telegram.error import TelegramError
 from telegram.constants import ParseMode
+from telegram.error import TelegramError
 
 from src.config_loader import Config
 from src.utils import split_message
@@ -29,7 +29,7 @@ class DigestSender:
         self.bot = Bot(token=config.telegram_bot_token)
         self.target_user_id = config.settings.target_user_id
 
-    async def send_digest(self, digest: str, user_id: int = None) -> bool:
+    async def send_digest(self, digest: str, user_id: Optional[int] = None) -> bool:
         """
         Send digest to user.
 
@@ -63,7 +63,7 @@ class DigestSender:
                     chat_id=user_id,
                     text=part,
                     parse_mode=ParseMode.MARKDOWN,
-                    disable_web_page_preview=False
+                    disable_web_page_preview=False,
                 )
 
                 if len(parts) > 1:
@@ -76,7 +76,7 @@ class DigestSender:
             self.logger.error(f"❌ Failed to send digest: {e}")
             return False
 
-    async def send_message(self, text: str, user_id: int = None) -> bool:
+    async def send_message(self, text: str, user_id: Optional[int] = None) -> bool:
         """
         Send a simple text message.
 
@@ -94,11 +94,7 @@ class DigestSender:
             return False
 
         try:
-            await self.bot.send_message(
-                chat_id=user_id,
-                text=text,
-                parse_mode=ParseMode.MARKDOWN
-            )
+            await self.bot.send_message(chat_id=user_id, text=text, parse_mode=ParseMode.MARKDOWN)
             return True
         except TelegramError as e:
             self.logger.error(f"Failed to send message: {e}")
@@ -133,6 +129,7 @@ async def main():
     print(f"Send result: {'✅ Success' if success else '❌ Failed'}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import asyncio
+
     asyncio.run(main())

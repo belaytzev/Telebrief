@@ -1,6 +1,5 @@
 """Pytest configuration and fixtures."""
 
-import os
 from datetime import datetime
 from unittest.mock import MagicMock
 

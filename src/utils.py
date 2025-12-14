@@ -5,7 +5,6 @@ Utility functions and logging setup for Telebrief.
 import logging
 import os
 from datetime import datetime, timedelta
-from typing import Optional
 
 
 def setup_logging(log_level: str = "INFO") -> logging.Logger:
@@ -19,14 +18,14 @@ def setup_logging(log_level: str = "INFO") -> logging.Logger:
         Configured logger instance
     """
     # Create logs directory if it doesn't exist
-    os.makedirs('logs', exist_ok=True)
+    os.makedirs("logs", exist_ok=True)
 
     # Configure logging format
-    log_format = '%(asctime)s [%(levelname)s] %(name)s: %(message)s'
-    date_format = '%Y-%m-%d %H:%M:%S'
+    log_format = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+    date_format = "%Y-%m-%d %H:%M:%S"
 
     # Create logger
-    logger = logging.getLogger('telebrief')
+    logger = logging.getLogger("telebrief")
     logger.setLevel(getattr(logging, log_level.upper()))
 
     # Remove existing handlers
@@ -40,8 +39,8 @@ def setup_logging(log_level: str = "INFO") -> logging.Logger:
     logger.addHandler(console_handler)
 
     # File handler
-    log_file = f'logs/telebrief.log'
-    file_handler = logging.FileHandler(log_file, encoding='utf-8')
+    log_file = "logs/telebrief.log"
+    file_handler = logging.FileHandler(log_file, encoding="utf-8")
     file_handler.setLevel(getattr(logging, log_level.upper()))
     file_formatter = logging.Formatter(log_format, date_format)
     file_handler.setFormatter(file_formatter)
@@ -95,7 +94,10 @@ def truncate_text(text: str, max_length: int = 4000) -> str:
     if len(text) <= max_length:
         return text
 
-    return text[:max_length - 100] + "\n\n...\n\n[Сообщение обрезано из-за ограничения длины Telegram]"
+    return (
+        text[: max_length - 100]
+        + "\n\n...\n\n[Сообщение обрезано из-за ограничения длины Telegram]"
+    )
 
 
 def split_message(text: str, max_length: int = 4000) -> list[str]:
@@ -115,13 +117,28 @@ def split_message(text: str, max_length: int = 4000) -> list[str]:
     parts = []
     current_part = ""
 
-    for line in text.split('\n'):
-        if len(current_part) + len(line) + 1 <= max_length:
-            current_part += line + '\n'
+    for line in text.split("\n"):
+        # Handle very long lines that exceed max_length
+        if len(line) > max_length:
+            # Save current part if it exists
+            if current_part:
+                parts.append(current_part.strip())
+                current_part = ""
+
+            # Split the long line into chunks
+            while len(line) > max_length:
+                parts.append(line[:max_length])
+                line = line[max_length:]
+
+            # Add remaining part of line to current_part
+            if line:
+                current_part = line + "\n"
+        elif len(current_part) + len(line) + 1 <= max_length:
+            current_part += line + "\n"
         else:
             if current_part:
                 parts.append(current_part.strip())
-            current_part = line + '\n'
+            current_part = line + "\n"
 
     if current_part:
         parts.append(current_part.strip())

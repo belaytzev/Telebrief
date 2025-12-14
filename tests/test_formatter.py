@@ -1,7 +1,5 @@
 """Tests for formatter module."""
 
-from datetime import datetime
-
 import pytest
 
 from src.formatter import DigestFormatter

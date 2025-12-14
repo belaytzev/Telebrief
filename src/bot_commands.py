@@ -2,7 +2,10 @@
 Bot command handlers for instant digest generation.
 """
 
+import asyncio
 import logging
+from typing import Optional
+
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
@@ -15,10 +18,7 @@ class BotCommandHandler:
     """Handles bot commands for manual digest generation."""
 
     def __init__(
-        self,
-        config: Config,
-        logger: logging.Logger,
-        scheduler: DigestScheduler = None
+        self, config: Config, logger: logging.Logger, scheduler: Optional[DigestScheduler] = None
     ):
         """
         Initialize bot command handler.
@@ -31,7 +31,7 @@ class BotCommandHandler:
         self.config = config
         self.logger = logger
         self.scheduler = scheduler
-        self.app = None
+        self.app: Optional[Application] = None
 
     def setup_application(self) -> Application:
         """
@@ -41,9 +41,7 @@ class BotCommandHandler:
             Configured Application instance
         """
         # Create application
-        self.app = Application.builder().token(
-            self.config.telegram_bot_token
-        ).build()
+        self.app = Application.builder().token(self.config.telegram_bot_token).build()
 
         # Add command handlers
         self.app.add_handler(CommandHandler("digest", self.handle_digest))
@@ -74,6 +72,10 @@ class BotCommandHandler:
             update: Telegram update
             context: Bot context
         """
+        # Type checks for command handlers
+        assert update.effective_user is not None
+        assert update.message is not None
+
         user_id = update.effective_user.id
 
         # Security check
@@ -85,32 +87,25 @@ class BotCommandHandler:
 
         # Send "processing" message
         await update.message.reply_text(
-            "⏳ Генерирую дайджест за последние 24 часа...\n"
-            "Это может занять 1-2 минуты."
+            "⏳ Генерирую дайджест за последние 24 часа...\n" "Это может занять 1-2 минуты."
         )
 
         try:
             # Generate and send digest
             success = await generate_and_send_digest(
-                config=self.config,
-                logger=self.logger,
-                hours=24,
-                user_id=user_id
+                config=self.config, logger=self.logger, hours=24, user_id=user_id
             )
 
             if success:
                 await update.message.reply_text("✅ Дайджест готов!")
             else:
                 await update.message.reply_text(
-                    "❌ Ошибка при генерации дайджеста. "
-                    "Проверьте логи для деталей."
+                    "❌ Ошибка при генерации дайджеста. " "Проверьте логи для деталей."
                 )
 
         except Exception as e:
             self.logger.error(f"Error in /digest command: {e}", exc_info=True)
-            await update.message.reply_text(
-                f"❌ Ошибка: {str(e)}"
-            )
+            await update.message.reply_text(f"❌ Ошибка: {str(e)}")
 
     async def handle_status(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
@@ -120,6 +115,10 @@ class BotCommandHandler:
             update: Telegram update
             context: Bot context
         """
+        # Type checks for command handlers
+        assert update.effective_user is not None
+        assert update.message is not None
+
         user_id = update.effective_user.id
 
         # Security check
@@ -140,18 +139,17 @@ class BotCommandHandler:
         else:
             status_lines.append("⏰ Планировщик не запущен")
 
-        status_lines.extend([
-            "",
-            "**Доступные команды:**",
-            "/digest - Сгенерировать дайджест сейчас",
-            "/status - Показать этот статус",
-            "/help - Помощь"
-        ])
-
-        await update.message.reply_text(
-            "\n".join(status_lines),
-            parse_mode='Markdown'
+        status_lines.extend(
+            [
+                "",
+                "**Доступные команды:**",
+                "/digest - Сгенерировать дайджест сейчас",
+                "/status - Показать этот статус",
+                "/help - Помощь",
+            ]
         )
+
+        await update.message.reply_text("\n".join(status_lines), parse_mode="Markdown")
 
     async def handle_help(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
@@ -161,6 +159,10 @@ class BotCommandHandler:
             update: Telegram update
             context: Bot context
         """
+        # Type checks for command handlers
+        assert update.effective_user is not None
+        assert update.message is not None
+
         user_id = update.effective_user.id
 
         # Security check
@@ -186,17 +188,19 @@ class BotCommandHandler:
 • Вывод всегда на русском языке
 • Умные суммаризации с помощью GPT-4
 • Ссылки на оригинальные сообщения
-        """.format(self.config.settings.schedule_time + " UTC")
-
-        await update.message.reply_text(
-            help_text,
-            parse_mode='Markdown'
+        """.format(
+            self.config.settings.schedule_time + " UTC"
         )
+
+        await update.message.reply_text(help_text, parse_mode="Markdown")
 
     async def run(self):
         """Run the bot (polling mode)."""
         if not self.app:
             self.setup_application()
+
+        assert self.app is not None
+        assert self.app.updater is not None
 
         self.logger.info("Starting bot polling...")
         await self.app.initialize()
@@ -207,7 +211,7 @@ class BotCommandHandler:
 
     async def stop(self):
         """Stop the bot."""
-        if self.app:
+        if self.app and self.app.updater:
             self.logger.info("Stopping bot...")
             await self.app.updater.stop()
             await self.app.stop()
@@ -216,7 +220,6 @@ class BotCommandHandler:
 
 async def main():
     """Test bot commands."""
-    import asyncio
     from src.config_loader import load_config
     from src.utils import setup_logging
 
@@ -238,5 +241,5 @@ async def main():
         await handler.stop()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     asyncio.run(main())
