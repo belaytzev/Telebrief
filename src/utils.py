@@ -49,24 +49,6 @@ def setup_logging(log_level: str = "INFO") -> logging.Logger:
     return logger
 
 
-def format_timerange(hours: int) -> str:
-    """
-    Format time range for display.
-
-    Args:
-        hours: Number of hours
-
-    Returns:
-        Formatted string (e.g., "последние 24ч")
-    """
-    if hours == 1:
-        return "последний 1ч"
-    elif hours < 5:
-        return f"последние {hours}ч"
-    else:
-        return f"последние {hours}ч"
-
-
 def get_lookback_time(hours: int) -> datetime:
     """
     Calculate lookback datetime.
@@ -78,26 +60,6 @@ def get_lookback_time(hours: int) -> datetime:
         Datetime object
     """
     return datetime.utcnow() - timedelta(hours=hours)
-
-
-def truncate_text(text: str, max_length: int = 4000) -> str:
-    """
-    Truncate text to maximum length.
-
-    Args:
-        text: Text to truncate
-        max_length: Maximum length
-
-    Returns:
-        Truncated text
-    """
-    if len(text) <= max_length:
-        return text
-
-    return (
-        text[: max_length - 100]
-        + "\n\n...\n\n[Сообщение обрезано из-за ограничения длины Telegram]"
-    )
 
 
 def split_message(text: str, max_length: int = 4000) -> list[str]:
@@ -144,37 +106,3 @@ def split_message(text: str, max_length: int = 4000) -> list[str]:
         parts.append(current_part.strip())
 
     return parts
-
-
-def estimate_tokens(text: str) -> int:
-    """
-    Rough estimate of token count.
-
-    Args:
-        text: Text to estimate
-
-    Returns:
-        Estimated token count
-    """
-    # Rough estimate: 1 token ≈ 4 characters
-    return len(text) // 4
-
-
-def format_cost(tokens_input: int, tokens_output: int, model: str = "gpt-5-nano") -> str:
-    """
-    Estimate API cost for GPT-5-nano.
-
-    Args:
-        tokens_input: Input token count
-        tokens_output: Output token count
-        model: Model name (only gpt-5-nano supported)
-
-    Returns:
-        Formatted cost string
-    """
-    # GPT-5-nano pricing: $0.050 input, $0.400 output per 1M tokens
-    cost_input = tokens_input * 0.050 / 1_000_000
-    cost_output = tokens_output * 0.400 / 1_000_000
-
-    total_cost = cost_input + cost_output
-    return f"${total_cost:.4f}"

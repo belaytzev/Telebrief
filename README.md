@@ -379,7 +379,7 @@ make help          # Show all available commands
 make install-dev   # Install dev dependencies
 make test          # Run tests with coverage
 make test-fast     # Run tests without coverage
-make lint          # Run all linters (black, flake8, mypy, pylint)
+make lint          # Run all linters (black, flake8, mypy, pylint, vulture)
 make format        # Auto-format code
 make clean         # Remove build artifacts
 make pre-commit    # Install pre-commit hooks
@@ -398,16 +398,31 @@ pre-commit run --all-files
 ### Code Quality
 
 The project uses:
-- **pytest** for testing (70%+ coverage required)
+- **pytest** for testing (45%+ coverage required)
 - **Black** for code formatting
 - **Flake8** for linting
 - **MyPy** for type checking
-- **Pylint** for code analysis
+- **Pylint** for code analysis (8.0+ rating required)
+- **Vulture** for detecting unused code
+
+#### Detecting Unused Code
+
+The project uses Vulture to automatically detect unused functions, classes, variables, and imports:
+
+```bash
+# Run as part of full linting
+make lint
+
+# Run vulture separately
+vulture src vulture_whitelist.py --min-confidence 80
+```
+
+**Whitelist Configuration**: `vulture_whitelist.py` contains intentionally unused code patterns (e.g., main() functions, required API signatures). Add patterns here to avoid false positives.
 
 ### CI/CD
 
 GitHub Actions runs on every push/PR:
-- Linting (Black, Flake8, MyPy, Pylint)
+- Linting (Black, Flake8, MyPy, Pylint, Vulture)
 - Tests (Python 3.10, 3.11, 3.12)
 - Security scans (Bandit, Safety)
 - Build verification

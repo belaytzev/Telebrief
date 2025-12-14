@@ -29,6 +29,41 @@ class DigestSender:
         self.bot = Bot(token=config.telegram_bot_token)
         self.target_user_id = config.settings.target_user_id
 
+    async def _send_message_part(self, user_id: int, text: str, part_num: int) -> None:
+        """
+        Send a single message part with markdown fallback.
+
+        Args:
+            user_id: Target user ID
+            text: Message text
+            part_num: Part number for logging
+
+        Raises:
+            TelegramError: If sending fails (not markdown parsing)
+        """
+        try:
+            # Try with Markdown first
+            await self.bot.send_message(
+                chat_id=user_id,
+                text=text,
+                parse_mode=ParseMode.MARKDOWN,
+                disable_web_page_preview=False,
+            )
+        except TelegramError as e:
+            # If markdown parsing fails, try plain text
+            if "Can't parse entities" in str(e):
+                self.logger.warning(
+                    f"Markdown parse error in part {part_num}, falling back to plain text"
+                )
+                await self.bot.send_message(
+                    chat_id=user_id,
+                    text=text,
+                    parse_mode=None,
+                    disable_web_page_preview=False,
+                )
+            else:
+                raise
+
     async def send_digest(self, digest: str, user_id: Optional[int] = None) -> bool:
         """
         Send digest to user.
@@ -59,12 +94,7 @@ class DigestSender:
 
             # Send each part
             for i, part in enumerate(parts, 1):
-                await self.bot.send_message(
-                    chat_id=user_id,
-                    text=part,
-                    parse_mode=ParseMode.MARKDOWN,
-                    disable_web_page_preview=False,
-                )
+                await self._send_message_part(user_id, part, i)
 
                 if len(parts) > 1:
                     self.logger.info(f"Sent part {i}/{len(parts)}")

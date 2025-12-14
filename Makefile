@@ -44,6 +44,8 @@ lint:
 	mypy src
 	@echo "\nRunning Pylint..."
 	pylint src tests --fail-under=8.0
+	@echo "\nRunning Vulture (unused code detection)..."
+	vulture src vulture_whitelist.py --min-confidence 80
 
 format:
 	black src tests

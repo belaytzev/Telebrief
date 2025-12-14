@@ -46,7 +46,9 @@ class DigestFormatter:
             Formatted Markdown digest
         """
         self.logger.info("Formatting digest")
-        self.logger.debug(f"Overview: {len(overview) if overview else 0} chars, truthy: {bool(overview)}")
+        self.logger.debug(
+            f"Overview: {len(overview) if overview else 0} chars, truthy: {bool(overview)}"
+        )
         self.logger.debug(f"Channel summaries: {len(channel_summaries)} channels")
 
         # Build digest parts
@@ -67,7 +69,9 @@ class DigestFormatter:
 
         # Channel sections
         for channel_name, summary in channel_summaries.items():
-            self.logger.debug(f"Processing channel '{channel_name}': {len(summary) if summary else 0} chars")
+            self.logger.debug(
+                f"Processing channel '{channel_name}': {len(summary) if summary else 0} chars"
+            )
             if not summary or "ошибка" in summary.lower():
                 self.logger.warning(f"Skipping channel '{channel_name}': empty or contains error")
                 continue

@@ -107,3 +107,35 @@ async def test_send_message_unauthorized(sample_config, mock_logger):
     result = await sender.send_message("Test message", user_id=999999999)
 
     assert result is False
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_send_digest_markdown_fallback(sample_config, mock_logger):
+    """Test markdown parsing error fallback to plain text."""
+    from telegram.error import TelegramError
+
+    with patch("src.sender.Bot") as mock_bot_class:
+        mock_bot = MagicMock()
+
+        # First call fails with markdown parsing error
+        # Second call succeeds with plain text
+        send_message_mock = AsyncMock(
+            side_effect=[
+                TelegramError("Can't parse entities: can't find end of the entity"),
+                None,  # Second call succeeds
+            ]
+        )
+        mock_bot.send_message = send_message_mock
+        mock_bot_class.return_value = mock_bot
+
+        sender = DigestSender(sample_config, mock_logger)
+        result = await sender.send_digest("Test *invalid markdown", user_id=123456789)
+
+    assert result is True
+    # Should be called twice: first with Markdown (fails), then with plain text (succeeds)
+    assert send_message_mock.call_count == 2
+
+    # Verify the second call used plain text (parse_mode=None)
+    second_call_kwargs = send_message_mock.call_args_list[1][1]
+    assert second_call_kwargs.get("parse_mode") is None

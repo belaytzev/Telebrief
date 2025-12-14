@@ -60,8 +60,12 @@ async def generate_digest(config: Config, logger: logging.Logger, hours: int = 2
         logger.debug(f"Overview length: {len(overview) if overview else 0} chars")
         logger.debug(f"Overview content: {overview[:200] if overview else 'EMPTY'}")
         for ch_name, ch_summary in channel_summaries.items():
-            logger.debug(f"Channel '{ch_name}' summary length: {len(ch_summary) if ch_summary else 0} chars")
-            logger.debug(f"Channel '{ch_name}' summary: {ch_summary[:200] if ch_summary else 'EMPTY'}")
+            logger.debug(
+                f"Channel '{ch_name}' summary length: {len(ch_summary) if ch_summary else 0} chars"
+            )
+            logger.debug(
+                f"Channel '{ch_name}' summary: {ch_summary[:200] if ch_summary else 'EMPTY'}"
+            )
 
         # Step 3: Format digest
         logger.info("STEP 3: Formatting digest")

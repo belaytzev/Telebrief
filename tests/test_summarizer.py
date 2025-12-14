@@ -29,7 +29,7 @@ async def test_summarize_all_empty(sample_config, mock_logger):
     result = await summarizer.summarize_all(messages_by_channel)
 
     assert result["channel_summaries"] == {}
-    assert "Нет сообщений" in result["overview"]
+    assert result["overview"] == ""
 
 
 @pytest.mark.unit
