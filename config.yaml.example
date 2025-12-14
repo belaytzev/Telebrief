@@ -14,7 +14,7 @@ settings:
   lookback_hours: 24       # Message collection window
 
   # OpenAI
-  openai_model: "gpt-4-turbo-preview"
+  openai_model: "gpt-5-nano"  # Ultra-low cost AI summarization
   openai_temperature: 0.7
   max_tokens_per_summary: 500
 

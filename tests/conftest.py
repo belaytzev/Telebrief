@@ -30,7 +30,7 @@ def sample_config():
         schedule_time="08:00",
         timezone="UTC",
         lookback_hours=24,
-        openai_model="gpt-4-turbo-preview",
+        openai_model="gpt-5-nano",
         openai_temperature=0.7,
         max_tokens_per_summary=500,
         output_language="russian",
@@ -110,7 +110,7 @@ settings:
   schedule_time: "08:00"
   timezone: "UTC"
   lookback_hours: 24
-  openai_model: "gpt-4-turbo-preview"
+  openai_model: "gpt-5-nano"
   openai_temperature: 0.7
   max_tokens_per_summary: 500
   output_language: "russian"

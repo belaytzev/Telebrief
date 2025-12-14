@@ -179,7 +179,7 @@ if __name__ == "__main__":
 ║      ╚═╝   ╚══════╝╚══════╝╚══════╝╚═════╝ ╚═╝  ╚═╝    ║
 ║                                                          ║
 ║         Automated Telegram Digest Generator             ║
-║                  Powered by GPT-4                        ║
+║                  Powered by GPT-5                        ║
 ║                                                          ║
 ╚══════════════════════════════════════════════════════════╝
     """)

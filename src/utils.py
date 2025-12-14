@@ -160,25 +160,21 @@ def estimate_tokens(text: str) -> int:
     return len(text) // 4
 
 
-def format_cost(tokens_input: int, tokens_output: int, model: str = "gpt-4-turbo-preview") -> str:
+def format_cost(tokens_input: int, tokens_output: int, model: str = "gpt-5-nano") -> str:
     """
-    Estimate API cost.
+    Estimate API cost for GPT-5-nano.
 
     Args:
         tokens_input: Input token count
         tokens_output: Output token count
-        model: OpenAI model name
+        model: Model name (only gpt-5-nano supported)
 
     Returns:
         Formatted cost string
     """
-    # GPT-4-turbo pricing
-    if "gpt-4" in model.lower():
-        cost_input = tokens_input * 0.01 / 1000
-        cost_output = tokens_output * 0.03 / 1000
-    else:  # GPT-3.5
-        cost_input = tokens_input * 0.001 / 1000
-        cost_output = tokens_output * 0.002 / 1000
+    # GPT-5-nano pricing: $0.050 input, $0.400 output per 1M tokens
+    cost_input = tokens_input * 0.050 / 1_000_000
+    cost_output = tokens_output * 0.400 / 1_000_000
 
     total_cost = cost_input + cost_output
-    return f"${total_cost:.2f}"
+    return f"${total_cost:.4f}"

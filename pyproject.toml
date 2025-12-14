@@ -1,7 +1,7 @@
 [project]
 name = "telebrief"
 version = "0.1.0"
-description = "Automated Telegram Digest Generator powered by GPT-4"
+description = "Automated Telegram Digest Generator powered by GPT-5"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = []

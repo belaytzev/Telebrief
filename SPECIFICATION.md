@@ -11,7 +11,7 @@
 **Telebrief** is an automated Telegram digest generator that:
 - Collects messages from ~20 Telegram channels/chats (public and private)
 - Processes messages in ANY language (English, Russian, Ukrainian, etc.)
-- Generates AI-powered summaries using GPT-4-turbo
+- Generates AI-powered summaries using GPT-5-nano
 - Delivers daily digests in **Russian language only** via Telegram bot
 - Supports instant on-demand digest generation
 - Runs unattended on Linux VPS
@@ -42,7 +42,7 @@
 | NFR-1 | Execution time | < 3 minutes for 2000 messages |
 | NFR-2 | Reliability | 99% successful daily deliveries |
 | NFR-3 | Security | Credentials encrypted, user whitelist |
-| NFR-4 | Cost | ~$70/month (acceptable) |
+| NFR-4 | Cost | ~$0.30/month (GPT-5-nano) |
 | NFR-5 | Maintainability | Simple configuration, clear logging |
 
 ---
@@ -90,7 +90,7 @@
   - Generate clickable message links
 
 #### 2. Summarizer
-- **Technology:** OpenAI API (GPT-4-turbo)
+- **Technology:** OpenAI API (GPT-5-nano)
 - **Responsibility:** Generate summaries in Russian
 - **Strategy:** Two-tier summarization
   1. Per-channel summaries (3-5 bullet points each)
@@ -229,7 +229,7 @@ settings:
   lookback_hours: 24       # Message collection window
 
   # OpenAI
-  openai_model: "gpt-4-turbo-preview"
+  openai_model: "gpt-5-nano"
   openai_temperature: 0.7
   max_tokens_per_summary: 500
 
@@ -283,14 +283,14 @@ LOG_LEVEL=INFO
     - Group messages by channel
     - For each channel:
         * Build prompt in Russian
-        * Call OpenAI API (gpt-4-turbo)
+        * Call OpenAI API (gpt-5-nano)
         * Extract summary (3-5 bullet points)
     - Return: Dict[channel_name: summary]
     ↓
 [3] Summarizer.generate_overview()
     - Combine all per-channel summaries
     - Build overview prompt in Russian
-    - Call OpenAI API (gpt-4-turbo)
+    - Call OpenAI API (gpt-5-nano)
     - Extract: executive summary + insights
     - Return: overview text
     ↓
@@ -410,7 +410,7 @@ OVERVIEW_TEMPLATE = """
 
 ## Cost Analysis
 
-### Daily Cost Breakdown (GPT-4-turbo)
+### Daily Cost Breakdown (GPT-5-nano)
 
 **Assumptions:**
 - 20 channels
@@ -433,25 +433,27 @@ Output tokens:
 Total output: ~4,500 tokens
 ```
 
-**Pricing (GPT-4-turbo-preview):**
-- Input: $0.01 per 1K tokens
-- Output: $0.03 per 1K tokens
+**Pricing (GPT-5-nano):**
+- Input: $0.050 per 1M tokens
+- Output: $0.400 per 1M tokens
 
 **Daily Cost:**
 ```
-Input: 205K × $0.01 / 1K = $2.05
-Output: 4.5K × $0.03 / 1K = $0.14
-Total per day: $2.19
+Input: 205,000 tokens × $0.050 / 1,000,000 = $0.0103
+Output: 4,500 tokens × $0.400 / 1,000,000 = $0.0018
+Total per day: ~$0.012
 ```
 
 **Monthly Cost:**
 ```
-$2.19 × 30 days = $65.70 per month
+$0.012 × 30 days = $0.36 per month
 ```
 
-**With instant digests:** Add ~$2-3 per manual /digest call
+**With instant digests:** Add ~$0.01 per manual /digest call
 
-**Annual Cost:** ~$788 per year
+**Annual Cost:** ~$4.32 per year
+
+💡 **GPT-5-nano makes this incredibly affordable - less than a cup of coffee per year!**
 
 ---
 
@@ -904,7 +906,7 @@ journalctl -u telebrief -f
 2. **Cost Optimization:**
    - Smart sampling for high-volume channels
    - Message deduplication
-   - Hybrid model approach (GPT-3.5 + GPT-4)
+   - Alternative models for different use cases
 
 3. **Enhanced Output:**
    - Topic clustering across channels
@@ -1007,7 +1009,7 @@ settings:
   schedule_time: "08:00"
   timezone: "UTC"
   lookback_hours: 24
-  openai_model: "gpt-4-turbo-preview"
+  openai_model: "gpt-5-nano"
   openai_temperature: 0.7
   max_tokens_per_summary: 500
   output_language: "russian"

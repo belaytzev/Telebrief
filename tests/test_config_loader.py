@@ -1,5 +1,7 @@
 """Tests for config_loader module."""
 
+from unittest.mock import patch
+
 import pytest
 
 from src.config_loader import load_config
@@ -28,14 +30,30 @@ def test_load_config_missing_file():
 
 
 @pytest.mark.unit
-def test_load_config_missing_env_vars(temp_config_file, monkeypatch):
+def test_load_config_missing_env_vars(tmp_path, monkeypatch):
     """Test error handling for missing environment variables."""
-    # Remove required env vars
+    # Create temp config file without using mock_env_vars
+    config_content = """
+channels:
+  - id: "@test_channel"
+    name: "Test Channel"
+
+settings:
+  target_user_id: 123456789
+"""
+    config_file = tmp_path / "config.yaml"
+    config_file.write_text(config_content)
+
+    # Remove all required env vars
     monkeypatch.delenv("TELEGRAM_API_ID", raising=False)
     monkeypatch.delenv("TELEGRAM_API_HASH", raising=False)
+    monkeypatch.delenv("TELEGRAM_BOT_TOKEN", raising=False)
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
 
-    with pytest.raises(ValueError, match="Missing required environment variables"):
-        load_config(temp_config_file)
+    # Mock load_dotenv to prevent loading from .env file
+    with patch("src.config_loader.load_dotenv"):
+        with pytest.raises(ValueError, match="Missing required environment variables"):
+            load_config(str(config_file))
 
 
 @pytest.mark.unit

@@ -91,20 +91,11 @@ def test_estimate_tokens():
 
 
 @pytest.mark.unit
-def test_format_cost_gpt4():
-    """Test cost formatting for GPT-4."""
-    cost = format_cost(1000, 500, "gpt-4-turbo-preview")
+def test_format_cost_gpt5nano():
+    """Test cost formatting for GPT-5-nano (default)."""
+    # 1000 input tokens + 500 output tokens
+    # GPT-5-nano: (1000 * $0.050 + 500 * $0.400) / 1M = $0.0003
+    cost = format_cost(1000, 500, "gpt-5-nano")
 
     assert cost.startswith("$")
-    assert float(cost[1:]) > 0
-
-
-@pytest.mark.unit
-def test_format_cost_gpt35():
-    """Test cost formatting for GPT-3.5."""
-    cost = format_cost(1000, 500, "gpt-3.5-turbo")
-
-    assert cost.startswith("$")
-    gpt4_cost = float(format_cost(1000, 500, "gpt-4-turbo-preview")[1:])
-    gpt35_cost = float(cost[1:])
-    assert gpt35_cost < gpt4_cost  # GPT-3.5 should be cheaper
+    assert cost == "$0.0003"

@@ -1,6 +1,6 @@
 # Telebrief
 
-**Automated Telegram Digest Generator powered by GPT-4**
+**Automated Telegram Digest Generator powered by GPT-5-nano**
 
 Telebrief collects messages from your Telegram channels (in any language), generates AI-powered summaries, and delivers beautiful daily digests **in Russian** directly to your Telegram account.
 
@@ -10,7 +10,7 @@ Telebrief collects messages from your Telegram channels (in any language), gener
 
 ✅ **Multi-language Support** - Reads channels in ANY language (English, Russian, Ukrainian, Chinese, etc.)
 ✅ **Russian Output Only** - All summaries generated in Russian regardless of source language
-✅ **GPT-4 Powered** - High-quality AI summarization using OpenAI's latest models
+✅ **GPT-5-nano Powered** - High-quality AI summarization with ultra-low cost ($0.05/$0.40 per 1M tokens)
 ✅ **Scheduled & On-Demand** - Daily automatic digests + instant generation via bot commands
 ✅ **Private Channel Support** - Access your private chats and channels
 ✅ **Smart Formatting** - Markdown with emojis, bullet points, and clickable message links
@@ -31,7 +31,7 @@ Before you begin, gather these credentials:
    - Create bot: `/newbot`
 
 3. **OpenAI API Key** (from https://platform.openai.com)
-   - GPT-4 access required
+   - Requires GPT-5-nano access
 
 4. **Your Telegram User ID** (from @userinfobot on Telegram)
 
@@ -92,7 +92,7 @@ channels:
 settings:
   schedule_time: "08:00"  # UTC time for daily digest
   timezone: "UTC"
-  openai_model: "gpt-4-turbo-preview"
+  openai_model: "gpt-5-nano"
   target_user_id: 123456789  # Your Telegram ID
 ```
 
@@ -198,12 +198,24 @@ sudo systemctl status telebrief
 
 ## Cost Estimation
 
-With default configuration (~20 channels, medium activity):
+**GPT-5-nano Pricing** (Default):
+- Input: $0.050 per 1M tokens
+- Output: $0.400 per 1M tokens
 
-- **GPT-4-turbo**: ~$2-3/day = **$60-90/month**
-- **GPT-3.5-turbo**: ~$0.40/day = **$12/month**
+**Estimated costs** (~20 channels, medium activity):
 
-Adjust model in `config.yaml` to manage costs.
+| Model | Daily Cost | Monthly Cost |
+|-------|-----------|--------------|
+| **GPT-5-nano** (default) | ~$0.01/day | **~$0.30/month** ⭐ |
+
+**Example calculation:**
+- Input: ~100K tokens/day (reading messages)
+- Output: ~10K tokens/day (summaries)
+- Cost: (100K × $0.05 + 10K × $0.40) / 1M = **$0.009/day** = **$0.27/month**
+
+💡 **Ultra-affordable pricing - perfect for personal daily digests!**
+
+Configure settings in `config.yaml` to customize your digest generation.
 
 ---
 
@@ -372,7 +384,7 @@ A: Yes! Edit `src/formatter.py` to change Markdown structure, emojis, and sectio
 **Built with:**
 - [Telethon](https://github.com/LonamiWebs/Telethon) - Telegram User API
 - [python-telegram-bot](https://github.com/python-telegram-bot/python-telegram-bot) - Bot API
-- [OpenAI API](https://openai.com) - GPT-4 Summarization
+- [OpenAI API](https://openai.com) - GPT-5-nano Summarization
 - [APScheduler](https://github.com/agronholm/apscheduler) - Task Scheduling
 
 ---
