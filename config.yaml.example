@@ -33,6 +33,7 @@ settings:
 
   # Telegram Bot
   target_user_id: 0  # Your Telegram user ID (get from @userinfobot)
+  auto_cleanup_old_digests: true  # Automatically delete previous digest messages
 
   # Safety limits
   max_messages_per_channel: 500

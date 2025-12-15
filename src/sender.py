@@ -10,7 +10,12 @@ from telegram.constants import ParseMode
 from telegram.error import TelegramError
 
 from src.config_loader import Config
-from src.utils import split_message
+from src.utils import (
+    clear_digest_message_ids,
+    get_digest_message_ids,
+    save_digest_message_ids,
+    split_message,
+)
 
 
 class DigestSender:
@@ -198,6 +203,160 @@ class DigestSender:
         except TelegramError as e:
             self.logger.error(f"Failed to send message: {e}")
             return False
+
+    async def cleanup_old_digests(self, user_id: Optional[int] = None) -> bool:
+        """
+        Delete previous digest messages.
+
+        Args:
+            user_id: Target user ID (defaults to configured user)
+
+        Returns:
+            True if cleanup successful, False otherwise
+        """
+        if user_id is None:
+            user_id = self.target_user_id
+
+        # Verify authorized user
+        if user_id != self.target_user_id:
+            self.logger.warning(f"Unauthorized cleanup attempt for user {user_id}")
+            return False
+
+        # Get stored message IDs
+        message_ids = get_digest_message_ids(user_id)
+
+        if not message_ids:
+            self.logger.info("No previous digest messages to clean up")
+            return True
+
+        self.logger.info(f"Cleaning up {len(message_ids)} previous digest messages")
+
+        deleted_count = 0
+        failed_count = 0
+
+        for message_id in message_ids:
+            try:
+                await self.bot.delete_message(chat_id=user_id, message_id=message_id)
+                deleted_count += 1
+            except TelegramError as e:
+                # Message might already be deleted or not found
+                if "message to delete not found" in str(e).lower():
+                    self.logger.debug(f"Message {message_id} already deleted")
+                    deleted_count += 1
+                else:
+                    self.logger.warning(f"Failed to delete message {message_id}: {e}")
+                    failed_count += 1
+
+        # Clear stored message IDs
+        clear_digest_message_ids(user_id)
+
+        if failed_count == 0:
+            self.logger.info(f"✅ Cleaned up {deleted_count} messages successfully")
+            return True
+        else:
+            self.logger.warning(
+                f"⚠️ Cleaned up {deleted_count} messages, {failed_count} failed to delete"
+            )
+            return deleted_count > 0
+
+    async def send_channel_messages_with_tracking(
+        self,
+        channel_messages: list[tuple[str, str]],
+        summary_message: Optional[str] = None,
+        user_id: Optional[int] = None,
+    ) -> bool:
+        """
+        Send separate messages for each channel and track message IDs for cleanup.
+
+        Args:
+            channel_messages: List of (channel_name, message_text) tuples
+            summary_message: Optional summary message to send at the end
+            user_id: Target user ID (defaults to configured user)
+
+        Returns:
+            True if all messages sent successfully, False otherwise
+        """
+        if user_id is None:
+            user_id = self.target_user_id
+
+        # Verify authorized user
+        if user_id != self.target_user_id:
+            self.logger.warning(f"Unauthorized send attempt to user {user_id}")
+            return False
+
+        self.logger.info(f"Sending {len(channel_messages)} channel messages to user {user_id}")
+
+        sent_message_ids = []
+        success_count = 0
+        failed_channels = []
+
+        for i, (channel_name, message_text) in enumerate(channel_messages, 1):
+            try:
+                self.logger.info(f"Sending message {i}/{len(channel_messages)}: {channel_name}")
+
+                # Send message and get message object
+                try:
+                    message = await self.bot.send_message(
+                        chat_id=user_id,
+                        text=message_text,
+                        parse_mode=ParseMode.MARKDOWN,
+                        disable_web_page_preview=False,
+                    )
+                    sent_message_ids.append(message.message_id)
+
+                except TelegramError as e:
+                    if "Can't parse entities" in str(e):
+                        self.logger.warning(f"Markdown parse error, falling back to plain text")
+                        message = await self.bot.send_message(
+                            chat_id=user_id,
+                            text=message_text,
+                            parse_mode=None,
+                            disable_web_page_preview=False,
+                        )
+                        sent_message_ids.append(message.message_id)
+                    else:
+                        raise
+
+                success_count += 1
+                self.logger.info(f"✅ Successfully sent message for {channel_name}")
+
+                # Small delay between messages to avoid rate limiting
+                if i < len(channel_messages):
+                    import asyncio
+
+                    await asyncio.sleep(0.5)
+
+            except TelegramError as e:
+                self.logger.error(f"❌ Failed to send message for {channel_name}: {e}")
+                failed_channels.append(channel_name)
+                continue
+
+        # Send summary message if provided
+        if summary_message and success_count > 0:
+            try:
+                message = await self.bot.send_message(
+                    chat_id=user_id, text=summary_message, parse_mode=ParseMode.MARKDOWN
+                )
+                sent_message_ids.append(message.message_id)
+                self.logger.info("✅ Summary message sent")
+            except TelegramError as e:
+                self.logger.warning(f"⚠️ Failed to send summary message: {e}")
+
+        # Save message IDs for future cleanup
+        if sent_message_ids:
+            save_digest_message_ids(sent_message_ids, user_id)
+            self.logger.info(f"Saved {len(sent_message_ids)} message IDs for cleanup")
+
+        # Log summary
+        if success_count == len(channel_messages):
+            self.logger.info(f"✅ All {success_count} channel messages sent successfully")
+            return True
+        else:
+            self.logger.warning(
+                f"⚠️ Sent {success_count}/{len(channel_messages)} messages. "
+                f"Failed: {', '.join(failed_channels)}"
+            )
+            return success_count > 0
 
 
 async def main():

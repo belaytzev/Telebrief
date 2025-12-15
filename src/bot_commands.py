@@ -6,7 +6,7 @@ import asyncio
 import logging
 from typing import Optional
 
-from telegram import Update
+from telegram import BotCommand, Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
 from src.config_loader import Config
@@ -45,12 +45,36 @@ class BotCommandHandler:
 
         # Add command handlers
         self.app.add_handler(CommandHandler("digest", self.handle_digest))
+        self.app.add_handler(CommandHandler("cleanup", self.handle_cleanup))
         self.app.add_handler(CommandHandler("status", self.handle_status))
         self.app.add_handler(CommandHandler("help", self.handle_help))
         self.app.add_handler(CommandHandler("start", self.handle_help))
 
         self.logger.info("Bot command handlers registered")
         return self.app
+
+    async def setup_bot_menu(self) -> None:
+        """
+        Set up bot command menu for easy command discovery.
+        This creates the menu that appears when users type '/' in the chat.
+        """
+        if not self.app:
+            self.logger.warning("Application not initialized, cannot set up bot menu")
+            return
+
+        commands = [
+            BotCommand("start", "Начать работу сботом"),
+            BotCommand("digest", "Сгенерировать дайджест за 24 часа"),
+            BotCommand("cleanup", "Удалить старые дайджесты"),
+            BotCommand("status", "Показать статус и настройки"),
+            BotCommand("help", "Показать справку"),
+        ]
+
+        try:
+            await self.app.bot.set_my_commands(commands)
+            self.logger.info("✅ Bot command menu configured successfully")
+        except Exception as e:
+            self.logger.error(f"Failed to set up bot menu: {e}")
 
     def is_authorized(self, user_id: int) -> bool:
         """
@@ -109,6 +133,47 @@ class BotCommandHandler:
             self.logger.error(f"Error in /digest command: {e}", exc_info=True)
             await update.message.reply_text(f"❌ Ошибка: {str(e)}")
 
+    async def handle_cleanup(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """
+        Handle /cleanup command.
+
+        Args:
+            update: Telegram update
+            context: Bot context
+        """
+        # Type checks for command handlers
+        assert update.effective_user is not None
+        assert update.message is not None
+
+        user_id = update.effective_user.id
+
+        # Security check
+        if not self.is_authorized(user_id):
+            self.logger.warning(f"Unauthorized /cleanup attempt from user {user_id}")
+            return  # Silently ignore
+
+        self.logger.info(f"Manual cleanup requested by user {user_id}")
+
+        # Send "processing" message
+        await update.message.reply_text("🧹 Удаляю предыдущие дайджесты...")
+
+        try:
+            from src.sender import DigestSender
+
+            sender = DigestSender(self.config, self.logger)
+            success = await sender.cleanup_old_digests(user_id)
+
+            if success:
+                await update.message.reply_text("✅ Предыдущие дайджесты успешно удалены!")
+            else:
+                await update.message.reply_text(
+                    "⚠️ Не удалось удалить некоторые сообщения. Проверьте логи для деталей."
+                )
+
+        except Exception as e:
+            self.logger.error(f"Error in /cleanup command: {e}", exc_info=True)
+            await update.message.reply_text(f"❌ Ошибка: {str(e)}")
+
     async def handle_status(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
         Handle /status command.
@@ -133,6 +198,7 @@ class BotCommandHandler:
             "📊 **Статус Telebrief**\n",
             f"🤖 Модель: {self.config.settings.openai_model}",
             f"📺 Каналов настроено: {len(self.config.channels)}",
+            f"🧹 Автоочистка: {'Включена' if self.config.settings.auto_cleanup_old_digests else 'Выключена'}",
         ]
 
         if self.scheduler:
@@ -146,6 +212,7 @@ class BotCommandHandler:
                 "",
                 "**Доступные команды:**",
                 "/digest - Сгенерировать дайджест сейчас",
+                "/cleanup - Удалить предыдущие дайджесты",
                 "/status - Показать этот статус",
                 "/help - Помощь",
             ]
@@ -179,6 +246,7 @@ class BotCommandHandler:
 **Команды:**
 
 /digest - Сгенерировать дайджест за последние 24 часа
+/cleanup - Удалить предыдущие дайджесты вручную
 /status - Показать статус и настройки
 /help - Показать эту справку
 
@@ -190,6 +258,7 @@ class BotCommandHandler:
 • Вывод всегда на русском языке
 • Умные суммаризации с помощью GPT-5
 • Ссылки на оригинальные сообщения
+• Автоматическая очистка старых дайджестов (настраивается)
         """.format(
             self.config.settings.schedule_time + " UTC"
         )
@@ -207,6 +276,10 @@ class BotCommandHandler:
         self.logger.info("Starting bot polling...")
         await self.app.initialize()
         await self.app.start()
+
+        # Set up bot command menu
+        await self.setup_bot_menu()
+
         await self.app.updater.start_polling()
 
         self.logger.info("✅ Bot is running and listening for commands")

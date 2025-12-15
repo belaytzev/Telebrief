@@ -2,9 +2,12 @@
 Utility functions and logging setup for Telebrief.
 """
 
+import json
 import logging
 import os
 from datetime import datetime, timedelta
+from pathlib import Path
+from typing import List
 
 
 def setup_logging(log_level: str = "INFO") -> logging.Logger:
@@ -106,3 +109,98 @@ def split_message(text: str, max_length: int = 4000) -> list[str]:
         parts.append(current_part.strip())
 
     return parts
+
+
+# Message ID storage for cleanup functionality
+MESSAGE_STORAGE_FILE = "data/digest_messages.json"
+
+
+def save_digest_message_ids(message_ids: List[int], user_id: int) -> None:
+    """
+    Save message IDs of sent digest messages for later cleanup.
+
+    Args:
+        message_ids: List of Telegram message IDs
+        user_id: Target user ID
+    """
+    # Create data directory if it doesn't exist
+    storage_path = Path(MESSAGE_STORAGE_FILE)
+    storage_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # Load existing data
+    data = {}
+    if storage_path.exists():
+        try:
+            with open(storage_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except (json.JSONDecodeError, IOError):
+            data = {}
+
+    # Store message IDs with timestamp
+    user_key = str(user_id)
+    data[user_key] = {
+        "message_ids": message_ids,
+        "timestamp": datetime.utcnow().isoformat(),
+    }
+
+    # Save to file
+    with open(storage_path, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+
+
+def get_digest_message_ids(user_id: int) -> List[int]:
+    """
+    Get stored message IDs for cleanup.
+
+    Args:
+        user_id: Target user ID
+
+    Returns:
+        List of message IDs
+    """
+    storage_path = Path(MESSAGE_STORAGE_FILE)
+
+    if not storage_path.exists():
+        return []
+
+    try:
+        with open(storage_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        user_key = str(user_id)
+        if user_key in data:
+            message_ids: List[int] = data[user_key].get("message_ids", [])
+            return message_ids
+
+    except (json.JSONDecodeError, IOError, KeyError):
+        pass
+
+    return []
+
+
+def clear_digest_message_ids(user_id: int) -> None:
+    """
+    Clear stored message IDs after cleanup.
+
+    Args:
+        user_id: Target user ID
+    """
+    storage_path = Path(MESSAGE_STORAGE_FILE)
+
+    if not storage_path.exists():
+        return
+
+    try:
+        with open(storage_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        user_key = str(user_id)
+        if user_key in data:
+            del data[user_key]
+
+        # Save updated data
+        with open(storage_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+
+    except (json.JSONDecodeError, IOError, KeyError):
+        pass

@@ -194,18 +194,20 @@ async def generate_and_send_channel_digests(
             logger.warning("No valid channel messages to send")
             return False
 
-        # Step 4: Send channel messages
-        logger.info(f"STEP 4: Sending {len(channel_messages)} channel messages")
+        # Step 4: Cleanup old digests (if enabled)
         sender = DigestSender(config, logger)
-        success = await sender.send_channel_messages(channel_messages, user_id)
+        if config.settings.auto_cleanup_old_digests:
+            logger.info("STEP 4: Cleaning up old digest messages")
+            await sender.cleanup_old_digests(user_id)
 
-        # Step 5: Send summary message
-        if success:
-            logger.info("STEP 5: Sending summary message")
-            summary_message = formatter.format_summary_message(
-                total_channels=len(channel_messages), total_messages=total_messages, hours=hours
-            )
-            await sender.send_message(summary_message, user_id)
+        # Step 5: Send channel messages with tracking
+        logger.info(f"STEP 5: Sending {len(channel_messages)} channel messages")
+        summary_message = formatter.format_summary_message(
+            total_channels=len(channel_messages), total_messages=total_messages, hours=hours
+        )
+        success = await sender.send_channel_messages_with_tracking(
+            channel_messages, summary_message, user_id
+        )
 
         # Calculate execution time
         execution_time = (datetime.utcnow() - start_time).total_seconds()
