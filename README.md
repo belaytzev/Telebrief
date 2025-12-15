@@ -44,6 +44,25 @@ Before you begin, you'll need:
 
 ---
 
+## 🐳 Docker Deployment
+
+Telebrief can be run in Docker for easy deployment. **No Python installation required on host!**
+
+```bash
+# 1. Create Telegram session (REQUIRED - one-time setup)
+./create_session.sh
+
+# 2. Start the service
+docker compose up -d
+
+# 3. View logs
+docker compose logs -f telebrief
+```
+
+**Important**: You must create the Telegram session file BEFORE running Docker. The script uses Docker itself, so no additional dependencies needed. See [DOCKER.md](DOCKER.md) for complete instructions.
+
+---
+
 ## 🤖 Bot Commands
 
 Open Telegram and message your bot:
@@ -130,6 +149,7 @@ A: Yes! Edit `src/formatter.py` to change Markdown structure, emojis, and sectio
 A: Approximately **$0.30/month** with GPT-5-nano (ultra-affordable pricing). Based on ~20 channels with medium activity.
 
 ---
+
 
 ## 🙏 Credits
 
