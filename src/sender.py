@@ -106,6 +106,75 @@ class DigestSender:
             self.logger.error(f"❌ Failed to send digest: {e}")
             return False
 
+    async def send_channel_messages(
+        self, channel_messages: list[tuple[str, str]], user_id: Optional[int] = None
+    ) -> bool:
+        """
+        Send separate messages for each channel.
+
+        Args:
+            channel_messages: List of (channel_name, message_text) tuples
+            user_id: Target user ID (defaults to configured user)
+
+        Returns:
+            True if all messages sent successfully, False otherwise
+        """
+        if user_id is None:
+            user_id = self.target_user_id
+
+        # Verify authorized user
+        if user_id != self.target_user_id:
+            self.logger.warning(f"Unauthorized send attempt to user {user_id}")
+            return False
+
+        self.logger.info(f"Sending {len(channel_messages)} channel messages to user {user_id}")
+
+        success_count = 0
+        failed_channels = []
+
+        for i, (channel_name, message_text) in enumerate(channel_messages, 1):
+            try:
+                self.logger.info(f"Sending message {i}/{len(channel_messages)}: {channel_name}")
+
+                # Verify message length
+                if len(message_text) > 4096:
+                    self.logger.error(
+                        f"Message for '{channel_name}' exceeds 4096 chars ({len(message_text)}), splitting..."
+                    )
+                    # Split and send parts
+                    parts = split_message(message_text, max_length=4000)
+                    for part_num, part in enumerate(parts, 1):
+                        await self._send_message_part(user_id, part, part_num)
+                        self.logger.info(f"Sent part {part_num}/{len(parts)} for {channel_name}")
+                else:
+                    # Send as single message
+                    await self._send_message_part(user_id, message_text, 1)
+
+                success_count += 1
+                self.logger.info(f"✅ Successfully sent message for {channel_name}")
+
+                # Small delay between messages to avoid rate limiting
+                if i < len(channel_messages):
+                    import asyncio
+
+                    await asyncio.sleep(0.5)
+
+            except TelegramError as e:
+                self.logger.error(f"❌ Failed to send message for {channel_name}: {e}")
+                failed_channels.append(channel_name)
+                continue
+
+        # Log summary
+        if success_count == len(channel_messages):
+            self.logger.info(f"✅ All {success_count} channel messages sent successfully")
+            return True
+        else:
+            self.logger.warning(
+                f"⚠️ Sent {success_count}/{len(channel_messages)} messages. "
+                f"Failed: {', '.join(failed_channels)}"
+            )
+            return False
+
     async def send_message(self, text: str, user_id: Optional[int] = None) -> bool:
         """
         Send a simple text message.
@@ -142,12 +211,12 @@ async def main():
     sender = DigestSender(config, logger)
 
     test_digest = """
-# 📊 Тестовый дайджест
+📰Тестовый дайджест
 
-## 🎯 Краткий обзор
+📌Краткий обзор
 Это тестовое сообщение для проверки отправки дайджеста.
 
-## 💻 Test Channel
+💻 Test Channel
 - Тестовый пункт 1
 - Тестовый пункт 2
 

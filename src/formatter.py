@@ -189,6 +189,114 @@ class DigestFormatter:
         else:
             return "📺"
 
+    def format_channel_message(
+        self, channel_name: str, summary: str, messages: List[Message], hours: int = 24
+    ) -> str:
+        """
+        Format a single channel's summary as a standalone Telegram message.
+
+        Args:
+            channel_name: Name of the channel
+            summary: AI-generated summary
+            messages: Original messages from the channel
+            hours: Time range covered
+
+        Returns:
+            Formatted message ready to send
+        """
+        self.logger.info(f"Formatting message for channel: {channel_name}")
+
+        parts = []
+
+        # Channel header with date
+        date_str = datetime.utcnow().strftime("%d %B %Y")
+        months_ru = {
+            "January": "января",
+            "February": "февраля",
+            "March": "марта",
+            "April": "апреля",
+            "May": "мая",
+            "June": "июня",
+            "July": "июля",
+            "August": "августа",
+            "September": "сентября",
+            "October": "октября",
+            "November": "ноября",
+            "December": "декабря",
+        }
+        for eng, rus in months_ru.items():
+            date_str = date_str.replace(eng, rus)
+
+        emoji = self._pick_emoji(channel_name)
+        header = f"# {emoji} {channel_name}\n*{date_str}*\n"
+        parts.append(header)
+
+        # Summary
+        parts.append(summary)
+
+        # Statistics for this channel
+        if self.include_stats:
+            message_count = len(messages)
+            parts.append(f"\n---\n📊 Обработано сообщений: {message_count}")
+            if hours == 24:
+                parts.append(f"⏱️ За последние {hours} часов")
+
+        message = "\n".join(parts)
+
+        # Verify length doesn't exceed Telegram limit
+        if len(message) > 4096:
+            self.logger.warning(
+                f"Channel message for '{channel_name}' exceeds 4096 chars ({len(message)}), truncating..."
+            )
+            # Truncate to 4000 to leave room for ellipsis
+            message = message[:4000] + "\n\n...(усечено из-за лимита длины)"
+
+        self.logger.info(f"Formatted message for {channel_name}: {len(message)} characters")
+        return message
+
+    def format_summary_message(
+        self, total_channels: int, total_messages: int, hours: int = 24
+    ) -> str:
+        """
+        Format a summary message to send after all channel messages.
+
+        Args:
+            total_channels: Number of channels processed
+            total_messages: Total messages processed
+            hours: Time range covered
+
+        Returns:
+            Summary message
+        """
+        date_str = datetime.utcnow().strftime("%d %B %Y")
+        months_ru = {
+            "January": "января",
+            "February": "февраля",
+            "March": "марта",
+            "April": "апреля",
+            "May": "мая",
+            "June": "июня",
+            "July": "июля",
+            "August": "августа",
+            "September": "сентября",
+            "October": "октября",
+            "November": "ноября",
+            "December": "декабря",
+        }
+        for eng, rus in months_ru.items():
+            date_str = date_str.replace(eng, rus)
+
+        end_time = datetime.utcnow()
+        start_time = end_time - timedelta(hours=hours)
+
+        message = f"""📊 **Дайджест завершён** - {date_str}
+
+✅ Обработано каналов: {total_channels}
+📨 Всего сообщений: {total_messages}
+⏱️ Период: {start_time.strftime('%d.%m %H:%M')} - {end_time.strftime('%d.%m %H:%M')} UTC
+"""
+        return message
+
     def _create_statistics(self, messages_by_channel: Dict[str, List[Message]], hours: int) -> str:
         """
         Create statistics footer.

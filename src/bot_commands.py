@@ -10,7 +10,7 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
 from src.config_loader import Config
-from src.core import generate_and_send_digest
+from src.core import generate_and_send_channel_digests
 from src.scheduler import DigestScheduler
 
 
@@ -92,12 +92,14 @@ class BotCommandHandler:
 
         try:
             # Generate and send digest
-            success = await generate_and_send_digest(
+            success = await generate_and_send_channel_digests(
                 config=self.config, logger=self.logger, hours=24, user_id=user_id
             )
 
             if success:
-                await update.message.reply_text("✅ Дайджест готов!")
+                await update.message.reply_text(
+                    "✅ Дайджест готов! Каждый канал отправлен отдельным сообщением."
+                )
             else:
                 await update.message.reply_text(
                     "❌ Ошибка при генерации дайджеста. " "Проверьте логи для деталей."
