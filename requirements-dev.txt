@@ -1,0 +1,29 @@
+# Development and testing dependencies
+
+# Core requirements (from requirements.txt)
+-r requirements.txt
+
+# Testing
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-cov>=4.1.0
+pytest-mock>=3.11.0
+pytest-timeout>=2.1.0
+
+# Linting and formatting
+black>=23.7.0
+flake8>=6.1.0
+flake8-docstrings>=1.7.0
+flake8-import-order>=0.18.2
+flake8-bugbear>=23.7.0
+isort>=5.12.0
+pylint>=2.17.0
+mypy>=1.5.0
+vulture>=2.7
+
+# Type stubs
+types-PyYAML>=6.0.0
+types-python-dateutil>=2.8.0
+
+# Pre-commit hooks
+pre-commit>=3.3.0

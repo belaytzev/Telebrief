@@ -1,0 +1,40 @@
+# Telegram channels/chats to monitor
+channels:
+  - id: "@channelname"
+    name: "Example Channel"
+  # Add your channels here
+  # Format for public channels: "@channelname" (string with quotes)
+  # Format for private channels/groups: -1001234567890 (integer, NO quotes!)
+  #
+  # IMPORTANT: Get the correct channel ID using @RawDataBot
+  # - Forward a message from the channel to @RawDataBot
+  # - Copy the complete chat ID (should start with -100)
+  #
+  # ✅ Correct:   id: -1001234567890  (integer with -100 prefix, no quotes)
+  # ❌ Wrong:     id: "-1001234567890" (has quotes)
+  # ❌ Wrong:     id: -1234567890     (missing -100 prefix)
+
+# Application settings
+settings:
+  # Scheduling
+  schedule_time: "08:00"   # UTC time for daily digest
+  timezone: "UTC"
+  lookback_hours: 24       # Message collection window
+
+  # OpenAI
+  openai_model: "gpt-5-nano"  # Ultra-low cost AI summarization
+  openai_temperature: 1.0  # GPT-5-nano only supports default temperature (1.0)
+  max_tokens_per_summary: 500
+
+  # Output
+  output_language: "russian"
+  use_emojis: true
+  include_statistics: true
+
+  # Telegram Bot
+  target_user_id: 0  # Your Telegram user ID (get from @userinfobot)
+  auto_cleanup_old_digests: true  # Automatically delete previous digest messages
+
+  # Safety limits
+  max_messages_per_channel: 500
+  api_timeout: 30
