@@ -1,10 +1,7 @@
 """Tests for utils module."""
 
-import json
 import logging
-import tempfile
 from datetime import datetime, timedelta
-from pathlib import Path
 
 import pytest
 

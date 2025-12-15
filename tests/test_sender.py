@@ -230,9 +230,7 @@ async def test_send_channel_messages_with_failure(sample_config, mock_logger):
     with patch("src.sender.Bot") as mock_bot_class:
         mock_bot = MagicMock()
         # First call fails, second succeeds
-        mock_bot.send_message = AsyncMock(
-            side_effect=[TelegramError("API Error"), MagicMock()]
-        )
+        mock_bot.send_message = AsyncMock(side_effect=[TelegramError("API Error"), MagicMock()])
         mock_bot_class.return_value = mock_bot
 
         sender = DigestSender(sample_config, mock_logger)
@@ -244,7 +242,9 @@ async def test_send_channel_messages_with_failure(sample_config, mock_logger):
 
 @pytest.mark.unit
 @pytest.mark.asyncio
-async def test_send_channel_messages_with_tracking(sample_config, mock_logger, tmp_path, monkeypatch):
+async def test_send_channel_messages_with_tracking(
+    sample_config, mock_logger, tmp_path, monkeypatch
+):
     """Test sending channel messages with message tracking."""
     storage_file = tmp_path / "digest_messages.json"
     monkeypatch.setattr("src.utils.MESSAGE_STORAGE_FILE", str(storage_file))
@@ -266,9 +266,7 @@ async def test_send_channel_messages_with_tracking(sample_config, mock_logger, t
         mock_message3 = MagicMock()
         mock_message3.message_id = 103
 
-        mock_bot.send_message = AsyncMock(
-            side_effect=[mock_message1, mock_message2, mock_message3]
-        )
+        mock_bot.send_message = AsyncMock(side_effect=[mock_message1, mock_message2, mock_message3])
         mock_bot_class.return_value = mock_bot
 
         sender = DigestSender(sample_config, mock_logger)
