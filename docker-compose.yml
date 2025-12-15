@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  telebrief:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: telebrief:latest
+    container_name: telebrief
+    restart: unless-stopped
+
+    # Environment variables from .env file
+    env_file:
+      - .env
+
+    # Additional environment variables
+    environment:
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - TZ=UTC
+
+    # Volumes for persistent data
+    volumes:
+      # Configuration file (read-only recommended)
+      - ./config.yaml:/app/config.yaml:ro
+
+      # Persistent data directories
+      - ./logs:/app/logs
+      - ./sessions:/app/sessions
+      - ./data:/app/data
+
+      # Optional: Mount .env if not using env_file
+      # - ./.env:/app/.env:ro
+
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "python", "-c", "import os; exit(0 if os.path.exists('logs/telebrief.log') else 1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    # Network mode (optional)
+    # network_mode: "host"  # Uncomment if you need host network access

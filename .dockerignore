@@ -1,0 +1,107 @@
+# Git files
+.git
+.gitignore
+.gitattributes
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Testing
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py.cover
+.hypothesis/
+.pytest_cache/
+htmlcov/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+.ruff_cache/
+
+# Documentation
+docs/
+*.md
+!README.md
+SPECIFICATION.md
+TESTING.md
+
+# Docker files
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Logs (will be mounted as volume)
+logs/*.log
+
+# Sessions (will be mounted as volume)
+sessions/*.session
+sessions/*.session-journal
+
+# Data (will be mounted as volume)
+data/
+
+# Configuration (will be mounted as volume)
+config.yaml
+
+# Backup files
+backup/
+*.bak
+*.tmp
+
+# Development files
+requirements-dev.txt
+.pre-commit-config.yaml
+vulture_whitelist.py
+Makefile
+pytest.ini
+.flake8
+pyproject.toml
+
+# Misc
+misc/
+.DS_Store
+*.log
