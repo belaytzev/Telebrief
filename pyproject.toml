@@ -3,12 +3,12 @@ name = "telebrief"
 version = "0.1.0"
 description = "Automated Telegram Digest Generator powered by GPT-5"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.14"
 dependencies = []
 
 [tool.black]
 line-length = 100
-target-version = ['py310', 'py311']
+target-version = ['py314']
 include = '\.pyi?$'
 exclude = '''
 /(
@@ -31,7 +31,7 @@ known_first_party = ["src", "tests"]
 sections = ["FUTURE", "STDLIB", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]
 
 [tool.mypy]
-python_version = "3.10"
+python_version = "3.14"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = false
