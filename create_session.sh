@@ -57,7 +57,7 @@ fi
 mkdir -p sessions
 
 echo -e "${BLUE}Building Docker image (this may take a minute)...${NC}"
-docker-compose build telebrief
+docker compose build telebrief
 
 echo ""
 echo -e "${GREEN}Starting interactive session creation...${NC}"
@@ -110,8 +110,8 @@ async def create_session():
         print('Session file: sessions/user.session')
         print()
         print('Next steps:')
-        print('  1. Run: docker-compose up -d')
-        print('  2. Check logs: docker-compose logs -f telebrief')
+        print('  1. Run: docker compose up -d')
+        print('  2. Check logs: docker compose logs -f telebrief')
         print()
 
     except KeyboardInterrupt:
@@ -138,7 +138,7 @@ if [ $RESULT -eq 0 ]; then
     echo "File location: $(pwd)/sessions/user.session"
     echo ""
     echo -e "${GREEN}✅ You can now run:${NC}"
-    echo "     docker-compose up -d"
+    echo "     docker compose up -d"
     echo ""
 else
     echo ""
