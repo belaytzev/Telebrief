@@ -107,16 +107,6 @@ make lint
 make format
 ```
 
-### CI/CD
-
-GitHub Actions runs on every push/PR:
-- Linting (Black, Flake8, MyPy, Pylint, Vulture)
-- Tests (Python 3.14)
-- Security scans (Bandit, Safety)
-- Build verification
-
-See [TESTING.md](TESTING.md) for comprehensive testing guide.
-
 ---
 
 ## ❓ FAQ
