@@ -37,6 +37,7 @@ def sample_config():
         use_emojis=True,
         include_statistics=True,
         target_user_id=123456789,
+        auto_cleanup_old_digests=True,
         max_messages_per_channel=500,
         api_timeout=30,
     )
@@ -117,6 +118,7 @@ settings:
   use_emojis: true
   include_statistics: true
   target_user_id: 123456789
+  auto_cleanup_old_digests: true
   max_messages_per_channel: 500
   api_timeout: 30
 """

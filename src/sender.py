@@ -259,6 +259,126 @@ class DigestSender:
             )
             return deleted_count > 0
 
+    async def _send_message_with_tracking(
+        self, user_id: int, message_text: str, channel_name: str
+    ) -> Optional[int]:
+        """
+        Send a message with markdown fallback and return message ID.
+
+        Args:
+            user_id: Target user ID
+            message_text: Message text to send
+            channel_name: Channel name for logging
+
+        Returns:
+            Message ID if successful, None otherwise
+        """
+        try:
+            message = await self.bot.send_message(
+                chat_id=user_id,
+                text=message_text,
+                parse_mode=ParseMode.MARKDOWN,
+                disable_web_page_preview=False,
+            )
+            return message.message_id
+        except TelegramError as e:
+            if "Can't parse entities" in str(e):
+                self.logger.warning("Markdown parse error, falling back to plain text")
+                message = await self.bot.send_message(
+                    chat_id=user_id,
+                    text=message_text,
+                    parse_mode=None,
+                    disable_web_page_preview=False,
+                )
+                return message.message_id
+            raise
+
+    async def _send_summary_message(self, user_id: int, summary_message: str) -> Optional[int]:
+        """
+        Send summary message and return message ID.
+
+        Args:
+            user_id: Target user ID
+            summary_message: Summary message text
+
+        Returns:
+            Message ID if successful, None otherwise
+        """
+        try:
+            message = await self.bot.send_message(
+                chat_id=user_id, text=summary_message, parse_mode=ParseMode.MARKDOWN
+            )
+            self.logger.info("✅ Summary message sent")
+            return message.message_id
+        except TelegramError as e:
+            self.logger.warning(f"⚠️ Failed to send summary message: {e}")
+            return None
+
+    def _log_and_return_result(
+        self, success_count: int, total_count: int, failed_channels: list[str]
+    ) -> bool:
+        """
+        Log summary and return success status.
+
+        Args:
+            success_count: Number of successful sends
+            total_count: Total number of messages
+            failed_channels: List of failed channel names
+
+        Returns:
+            True if all successful, False otherwise
+        """
+        if success_count == total_count:
+            self.logger.info(f"✅ All {success_count} channel messages sent successfully")
+            return True
+        self.logger.warning(
+            f"⚠️ Sent {success_count}/{total_count} messages. "
+            f"Failed: {', '.join(failed_channels)}"
+        )
+        return success_count > 0
+
+    async def _send_channel_messages_loop(
+        self, user_id: int, channel_messages: list[tuple[str, str]]
+    ) -> tuple[list[int], int, list[str]]:
+        """
+        Send messages for all channels.
+
+        Args:
+            user_id: Target user ID
+            channel_messages: List of (channel_name, message_text) tuples
+
+        Returns:
+            Tuple of (sent_message_ids, success_count, failed_channels)
+        """
+        sent_message_ids = []
+        success_count = 0
+        failed_channels = []
+
+        for i, (channel_name, message_text) in enumerate(channel_messages, 1):
+            try:
+                self.logger.info(f"Sending message {i}/{len(channel_messages)}: {channel_name}")
+
+                message_id = await self._send_message_with_tracking(
+                    user_id, message_text, channel_name
+                )
+                if message_id:
+                    sent_message_ids.append(message_id)
+
+                success_count += 1
+                self.logger.info(f"✅ Successfully sent message for {channel_name}")
+
+                if i < len(channel_messages):
+                    import asyncio
+
+                    await asyncio.sleep(0.5)
+
+            except TelegramError as e:
+                self.logger.error(f"❌ Failed to send message for {channel_name}: {e}")
+                failed_channels.append(channel_name)
+                continue
+
+        return sent_message_ids, success_count, failed_channels
+
     async def send_channel_messages_with_tracking(
         self,
         channel_messages: list[tuple[str, str]],
@@ -279,84 +399,29 @@ class DigestSender:
         if user_id is None:
             user_id = self.target_user_id
 
-        # Verify authorized user
         if user_id != self.target_user_id:
             self.logger.warning(f"Unauthorized send attempt to user {user_id}")
             return False
 
         self.logger.info(f"Sending {len(channel_messages)} channel messages to user {user_id}")
 
-        sent_message_ids = []
-        success_count = 0
-        failed_channels = []
-
-        for i, (channel_name, message_text) in enumerate(channel_messages, 1):
-            try:
-                self.logger.info(f"Sending message {i}/{len(channel_messages)}: {channel_name}")
-
-                # Send message and get message object
-                try:
-                    message = await self.bot.send_message(
-                        chat_id=user_id,
-                        text=message_text,
-                        parse_mode=ParseMode.MARKDOWN,
-                        disable_web_page_preview=False,
-                    )
-                    sent_message_ids.append(message.message_id)
-
-                except TelegramError as e:
-                    if "Can't parse entities" in str(e):
-                        self.logger.warning(f"Markdown parse error, falling back to plain text")
-                        message = await self.bot.send_message(
-                            chat_id=user_id,
-                            text=message_text,
-                            parse_mode=None,
-                            disable_web_page_preview=False,
-                        )
-                        sent_message_ids.append(message.message_id)
-                    else:
-                        raise
-
-                success_count += 1
-                self.logger.info(f"✅ Successfully sent message for {channel_name}")
-
-                # Small delay between messages to avoid rate limiting
-                if i < len(channel_messages):
-                    import asyncio
-
-                    await asyncio.sleep(0.5)
-
-            except TelegramError as e:
-                self.logger.error(f"❌ Failed to send message for {channel_name}: {e}")
-                failed_channels.append(channel_name)
-                continue
+        # Send all channel messages
+        sent_message_ids, success_count, failed_channels = await self._send_channel_messages_loop(
+            user_id, channel_messages
+        )
 
         # Send summary message if provided
         if summary_message and success_count > 0:
-            try:
-                message = await self.bot.send_message(
-                    chat_id=user_id, text=summary_message, parse_mode=ParseMode.MARKDOWN
-                )
-                sent_message_ids.append(message.message_id)
-                self.logger.info("✅ Summary message sent")
-            except TelegramError as e:
-                self.logger.warning(f"⚠️ Failed to send summary message: {e}")
+            summary_id = await self._send_summary_message(user_id, summary_message)
+            if summary_id:
+                sent_message_ids.append(summary_id)
 
         # Save message IDs for future cleanup
         if sent_message_ids:
             save_digest_message_ids(sent_message_ids, user_id)
             self.logger.info(f"Saved {len(sent_message_ids)} message IDs for cleanup")
 
-        # Log summary
-        if success_count == len(channel_messages):
-            self.logger.info(f"✅ All {success_count} channel messages sent successfully")
-            return True
-        else:
-            self.logger.warning(
-                f"⚠️ Sent {success_count}/{len(channel_messages)} messages. "
-                f"Failed: {', '.join(failed_channels)}"
-            )
-            return success_count > 0
+        return self._log_and_return_result(success_count, len(channel_messages), failed_channels)
 
 
 async def main():
