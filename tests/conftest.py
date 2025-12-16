@@ -33,7 +33,6 @@ def sample_config():
         openai_model="gpt-5-nano",
         openai_temperature=0.7,
         max_tokens_per_summary=500,
-        output_language="russian",
         use_emojis=True,
         include_statistics=True,
         target_user_id=123456789,
@@ -114,7 +113,6 @@ settings:
   openai_model: "gpt-5-nano"
   openai_temperature: 0.7
   max_tokens_per_summary: 500
-  output_language: "russian"
   use_emojis: true
   include_statistics: true
   target_user_id: 123456789

@@ -27,7 +27,6 @@ settings:
   max_tokens_per_summary: 500
 
   # Output
-  output_language: "russian"
   use_emojis: true
   include_statistics: true
 
