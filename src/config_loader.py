@@ -29,7 +29,6 @@ class Settings:
     openai_model: str
     openai_temperature: float
     max_tokens_per_summary: int
-    output_language: str
     use_emojis: bool
     include_statistics: bool
     target_user_id: int
@@ -94,7 +93,6 @@ def load_config(config_path: str = "config.yaml") -> Config:
         openai_model=settings_dict.get("openai_model", "gpt-5-nano"),
         openai_temperature=settings_dict.get("openai_temperature", 0.7),
         max_tokens_per_summary=settings_dict.get("max_tokens_per_summary", 500),
-        output_language=settings_dict.get("output_language", "russian"),
         use_emojis=settings_dict.get("use_emojis", True),
         include_statistics=settings_dict.get("include_statistics", True),
         target_user_id=settings_dict.get("target_user_id", 0),

@@ -59,7 +59,7 @@ docker compose up -d
 docker compose logs -f telebrief
 ```
 
-**Important**: You must create the Telegram session file BEFORE running Docker. The script uses Docker itself, so no additional dependencies needed. See [DOCKER.md](DOCKER.md) for complete instructions.
+**Important**: You must create the Telegram session file BEFORE running Docker. The script uses Docker itself, so no additional dependencies needed.
 
 ---
 
