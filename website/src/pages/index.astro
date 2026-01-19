@@ -1,21 +1,23 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import { Image } from 'astro:assets';
+import logoImage from '../../public/logo.webp';
 ---
 
 <Layout title="Telebrief - AI-Powered Telegram Digest Generator">
   <!-- Navigation -->
-  <nav class="nav">
+  <nav class="nav" aria-label="Main navigation">
     <div class="container">
       <div class="nav-content">
         <div class="nav-brand">
-          <img src="/logo.png" alt="Telebrief Logo" class="nav-logo">
+          <Image src={logoImage} alt="Telebrief Logo" class="nav-logo" width={40} height={40} loading="eager" />
           <span class="nav-title">Telebrief</span>
         </div>
         <div class="nav-links">
           <a href="#features" class="nav-link">Features</a>
           <a href="#how-it-works" class="nav-link">How It Works</a>
-          <a href="https://github.com/belaytzev/Telebrief" class="btn btn-primary" target="_blank">
-            <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+          <a href="https://github.com/belaytzev/Telebrief" class="btn btn-primary" target="_blank" rel="noopener noreferrer" rel="noopener noreferrer">
+            <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
             </svg>
             View on GitHub
@@ -25,12 +27,14 @@ import Layout from '../layouts/Layout.astro';
     </div>
   </nav>
 
+  <!-- Main Content -->
+  <main>
   <!-- Hero Section -->
-  <section class="hero">
+  <section class="hero" aria-labelledby="hero-title">
     <div class="container">
       <div class="hero-content">
         <div class="hero-text">
-          <h1 class="hero-title">
+          <h1 class="hero-title" id="hero-title">
             Never Miss Important<br/>
             <span class="gradient-text">Telegram Updates</span>
           </h1>
@@ -40,7 +44,7 @@ import Layout from '../layouts/Layout.astro';
             directly to your Telegram account.
           </p>
           <div class="hero-buttons">
-            <a href="https://github.com/belaytzev/Telebrief#quick-start" class="btn btn-primary" target="_blank">
+            <a href="https://github.com/belaytzev/Telebrief#quick-start" class="btn btn-primary" target="_blank" rel="noopener noreferrer">
               Get Started
             </a>
             <a href="#how-it-works" class="btn btn-secondary">
@@ -64,7 +68,7 @@ import Layout from '../layouts/Layout.astro';
         </div>
         <div class="hero-visual">
           <div class="phone-mockup">
-            <img src="/logo.png" alt="Telebrief App" class="phone-image">
+            <Image src={logoImage} alt="Telebrief Application Interface" class="phone-image" width={400} height={400} loading="eager" />
             <div class="phone-glow"></div>
           </div>
         </div>
@@ -73,10 +77,10 @@ import Layout from '../layouts/Layout.astro';
   </section>
 
   <!-- Features Section -->
-  <section id="features" class="features">
+  <section id="features" class="features" aria-labelledby="features-title">
     <div class="container">
       <div class="section-header">
-        <h2>Powerful Features</h2>
+        <h2 id="features-title">Powerful Features</h2>
         <p>Everything you need to stay informed without information overload</p>
       </div>
       <div class="features-grid">
@@ -115,10 +119,10 @@ import Layout from '../layouts/Layout.astro';
   </section>
 
   <!-- How It Works Section -->
-  <section id="how-it-works" class="how-it-works">
+  <section id="how-it-works" class="how-it-works" aria-labelledby="how-it-works-title">
     <div class="container">
       <div class="section-header">
-        <h2>How It Works</h2>
+        <h2 id="how-it-works-title">How It Works</h2>
         <p>Simple, automated workflow from collection to delivery</p>
       </div>
       <div class="steps">
@@ -173,33 +177,34 @@ import Layout from '../layouts/Layout.astro';
   </section>
 
   <!-- CTA Section -->
-  <section class="cta">
+  <section class="cta" aria-labelledby="cta-title">
     <div class="container">
       <div class="cta-content">
-        <h2>Ready to Get Started?</h2>
+        <h2 id="cta-title">Ready to Get Started?</h2>
         <p>Deploy Telebrief in minutes and start receiving intelligent daily digests</p>
         <div class="cta-buttons">
-          <a href="https://github.com/belaytzev/Telebrief" class="btn btn-primary" target="_blank">
-            <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+          <a href="https://github.com/belaytzev/Telebrief" class="btn btn-primary" target="_blank" rel="noopener noreferrer">
+            <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
             </svg>
             View Documentation
           </a>
-          <a href="https://github.com/belaytzev/Telebrief?tab=readme-ov-file#-docker-deployment" class="btn btn-secondary" target="_blank">
+          <a href="https://github.com/belaytzev/Telebrief?tab=readme-ov-file#-docker-deployment" class="btn btn-secondary" target="_blank" rel="noopener noreferrer">
             Quick Start Guide
           </a>
         </div>
       </div>
     </div>
   </section>
+  </main>
 
   <!-- Footer -->
-  <footer class="footer">
+  <footer class="footer" role="contentinfo">
     <div class="container">
       <div class="footer-content">
         <div class="footer-section">
           <div class="footer-brand">
-            <img src="/logo.png" alt="Telebrief Logo" class="footer-logo">
+            <Image src={logoImage} alt="Telebrief Logo" class="footer-logo" width={48} height={48} loading="lazy" />
             <span class="footer-title">Telebrief</span>
           </div>
           <p class="footer-description">
@@ -210,24 +215,24 @@ import Layout from '../layouts/Layout.astro';
         <div class="footer-section">
           <h4>Resources</h4>
           <ul class="footer-links">
-            <li><a href="https://github.com/belaytzev/Telebrief" target="_blank">GitHub Repository</a></li>
-            <li><a href="https://github.com/belaytzev/Telebrief#readme" target="_blank">Documentation</a></li>
-            <li><a href="https://github.com/belaytzev/Telebrief/issues" target="_blank">Report Issues</a></li>
+            <li><a href="https://github.com/belaytzev/Telebrief" target="_blank" rel="noopener noreferrer">GitHub Repository</a></li>
+            <li><a href="https://github.com/belaytzev/Telebrief#readme" target="_blank" rel="noopener noreferrer">Documentation</a></li>
+            <li><a href="https://github.com/belaytzev/Telebrief/issues" target="_blank" rel="noopener noreferrer">Report Issues</a></li>
           </ul>
         </div>
         <div class="footer-section">
           <h4>Project</h4>
           <ul class="footer-links">
-            <li><a href="https://github.com/belaytzev/Telebrief/blob/main/LICENSE" target="_blank">License</a></li>
-            <li><a href="https://github.com/belaytzev/Telebrief/releases" target="_blank">Releases</a></li>
-            <li><a href="https://github.com/belaytzev/Telebrief/blob/main/PROJECT_INDEX.md" target="_blank">Project Index</a></li>
+            <li><a href="https://github.com/belaytzev/Telebrief/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">License</a></li>
+            <li><a href="https://github.com/belaytzev/Telebrief/releases" target="_blank" rel="noopener noreferrer">Releases</a></li>
+            <li><a href="https://github.com/belaytzev/Telebrief/blob/main/PROJECT_INDEX.md" target="_blank" rel="noopener noreferrer">Project Index</a></li>
           </ul>
         </div>
         <div class="footer-section">
           <h4>Connect</h4>
           <ul class="footer-links">
-            <li><a href="https://github.com/belaytzev" target="_blank">GitHub Profile</a></li>
-            <li><a href="https://t.me/telebrief" target="_blank">Telegram</a></li>
+            <li><a href="https://github.com/belaytzev" target="_blank" rel="noopener noreferrer">GitHub Profile</a></li>
+            <li><a href="https://t.me/telebrief" target="_blank" rel="noopener noreferrer">Telegram</a></li>
           </ul>
         </div>
       </div>

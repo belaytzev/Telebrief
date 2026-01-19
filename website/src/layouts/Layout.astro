@@ -15,19 +15,27 @@ const { title, description = "Automated Telegram Digest Generator powered by AI"
   <meta name="description" content={description}>
   <meta name="generator" content={Astro.generator}>
 
+  <!-- Preconnect to external domains -->
+  <link rel="preconnect" href="https://github.com" crossorigin>
+
+  <!-- DNS prefetch for external resources -->
+  <link rel="dns-prefetch" href="https://github.com">
+
   <!-- Open Graph / Facebook -->
   <meta property="og:type" content="website">
+  <meta property="og:url" content="https://telebrief.ti1orn.com">
   <meta property="og:title" content={title}>
   <meta property="og:description" content={description}>
-  <meta property="og:image" content="/logo.png">
+  <meta property="og:image" content="https://telebrief.ti1orn.com/logo.webp">
 
   <!-- Twitter -->
   <meta property="twitter:card" content="summary_large_image">
+  <meta property="twitter:url" content="https://telebrief.ti1orn.com">
   <meta property="twitter:title" content={title}>
   <meta property="twitter:description" content={description}>
-  <meta property="twitter:image" content="/logo.png">
+  <meta property="twitter:image" content="https://telebrief.ti1orn.com/logo.webp">
 
-  <link rel="icon" type="image/png" href="/logo.png">
+  <link rel="icon" type="image/webp" href="/logo.webp">
   <title>{title}</title>
 </head>
 <body>
