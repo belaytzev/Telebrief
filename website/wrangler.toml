@@ -1,14 +1,12 @@
 # Cloudflare Pages configuration for Telebrief Website
+# Note: For Cloudflare Pages, configure directly in dashboard instead of using wrangler.toml
+# This file is kept for reference but Pages deployment should use dashboard settings:
+#
+# Build command: npm run build
+# Build output directory: dist
+# Root directory: website
+#
+# Or use: wrangler pages deploy dist --project-name=telebrief
 
 name = "telebrief"
 compatibility_date = "2024-01-01"
-
-[site]
-bucket = "./dist"
-
-[build]
-command = "npm run build"
-cwd = "./"
-
-[build.upload]
-format = "service-worker"

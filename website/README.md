@@ -65,12 +65,20 @@ npm run preview
 
 ### Cloudflare Pages
 
-#### Option 1: Automatic (via Git)
+#### Option 1: Automatic (via Git) - RECOMMENDED
 
 1. Connect your GitHub repository to Cloudflare Pages
-2. Set build command: `cd website && npm run build`
-3. Set build output directory: `website/dist`
-4. Deploy automatically on push
+2. **IMPORTANT**: Configure these exact settings:
+   - **Framework preset**: `Astro`
+   - **Root directory**: `website` ← **This is crucial!**
+   - **Build command**: `npm run build`
+   - **Build output directory**: `dist`
+   - **Environment variables**: `NODE_VERSION = 20`
+3. Deploy automatically on push
+
+⚠️ **Common mistake**: Not setting "Root directory" to `website` causes deployment to fail.
+
+See `DEPLOYMENT.md` for detailed troubleshooting.
 
 #### Option 2: Manual (via Wrangler CLI)
 
@@ -84,7 +92,7 @@ wrangler login
 # Deploy
 cd website
 npm run build
-wrangler pages publish dist --project-name=telebrief
+wrangler pages deploy dist --project-name=telebrief
 ```
 
 ### Other Static Hosts
