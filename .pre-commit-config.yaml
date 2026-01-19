@@ -20,11 +20,11 @@ repos:
 
   # Python code formatting
   - repo: https://github.com/psf/black
-    rev: 23.12.1
+    rev: 24.10.0
     hooks:
       - id: black
-        language_version: python3.10
         args: ['--line-length=100']
+        files: ^(src/|tests/)
 
   # Import sorting
   - repo: https://github.com/pycqa/isort
@@ -32,6 +32,7 @@ repos:
     hooks:
       - id: isort
         args: ['--profile', 'black', '--line-length=100']
+        files: ^(src/|tests/)
 
   # Linting
   - repo: https://github.com/pycqa/flake8
@@ -42,6 +43,8 @@ repos:
         additional_dependencies:
           - flake8-docstrings
           - flake8-bugbear
+        files: ^(src/|tests/)
+        exclude: ^vulture_whitelist\.py$
 
   # Type checking
   - repo: https://github.com/pre-commit/mirrors-mypy
@@ -51,8 +54,22 @@ repos:
         additional_dependencies:
           - types-PyYAML
           - types-python-dateutil
-        args: ['--ignore-missing-imports']
-        exclude: ^tests/
+        args: ['--ignore-missing-imports', '--no-warn-return-any']
+        files: ^src/
+        exclude: ^(tests/|vulture_whitelist\.py)
+
+  # Pylint
+  - repo: https://github.com/pycqa/pylint
+    rev: v3.0.3
+    hooks:
+      - id: pylint
+        args: ['--fail-under=8.0']
+        additional_dependencies:
+          - PyYAML
+          - python-dateutil
+          - requests
+        files: ^(src/|tests/)
+        exclude: ^vulture_whitelist\.py$
 
   # Security checks
   - repo: https://github.com/PyCQA/bandit
@@ -67,7 +84,7 @@ repos:
     rev: v0.12.0
     hooks:
       - id: markdownlint
-        args: ['--rules', '~MD013,~MD033,~MD041']
+        args: ['--rules', '~MD002,~MD005,~MD007,~MD012,~MD013,~MD029,~MD032,~MD033,~MD034,~MD036,~MD041']
 
 # Exclude patterns
 exclude: |

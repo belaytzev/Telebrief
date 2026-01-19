@@ -52,7 +52,7 @@ async def create_session():
     sessions_dir.mkdir(exist_ok=True)
 
     print(f"API ID: {api_id}")
-    print(f"Session file: sessions/user.session")
+    print("Session file: sessions/user.session")
     print()
 
     # Create client
