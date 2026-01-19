@@ -222,3 +222,6 @@ PROJECT_INDEX.json
 
 # Mac
 .DS_Store
+
+# Claude Code
+CLAUDE.md
