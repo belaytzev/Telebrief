@@ -1,0 +1,641 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Telebrief - AI-Powered Telegram Digest Generator">
+  <!-- Navigation -->
+  <nav class="nav">
+    <div class="container">
+      <div class="nav-content">
+        <div class="nav-brand">
+          <img src="/logo.png" alt="Telebrief Logo" class="nav-logo">
+          <span class="nav-title">Telebrief</span>
+        </div>
+        <div class="nav-links">
+          <a href="#features" class="nav-link">Features</a>
+          <a href="#how-it-works" class="nav-link">How It Works</a>
+          <a href="https://github.com/belaytzev/Telebrief" class="btn btn-primary" target="_blank">
+            <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+            </svg>
+            View on GitHub
+          </a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-content">
+        <div class="hero-text">
+          <h1 class="hero-title">
+            Never Miss Important<br/>
+            <span class="gradient-text">Telegram Updates</span>
+          </h1>
+          <p class="hero-description">
+            Telebrief automatically collects messages from your Telegram channels,
+            generates AI-powered summaries, and delivers beautiful daily digests
+            directly to your Telegram account.
+          </p>
+          <div class="hero-buttons">
+            <a href="https://github.com/belaytzev/Telebrief#quick-start" class="btn btn-primary" target="_blank">
+              Get Started
+            </a>
+            <a href="#how-it-works" class="btn btn-secondary">
+              Learn More
+            </a>
+          </div>
+          <div class="hero-stats">
+            <div class="stat">
+              <div class="stat-value">~$0.30</div>
+              <div class="stat-label">Per Month</div>
+            </div>
+            <div class="stat">
+              <div class="stat-value">Any Language</div>
+              <div class="stat-label">Support</div>
+            </div>
+            <div class="stat">
+              <div class="stat-value">GPT-5-nano</div>
+              <div class="stat-label">Powered</div>
+            </div>
+          </div>
+        </div>
+        <div class="hero-visual">
+          <div class="phone-mockup">
+            <img src="/logo.png" alt="Telebrief App" class="phone-image">
+            <div class="phone-glow"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section id="features" class="features">
+    <div class="container">
+      <div class="section-header">
+        <h2>Powerful Features</h2>
+        <p>Everything you need to stay informed without information overload</p>
+      </div>
+      <div class="features-grid">
+        <div class="card feature-card">
+          <div class="icon">🤖</div>
+          <h3>AI-Powered Summaries</h3>
+          <p>Advanced GPT-5-nano technology generates concise, intelligent summaries of your Telegram channels in Russian.</p>
+        </div>
+        <div class="card feature-card">
+          <div class="icon">🌍</div>
+          <h3>Multi-Language Support</h3>
+          <p>Collect messages in any language - English, Russian, Ukrainian, Chinese, and more. Summaries are always in Russian.</p>
+        </div>
+        <div class="card feature-card">
+          <div class="icon">⏰</div>
+          <h3>Automated Scheduling</h3>
+          <p>Set your preferred time and receive daily digests automatically. On-demand generation available via bot commands.</p>
+        </div>
+        <div class="card feature-card">
+          <div class="icon">🔒</div>
+          <h3>Private Channel Access</h3>
+          <p>Full support for private Telegram channels using Telethon user API for comprehensive message collection.</p>
+        </div>
+        <div class="card feature-card">
+          <div class="icon">💰</div>
+          <h3>Ultra Affordable</h3>
+          <p>Runs on GPT-5-nano for just ~$0.30 per month. Self-hosted solution with no subscription fees.</p>
+        </div>
+        <div class="card feature-card">
+          <div class="icon">🐳</div>
+          <h3>Docker Ready</h3>
+          <p>Complete Docker containerization with docker-compose support for easy deployment and management.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How It Works Section -->
+  <section id="how-it-works" class="how-it-works">
+    <div class="container">
+      <div class="section-header">
+        <h2>How It Works</h2>
+        <p>Simple, automated workflow from collection to delivery</p>
+      </div>
+      <div class="steps">
+        <div class="step">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <h3>Collect Messages</h3>
+            <p>Telebrief connects to your Telegram channels using Telethon and collects all messages from the last 24 hours.</p>
+          </div>
+        </div>
+        <div class="step-arrow">→</div>
+        <div class="step">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <h3>AI Summarization</h3>
+            <p>GPT-5-nano analyzes and generates intelligent summaries for each channel, plus an overall digest summary.</p>
+          </div>
+        </div>
+        <div class="step-arrow">→</div>
+        <div class="step">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <h3>Format & Deliver</h3>
+            <p>Beautiful Markdown digest with emojis and clickable links is sent directly to your Telegram via bot.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bot Commands -->
+      <div class="bot-commands">
+        <h3>Available Bot Commands</h3>
+        <div class="commands-grid">
+          <div class="command-card">
+            <code>/start</code>
+            <p>Show welcome message and available commands</p>
+          </div>
+          <div class="command-card">
+            <code>/digest</code>
+            <p>Generate and send digest instantly</p>
+          </div>
+          <div class="command-card">
+            <code>/status</code>
+            <p>View configuration and next scheduled run</p>
+          </div>
+          <div class="command-card">
+            <code>/cleanup</code>
+            <p>Delete old digest messages</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section class="cta">
+    <div class="container">
+      <div class="cta-content">
+        <h2>Ready to Get Started?</h2>
+        <p>Deploy Telebrief in minutes and start receiving intelligent daily digests</p>
+        <div class="cta-buttons">
+          <a href="https://github.com/belaytzev/Telebrief" class="btn btn-primary" target="_blank">
+            <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+            </svg>
+            View Documentation
+          </a>
+          <a href="https://github.com/belaytzev/Telebrief#quick-start" class="btn btn-secondary" target="_blank">
+            Quick Start Guide
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-section">
+          <div class="footer-brand">
+            <img src="/logo.png" alt="Telebrief Logo" class="footer-logo">
+            <span class="footer-title">Telebrief</span>
+          </div>
+          <p class="footer-description">
+            AI-Powered Telegram Digest Generator<br/>
+            Stay informed, stay efficient
+          </p>
+        </div>
+        <div class="footer-section">
+          <h4>Resources</h4>
+          <ul class="footer-links">
+            <li><a href="https://github.com/belaytzev/Telebrief" target="_blank">GitHub Repository</a></li>
+            <li><a href="https://github.com/belaytzev/Telebrief#readme" target="_blank">Documentation</a></li>
+            <li><a href="https://github.com/belaytzev/Telebrief/issues" target="_blank">Report Issues</a></li>
+          </ul>
+        </div>
+        <div class="footer-section">
+          <h4>Project</h4>
+          <ul class="footer-links">
+            <li><a href="https://github.com/belaytzev/Telebrief/blob/main/LICENSE" target="_blank">License</a></li>
+            <li><a href="https://github.com/belaytzev/Telebrief/releases" target="_blank">Releases</a></li>
+            <li><a href="https://github.com/belaytzev/Telebrief/blob/main/PROJECT_INDEX.md" target="_blank">Project Index</a></li>
+          </ul>
+        </div>
+        <div class="footer-section">
+          <h4>Connect</h4>
+          <ul class="footer-links">
+            <li><a href="https://github.com/belaytzev" target="_blank">GitHub Profile</a></li>
+            <li><a href="https://t.me/telebrief" target="_blank">Telegram</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2026 Telebrief. Open source project under MIT License.</p>
+      </div>
+    </div>
+  </footer>
+</Layout>
+
+<style>
+  /* Navigation */
+  .nav {
+    background: var(--color-white);
+    box-shadow: var(--shadow-soft);
+    padding: var(--spacing-md) 0;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.95);
+  }
+
+  .nav-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .nav-brand {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+  }
+
+  .nav-logo {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-soft);
+  }
+
+  .nav-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-secondary);
+  }
+
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-lg);
+  }
+
+  .nav-link {
+    color: var(--color-gray-dark);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.3s ease;
+  }
+
+  .nav-link:hover {
+    color: var(--color-primary);
+  }
+
+  /* Hero Section */
+  .hero {
+    padding: var(--spacing-3xl) 0;
+    background: linear-gradient(180deg, var(--color-gray-light) 0%, var(--color-white) 100%);
+  }
+
+  .hero-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-3xl);
+    align-items: center;
+  }
+
+  .hero-title {
+    margin-bottom: var(--spacing-md);
+  }
+
+  .gradient-text {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero-description {
+    margin-bottom: var(--spacing-xl);
+    font-size: 1.25rem;
+  }
+
+  .hero-buttons {
+    display: flex;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-2xl);
+  }
+
+  .hero-stats {
+    display: flex;
+    gap: var(--spacing-xl);
+  }
+
+  .stat {
+    text-align: center;
+  }
+
+  .stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-primary);
+    margin-bottom: var(--spacing-xs);
+  }
+
+  .stat-label {
+    font-size: 0.875rem;
+    color: var(--color-gray-dark);
+  }
+
+  .phone-mockup {
+    position: relative;
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+  }
+
+  .phone-image {
+    width: 100%;
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-raised);
+    background: var(--color-white);
+    padding: var(--spacing-xl);
+  }
+
+  .phone-glow {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 120%;
+    height: 120%;
+    background: radial-gradient(circle, var(--color-primary) 0%, transparent 70%);
+    opacity: 0.2;
+    z-index: -1;
+    filter: blur(60px);
+  }
+
+  /* Features Section */
+  .features {
+    background: var(--color-white);
+  }
+
+  .section-header {
+    text-align: center;
+    margin-bottom: var(--spacing-3xl);
+  }
+
+  .section-header h2 {
+    margin-bottom: var(--spacing-md);
+  }
+
+  .section-header p {
+    font-size: 1.25rem;
+  }
+
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: var(--spacing-xl);
+  }
+
+  .feature-card h3 {
+    margin: var(--spacing-md) 0;
+  }
+
+  /* How It Works */
+  .how-it-works {
+    background: var(--color-gray-light);
+  }
+
+  .steps {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-3xl);
+  }
+
+  .step {
+    flex: 1;
+    max-width: 300px;
+  }
+
+  .step-number {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: var(--gradient-primary);
+    color: var(--color-white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0 auto var(--spacing-md);
+    box-shadow: var(--shadow-medium), inset 0 2px 0 rgba(255, 255, 255, 0.3);
+    position: relative;
+  }
+
+  .step-number::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60%;
+    height: 10px;
+    background: rgba(18, 122, 156, 0.2);
+    filter: blur(10px);
+    border-radius: 50%;
+  }
+
+  .step-content {
+    text-align: center;
+  }
+
+  .step-arrow {
+    font-size: 2rem;
+    color: var(--color-primary);
+    font-weight: 700;
+  }
+
+  .bot-commands {
+    background: var(--color-white);
+    padding: var(--spacing-xl);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-medium);
+  }
+
+  .bot-commands h3 {
+    text-align: center;
+    margin-bottom: var(--spacing-xl);
+  }
+
+  .commands-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-md);
+  }
+
+  .command-card {
+    background: var(--color-gray-light);
+    padding: var(--spacing-md);
+    border-radius: var(--radius-md);
+    text-align: center;
+    box-shadow: var(--shadow-inner);
+  }
+
+  .command-card code {
+    display: block;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--color-primary);
+    margin-bottom: var(--spacing-xs);
+    font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+  }
+
+  .command-card p {
+    font-size: 0.875rem;
+  }
+
+  /* CTA Section */
+  .cta {
+    background: var(--gradient-primary);
+    color: var(--color-white);
+    text-align: center;
+  }
+
+  .cta h2, .cta p {
+    color: var(--color-white);
+  }
+
+  .cta h2 {
+    margin-bottom: var(--spacing-md);
+  }
+
+  .cta p {
+    font-size: 1.25rem;
+    margin-bottom: var(--spacing-xl);
+  }
+
+  .cta-buttons {
+    display: flex;
+    gap: var(--spacing-md);
+    justify-content: center;
+  }
+
+  /* Footer */
+  .footer {
+    background: var(--color-secondary);
+    color: var(--color-white);
+    padding: var(--spacing-3xl) 0 var(--spacing-lg);
+  }
+
+  .footer-content {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-xl);
+    margin-bottom: var(--spacing-xl);
+  }
+
+  .footer-brand {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-md);
+  }
+
+  .footer-logo {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-sm);
+  }
+
+  .footer-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+  }
+
+  .footer-description {
+    color: var(--color-accent);
+    font-size: 0.875rem;
+  }
+
+  .footer-section h4 {
+    color: var(--color-white);
+    margin-bottom: var(--spacing-md);
+  }
+
+  .footer-links {
+    list-style: none;
+  }
+
+  .footer-links li {
+    margin-bottom: var(--spacing-xs);
+  }
+
+  .footer-links a {
+    color: var(--color-accent);
+    text-decoration: none;
+    font-size: 0.875rem;
+    transition: color 0.3s ease;
+  }
+
+  .footer-links a:hover {
+    color: var(--color-white);
+  }
+
+  .footer-bottom {
+    border-top: 1px solid rgba(184, 229, 240, 0.2);
+    padding-top: var(--spacing-md);
+    text-align: center;
+  }
+
+  .footer-bottom p {
+    color: var(--color-accent);
+    font-size: 0.875rem;
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .nav-links {
+      gap: var(--spacing-sm);
+    }
+
+    .nav-link {
+      display: none;
+    }
+
+    .hero-content {
+      grid-template-columns: 1fr;
+    }
+
+    .hero-visual {
+      order: -1;
+    }
+
+    .hero-buttons {
+      flex-direction: column;
+    }
+
+    .hero-stats {
+      flex-wrap: wrap;
+    }
+
+    .steps {
+      flex-direction: column;
+    }
+
+    .step-arrow {
+      transform: rotate(90deg);
+    }
+
+    .cta-buttons {
+      flex-direction: column;
+      align-items: center;
+    }
+  }
+</style>
