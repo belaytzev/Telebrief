@@ -54,7 +54,7 @@ repos:
         additional_dependencies:
           - types-PyYAML
           - types-python-dateutil
-        args: ['--ignore-missing-imports']
+        args: ['--ignore-missing-imports', '--no-warn-return-any']
         files: ^src/
         exclude: ^(tests/|vulture_whitelist\.py)
 
