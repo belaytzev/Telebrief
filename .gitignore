@@ -219,3 +219,6 @@ data/
 # Index file
 PROJECT_INDEX.md
 PROJECT_INDEX.json
+
+# Mac
+.DS_Store
