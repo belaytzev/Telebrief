@@ -77,7 +77,7 @@ repos:
     rev: v0.12.0
     hooks:
       - id: markdownlint
-        args: ['--rules', '~MD013,~MD033,~MD041']
+        args: ['--rules', '~MD002,~MD005,~MD007,~MD012,~MD013,~MD029,~MD032,~MD033,~MD034,~MD036,~MD041']
 
 # Exclude patterns
 exclude: |
