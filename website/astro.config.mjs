@@ -1,10 +1,9 @@
-import { defineConfig } from 'astro/config';
+import { defineConfig } from "astro/config";
 
 export default defineConfig({
-  site: 'https://telebrief.github.io',
-  base: '/Telebrief',
-  output: 'static',
+  site: "https://telebrief.github.io",
+  output: "static",
   build: {
-    assets: 'assets'
-  }
+    assets: "assets",
+  },
 });
