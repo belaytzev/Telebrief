@@ -7,16 +7,19 @@
   --color-primary-light: #1A9EC8;
   --color-secondary: #2D3748;
   --color-secondary-dark: #1A202C;
-  --color-accent: #B8E5F0;
-  --color-accent-dark: #8FC4D6;
+  --color-accent: #D4F1F9;
+  --color-accent-dark: #A5D8E8;
   --color-white: #FFFFFF;
   --color-gray-light: #F7FAFC;
   --color-gray: #E2E8F0;
-  --color-gray-dark: #718096;
+  --color-gray-dark: #4A5568;
 
   /* Typography */
   --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --font-display: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+
+  /* Performance */
+  font-display: swap;
 
   /* Spacing */
   --spacing-xs: 0.5rem;
@@ -56,6 +59,12 @@
 html {
   scroll-behavior: smooth;
   font-size: 16px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
 }
 
 body {
@@ -110,6 +119,8 @@ p {
   position: relative;
   overflow: hidden;
   text-decoration: none;
+  will-change: transform, box-shadow;
+  contain: layout style paint;
 }
 
 .btn::before {
@@ -166,6 +177,8 @@ p {
   position: relative;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border: 1px solid rgba(18, 122, 156, 0.1);
+  will-change: transform, box-shadow;
+  contain: layout style paint;
 }
 
 .card::before {
