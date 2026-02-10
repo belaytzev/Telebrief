@@ -22,6 +22,6 @@ Add support Ollama and other Chat bots plus use output language as a parameter
 - [x] Update documentation to reflect changes
 
 ### Task 3: Commit and push changes
-- [ ] Commit changes with a descriptive message
-- [ ] Push changes to the remote repository
-- [ ] Create a pull request for review
+- [x] Commit changes with a descriptive message
+- [x] Push changes to the remote repository
+- [x] Create a pull request for review
