@@ -3,9 +3,9 @@
 
   # Telebrief
 
-  **Automated Telegram Digest Generator powered by GPT-5-nano**
+  **Automated Telegram Digest Generator powered by AI**
 
-  Telebrief collects messages from your Telegram channels (in any language), generates AI-powered summaries, and delivers beautiful daily digests **in Russian** directly to your Telegram account.
+  Telebrief collects messages from your Telegram channels (in any language), generates AI-powered summaries, and delivers beautiful daily digests **in Russian** directly to your Telegram account. Supports multiple AI providers: **OpenAI**, **Ollama** (local), and **Anthropic**.
 </div>
 
 ---
@@ -14,7 +14,7 @@
 
 - 🌐 **Multi-language Support** - Reads channels in ANY language (English, Russian, Ukrainian, Chinese, etc.)
 - 🇷🇺 **Russian Output Only** - All summaries generated in Russian regardless of source language
-- 🤖 **GPT-5-nano Powered** - High-quality AI summarization with ultra-low cost (~$0.30/month)
+- 🤖 **Multi-Provider AI** - Supports OpenAI, Ollama (local), and Anthropic for summarization
 - ⏰ **Scheduled & On-Demand** - Daily automatic digests + instant generation via bot commands
 - 🔒 **Private Channel Support** - Access your private chats and channels
 - 🎨 **Smart Formatting** - Markdown with emojis, bullet points, and clickable message links
@@ -36,8 +36,10 @@ Before you begin, you'll need:
    - Send `/newbot` to create a new bot
    - Save the bot token
 
-4. **OpenAI API Key** - [Get from platform.openai.com](https://platform.openai.com)
-   - Requires GPT-5-nano access
+4. **AI Provider API Key** (one of the following):
+   - **OpenAI**: [Get from platform.openai.com](https://platform.openai.com)
+   - **Anthropic**: [Get from console.anthropic.com](https://console.anthropic.com)
+   - **Ollama**: No API key needed - [install locally](https://ollama.ai)
 
 5. **Your Telegram User ID** - Get from [@userinfobot](https://t.me/userinfobot)
    - Send `/start` to get your ID
@@ -146,7 +148,10 @@ A: Yes! Add group chat IDs to `config.yaml` the same way as channels.
 A: Yes! Edit `src/formatter.py` to change Markdown structure, emojis, and sections.
 
 **Q: How much does it cost to run?**
-A: Approximately **$0.30/month** with GPT-5-nano (ultra-affordable pricing). Based on ~20 channels with medium activity.
+A: With OpenAI GPT-5-nano: ~$0.30/month. With Ollama: free (runs locally). Anthropic pricing varies by model.
+
+**Q: Can I use a local AI model?**
+A: Yes! Set `ai_provider: "ollama"` in config.yaml and install [Ollama](https://ollama.ai) on your machine.
 
 ---
 
@@ -156,7 +161,9 @@ A: Approximately **$0.30/month** with GPT-5-nano (ultra-affordable pricing). Bas
 **Built with:**
 - [Telethon](https://github.com/LonamiWebs/Telethon) - Telegram User API
 - [python-telegram-bot](https://github.com/python-telegram-bot/python-telegram-bot) - Bot API
-- [OpenAI API](https://openai.com) - GPT-5-nano Summarization
+- [OpenAI API](https://openai.com) - AI Summarization (OpenAI provider)
+- [Ollama](https://ollama.ai) - Local AI Summarization
+- [Anthropic API](https://anthropic.com) - AI Summarization (Anthropic provider)
 - [APScheduler](https://github.com/agronholm/apscheduler) - Task Scheduling
 
 ---

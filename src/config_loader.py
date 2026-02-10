@@ -35,6 +35,9 @@ class Settings:
     auto_cleanup_old_digests: bool
     max_messages_per_channel: int
     api_timeout: int
+    ai_provider: str = "openai"
+    ai_model: str = ""
+    ollama_base_url: str = "http://localhost:11434"
 
 
 @dataclass
@@ -50,6 +53,7 @@ class Config:
     telegram_bot_token: str
     openai_api_key: str
     log_level: str
+    anthropic_api_key: str = ""
 
 
 def load_config(config_path: str = "config.yaml") -> Config:
@@ -86,6 +90,10 @@ def load_config(config_path: str = "config.yaml") -> Config:
 
     # Parse settings
     settings_dict = yaml_config.get("settings", {})
+    ai_provider = settings_dict.get("ai_provider", "openai")
+    # ai_model overrides openai_model; fall back to openai_model for backward compat
+    ai_model = settings_dict.get("ai_model", settings_dict.get("openai_model", "gpt-5-nano"))
+
     settings = Settings(
         schedule_time=settings_dict.get("schedule_time", "08:00"),
         timezone=settings_dict.get("timezone", "UTC"),
@@ -99,6 +107,9 @@ def load_config(config_path: str = "config.yaml") -> Config:
         auto_cleanup_old_digests=settings_dict.get("auto_cleanup_old_digests", True),
         max_messages_per_channel=settings_dict.get("max_messages_per_channel", 500),
         api_timeout=settings_dict.get("api_timeout", 30),
+        ai_provider=ai_provider,
+        ai_model=ai_model,
+        ollama_base_url=settings_dict.get("ollama_base_url", "http://localhost:11434"),
     )
 
     if settings.target_user_id == 0:
@@ -111,7 +122,8 @@ def load_config(config_path: str = "config.yaml") -> Config:
     telegram_api_id = os.getenv("TELEGRAM_API_ID")
     telegram_api_hash = os.getenv("TELEGRAM_API_HASH")
     telegram_bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
-    openai_api_key = os.getenv("OPENAI_API_KEY")
+    openai_api_key = os.getenv("OPENAI_API_KEY", "")
+    anthropic_api_key = os.getenv("ANTHROPIC_API_KEY", "")
     log_level = os.getenv("LOG_LEVEL", "INFO")
 
     # Validate required environment variables
@@ -122,8 +134,12 @@ def load_config(config_path: str = "config.yaml") -> Config:
         missing_vars.append("TELEGRAM_API_HASH")
     if not telegram_bot_token:
         missing_vars.append("TELEGRAM_BOT_TOKEN")
-    if not openai_api_key:
+
+    # Validate API key for the selected provider
+    if ai_provider == "openai" and not openai_api_key:
         missing_vars.append("OPENAI_API_KEY")
+    elif ai_provider == "anthropic" and not anthropic_api_key:
+        missing_vars.append("ANTHROPIC_API_KEY")
 
     if missing_vars:
         raise ValueError(
@@ -136,7 +152,6 @@ def load_config(config_path: str = "config.yaml") -> Config:
     assert telegram_api_id is not None
     assert telegram_api_hash is not None
     assert telegram_bot_token is not None
-    assert openai_api_key is not None
 
     config = Config(
         channels=channels,
@@ -144,7 +159,8 @@ def load_config(config_path: str = "config.yaml") -> Config:
         telegram_api_id=int(telegram_api_id),
         telegram_api_hash=telegram_api_hash,
         telegram_bot_token=telegram_bot_token,
-        openai_api_key=openai_api_key,
+        openai_api_key=openai_api_key or "",
+        anthropic_api_key=anthropic_api_key,
         log_level=log_level,
     )
 

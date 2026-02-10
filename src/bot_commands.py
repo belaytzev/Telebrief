@@ -194,9 +194,11 @@ class BotCommandHandler:
             return
 
         # Gather status information
+        ai_model = self.config.settings.ai_model or self.config.settings.openai_model
         status_lines = [
             "📊 **Статус Telebrief**\n",
-            f"🤖 Модель: {self.config.settings.openai_model}",
+            f"🤖 Провайдер: {self.config.settings.ai_provider}",
+            f"🧠 Модель: {ai_model}",
             f"📺 Каналов настроено: {len(self.config.channels)}",
             f"🧹 Автоочистка: {'Включена' if self.config.settings.auto_cleanup_old_digests else 'Выключена'}",
         ]
@@ -259,9 +261,7 @@ class BotCommandHandler:
 • Умные суммаризации с помощью GPT-5
 • Ссылки на оригинальные сообщения
 • Автоматическая очистка старых дайджестов (настраивается)
-        """.format(
-            self.config.settings.schedule_time + " UTC"
-        )
+        """.format(self.config.settings.schedule_time + " UTC")
 
         await update.message.reply_text(help_text, parse_mode="Markdown")
 

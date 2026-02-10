@@ -39,6 +39,9 @@ def sample_config():
         auto_cleanup_old_digests=True,
         max_messages_per_channel=500,
         api_timeout=30,
+        ai_provider="openai",
+        ai_model="gpt-5-nano",
+        ollama_base_url="http://localhost:11434",
     )
 
     config = Config(
@@ -49,6 +52,7 @@ def sample_config():
         telegram_bot_token="123456789:ABC-DEF",
         openai_api_key="sk-test-key",
         log_level="INFO",
+        anthropic_api_key="",
     )
 
     return config

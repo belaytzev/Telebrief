@@ -1,13 +1,12 @@
 """
-AI-powered summarizer using OpenAI API with Russian output.
+AI-powered summarizer using pluggable providers with Russian output.
 """
 
 import asyncio
 import logging
 from typing import Any, Dict, List
 
-from openai import AsyncOpenAI
-
+from src.ai_providers import AIProvider, create_provider
 from src.collector import Message
 from src.config_loader import Config
 
@@ -64,7 +63,7 @@ SYSTEM_PROMPT = """
 
 
 class Summarizer:
-    """Generates AI-powered summaries in Russian using OpenAI."""
+    """Generates AI-powered summaries using a pluggable AI provider."""
 
     def __init__(self, config: Config, logger: logging.Logger):
         """
@@ -76,8 +75,14 @@ class Summarizer:
         """
         self.config = config
         self.logger = logger
-        self.client = AsyncOpenAI(api_key=config.openai_api_key)
-        self.model = config.settings.openai_model
+        self.provider: AIProvider = create_provider(
+            provider_name=config.settings.ai_provider,
+            logger=logger,
+            openai_api_key=config.openai_api_key,
+            anthropic_api_key=config.anthropic_api_key,
+            ollama_base_url=config.settings.ollama_base_url,
+        )
+        self.model = config.settings.ai_model or config.settings.openai_model
         self.temperature = config.settings.openai_temperature
         self.max_tokens = config.settings.max_tokens_per_summary
 
@@ -124,9 +129,9 @@ class Summarizer:
             try:
                 summary = await self._summarize_channel(channel_name, messages)
                 summaries[channel_name] = summary
-                self.logger.info(f"✓ Summarized {channel_name}")
+                self.logger.info(f"Summarized {channel_name}")
             except Exception as e:
-                self.logger.error(f"✗ Failed to summarize {channel_name}: {e}")
+                self.logger.error(f"Failed to summarize {channel_name}: {e}")
                 summaries[channel_name] = f"Ошибка при обработке канала: {str(e)}"
 
         return summaries
@@ -155,10 +160,10 @@ class Summarizer:
 - Сокращай резюме до 3-5 самых важных пунктов, чтобы уложиться в лимит
 
 Сфокусируйся на:
-- 📰 Важных новостях и анонсах
-- 💬 Ключевых обсуждениях и дебатах
-- ✅ Принятых решениях или выводах
-- 🖇️ Полезных ресурсах и ссылках
+- Важных новостях и анонсах
+- Ключевых обсуждениях и дебатах
+- Принятых решениях или выводах
+- Полезных ресурсах и ссылках
 
 Формат ответа:
 - 3-5 информативных пунктов (bullet points)
@@ -176,27 +181,22 @@ class Summarizer:
 """
 
         try:
-            response = await self.client.chat.completions.create(
+            chat_messages = [
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": prompt},
+            ]
+            summary = await self.provider.chat_completion(
+                messages=chat_messages,
                 model=self.model,
-                messages=[
-                    {"role": "system", "content": SYSTEM_PROMPT},
-                    {"role": "user", "content": prompt},
-                ],
+                temperature=self.temperature,
+                max_tokens=self.max_tokens,
             )
 
-            self.logger.debug(f"API response for {channel_name}: {response}")
-            self.logger.debug(f"Response choices: {response.choices}")
-
-            content = response.choices[0].message.content
-            self.logger.debug(f"Raw content for {channel_name}: {repr(content)}")
-            self.logger.debug(f"Content type: {type(content)}, is None: {content is None}")
-
-            summary = content.strip() if content else ""
-            self.logger.debug(f"Final summary for {channel_name}: {len(summary)} chars")
+            self.logger.debug(f"Summary for {channel_name}: {len(summary)} chars")
             return summary
 
         except Exception as e:
-            self.logger.error(f"OpenAI API error for {channel_name}: {e}")
+            self.logger.error(f"AI provider error for {channel_name}: {e}")
             raise
 
     def _format_messages_for_prompt(self, messages: List[Message]) -> str:

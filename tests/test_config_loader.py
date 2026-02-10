@@ -20,6 +20,8 @@ def test_load_config_success(temp_config_file, mock_env_vars):
     assert config.settings.target_user_id == 123456789
     assert config.telegram_api_id == 12345678
     assert config.openai_api_key == "sk-test-key"
+    assert config.settings.ai_provider == "openai"
+    assert config.settings.ai_model == "gpt-5-nano"
 
 
 @pytest.mark.unit
@@ -88,3 +90,56 @@ settings:
 
     with pytest.raises(ValueError, match="No channels configured"):
         load_config(str(config_file))
+
+
+@pytest.mark.unit
+def test_load_config_ollama_provider(tmp_path, monkeypatch):
+    """Test config loading with Ollama provider (no API keys needed)."""
+    monkeypatch.setenv("TELEGRAM_API_ID", "12345678")
+    monkeypatch.setenv("TELEGRAM_API_HASH", "test_hash")
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "123456789:ABC-DEF")
+
+    config_content = """
+channels:
+  - id: "@test"
+    name: "Test"
+
+settings:
+  target_user_id: 123456789
+  ai_provider: "ollama"
+  ai_model: "llama3"
+  ollama_base_url: "http://myserver:11434"
+"""
+    config_file = tmp_path / "config.yaml"
+    config_file.write_text(config_content)
+
+    config = load_config(str(config_file))
+
+    assert config.settings.ai_provider == "ollama"
+    assert config.settings.ai_model == "llama3"
+    assert config.settings.ollama_base_url == "http://myserver:11434"
+
+
+@pytest.mark.unit
+def test_load_config_anthropic_provider_missing_key(tmp_path, monkeypatch):
+    """Test Anthropic provider requires ANTHROPIC_API_KEY."""
+    monkeypatch.setenv("TELEGRAM_API_ID", "12345678")
+    monkeypatch.setenv("TELEGRAM_API_HASH", "test_hash")
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "123456789:ABC-DEF")
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+
+    config_content = """
+channels:
+  - id: "@test"
+    name: "Test"
+
+settings:
+  target_user_id: 123456789
+  ai_provider: "anthropic"
+"""
+    config_file = tmp_path / "config.yaml"
+    config_file.write_text(config_content)
+
+    with patch("src.config_loader.load_dotenv"):
+        with pytest.raises(ValueError, match="ANTHROPIC_API_KEY"):
+            load_config(str(config_file))
