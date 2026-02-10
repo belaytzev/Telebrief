@@ -1,5 +1,5 @@
 """
-AI-powered summarizer using pluggable providers with Russian output.
+AI-powered summarizer using pluggable providers with configurable output language.
 """
 
 import asyncio
@@ -10,55 +10,55 @@ from src.ai_providers import AIProvider, create_provider
 from src.collector import Message
 from src.config_loader import Config
 
-# Russian system prompt
-SYSTEM_PROMPT = """
-Ты — профессиональный ассистент по созданию новостных дайджестов для Telegram.
+# System prompt template with configurable output language
+SYSTEM_PROMPT_TEMPLATE = """
+You are a professional assistant for creating news digests for Telegram.
 
-КРИТИЧЕСКИ ВАЖНО:
-- Всегда отвечай ТОЛЬКО на русском языке, независимо от языка входных сообщений.
-- Форматируй вывод под Telegram-сообщение: кратко, структурировано, с эмодзи и визуальными разделителями.
-- Указывай источники только для действительно важных сообщений из Telegram-чатов; отдельный раздел «Источники» не нужен — интегрируй ссылку/упоминание прямо в соответствующий пункт.
+CRITICAL RULES:
+- Always respond ONLY in {language}, regardless of the input message language.
+- Format the output for Telegram messages: concise, structured, with emojis and visual separators.
+- Include sources only for truly important messages from Telegram chats; do not create a separate "Sources" section - embed the link/mention directly in the relevant item.
 
-Твоя задача:
-- Анализировать входные материалы на любых языках (английский, русский, украинский, китайский и др.).
-- Предоставлять сжатое, чётко структурированное резюме на русском языке для Telegram.
-- Сохранять контекст, нюансы и важные детали; объединять дубли, убирать повторы.
-- Отмечать расхождения между источниками и помечать неподтверждённые данные.
+Your task:
+- Analyze input materials in any language (English, Russian, Ukrainian, Chinese, etc.).
+- Provide a concise, clearly structured summary in {language} for Telegram.
+- Preserve context, nuances, and important details; merge duplicates, remove repetitions.
+- Note discrepancies between sources and flag unconfirmed data.
 
-Формат и оформление (для Telegram):
-- Используй эмодзи для акцентов и семантики (например: 📚 тема, 🆕 новое, 📊 цифры, ⚠️ риск, ✅ подтверждено, 📌важно, 🖇️ ссылка).
-- Разделяй блоки визуально пустыми строками.
-- Максимальная читаемость с мобильного: короткие абзацы, 1–2 предложения на пункт.
-- Встраивай источник только там, где это критично (важные сообщения из Telegram-чата): укажи @канал или ссылку 🖇️ в конце соответствующего пункта.
+Formatting (for Telegram):
+- Use emojis for emphasis and semantics (e.g.: 📚 topic, 🆕 new, 📊 numbers, ⚠️ risk, ✅ confirmed, 📌 important, 🖇️ link).
+- Separate blocks visually with blank lines.
+- Maximize mobile readability: short paragraphs, 1-2 sentences per item.
+- Embed source only where critical (important Telegram chat messages): add @channel or link 🖇️ at the end of the relevant item.
 
-Структура ответа:
-- Заголовок (1–2 строки) с эмодзи, отражающий суть дайджеста.
-- Что важно — 3–7 пунктов с ключевыми фактами, датами, именами, цифрами. Для каждого пункта:
-    - Кратко по делу.
-    - Эмодзи в начале.
-    - Если критично — встроенная ссылка/упоминание источника 🖇️@канал.
+Response structure:
+- Header (1-2 lines) with emoji reflecting the digest essence.
+- Key points - 3-7 items with key facts, dates, names, numbers. For each item:
+    - Brief and to the point.
+    - Emoji at the beginning.
+    - If critical - embedded source link/mention 🖇️@channel.
 
-Правила стилевого оформления:
-- Ясно, нейтрально, без жаргона и лишней эмоциональности.
-- Сохраняй числовые данные и собственные имена точно; при неоднозначности — помечай «неподтверждено».
-- При переводе сохраняй терминологию и интенцию автора.
-- Избегай перегруза ссылками: только для важных сообщений из Telegram.
+Style rules:
+- Clear, neutral, no jargon or excessive emotion.
+- Preserve numerical data and proper names exactly; if ambiguous - mark as "unconfirmed".
+- When translating, preserve terminology and the author's intent.
+- Avoid link overload: only for important Telegram messages.
 
-Технические ограничения:
-- Объём основного резюме: 120–250 слов (кратко) или 250–500 слов (расширенно), ориентируясь на читаемость в одном-двух экранах.
-- Используй визуальные разделители между секциями.
-- Не добавляй отдельный список источников; ссылки/упоминания — только внутри соответствующих пунктов.
+Technical constraints:
+- Summary volume: 120-250 words (brief) or 250-500 words (extended), aiming for readability on one or two screens.
+- Use visual separators between sections.
+- Do not add a separate list of sources; links/mentions only within the corresponding items.
 
-Шаблон вывода (Telegram-ready):
-🚀[кратко]
+Output template (Telegram-ready):
+🚀 [brief summary]
 
-📌Главное:
-    1️⃣ [эмодзи] [краткий факт, цифры, имена] [при необходимости: 🔗@канал/ссылка]
-    2️⃣ [эмодзи] [краткий факт] [при необходимости: 🔗@канал/ссылка]
-    3️⃣ [эмодзи] [краткий факт] [при необходимости: 🔗@канал/ссылка]
+📌 Key points:
+    1️⃣ [emoji] [brief fact, numbers, names] [if needed: 🔗@channel/link]
+    2️⃣ [emoji] [brief fact] [if needed: 🔗@channel/link]
+    3️⃣ [emoji] [brief fact] [if needed: 🔗@channel/link]
 
 
-Если вход включает несколько материалов, сгруппируй по темам с подзаголовками и разделителями; связывай события, указывая причинно-следственные связи.
+If the input includes multiple materials, group by topics with subheadings and separators; connect events by indicating cause-and-effect relationships.
 """
 
 
@@ -85,6 +85,7 @@ class Summarizer:
         self.model = config.settings.ai_model or config.settings.openai_model
         self.temperature = config.settings.openai_temperature
         self.max_tokens = config.settings.max_tokens_per_summary
+        self.output_language = config.settings.output_language
 
     async def summarize_all(self, messages_by_channel: Dict[str, List[Message]]) -> Dict[str, Any]:
         """
@@ -132,7 +133,7 @@ class Summarizer:
                 self.logger.info(f"Summarized {channel_name}")
             except Exception as e:
                 self.logger.error(f"Failed to summarize {channel_name}: {e}")
-                summaries[channel_name] = f"Ошибка при обработке канала: {str(e)}"
+                summaries[channel_name] = f"Error processing channel: {str(e)}"
 
         return summaries
 
@@ -145,44 +146,46 @@ class Summarizer:
             messages: List of messages
 
         Returns:
-            Summary in Russian
+            Summary in the configured output language
         """
         # Format messages for prompt
         messages_text = self._format_messages_for_prompt(messages)
 
         prompt = f"""
-Проанализируй следующие сообщения из Telegram-канала "{channel_name}" и создай краткое резюме на русском языке.
+Analyze the following messages from Telegram channel "{channel_name}" \
+and create a concise summary in {self.output_language}.
 
-КРИТИЧЕСКИ ВАЖНО - ОГРАНИЧЕНИЕ ДЛИНЫ:
-- Telegram имеет лимит 4096 символов на сообщение
-- Твоё резюме должно быть НЕ БОЛЕЕ 3500 символов (включая эмодзи и форматирование)
-- Это жёсткое ограничение - если превысишь, сообщение не будет доставлено
-- Сокращай резюме до 3-5 самых важных пунктов, чтобы уложиться в лимит
+CRITICAL - LENGTH CONSTRAINT:
+- Telegram has a 4096 character limit per message
+- Your summary MUST be NO MORE than 3500 characters (including emojis and formatting)
+- This is a hard limit - if exceeded, the message will not be delivered
+- Reduce the summary to 3-5 most important points to fit within the limit
 
-Сфокусируйся на:
-- Важных новостях и анонсах
-- Ключевых обсуждениях и дебатах
-- Принятых решениях или выводах
-- Полезных ресурсах и ссылках
+Focus on:
+- Important news and announcements
+- Key discussions and debates
+- Decisions made or conclusions reached
+- Useful resources and links
 
-Формат ответа:
-- 3-5 информативных пунктов (bullet points)
-- Каждый пункт: 1-2 предложения (максимум 150-200 символов)
-- Используй эмодзи для категоризации
-- Будь лаконичен но информативен
-- ОБЯЗАТЕЛЬНО проверь, что итоговая длина НЕ превышает 3500 символов
+Response format:
+- 3-5 informative bullet points
+- Each point: 1-2 sentences (maximum 150-200 characters)
+- Use emojis for categorization
+- Be concise but informative
+- VERIFY that the final length does NOT exceed 3500 characters
 
-Сообщения (всего: {len(messages)}):
+Messages (total: {len(messages)}):
 ---
 {messages_text}
 ---
 
-Ответь ТОЛЬКО на русском языке. Помни: максимум 3500 символов!
+Respond ONLY in {self.output_language}. Remember: maximum 3500 characters!
 """
 
         try:
+            system_prompt = SYSTEM_PROMPT_TEMPLATE.format(language=self.output_language)
             chat_messages = [
-                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "system", "content": system_prompt},
                 {"role": "user", "content": prompt},
             ]
             summary = await self.provider.chat_completion(

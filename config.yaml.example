@@ -39,6 +39,7 @@ settings:
   ollama_base_url: "http://localhost:11434"
 
   # Output
+  output_language: "Russian"  # Language for AI summaries (e.g., "English", "Russian", "Spanish")
   use_emojis: true
   include_statistics: true
 

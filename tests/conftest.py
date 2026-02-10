@@ -42,6 +42,7 @@ def sample_config():
         ai_provider="openai",
         ai_model="gpt-5-nano",
         ollama_base_url="http://localhost:11434",
+        output_language="Russian",
     )
 
     config = Config(

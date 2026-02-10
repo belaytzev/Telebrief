@@ -72,7 +72,7 @@ class DigestFormatter:
             self.logger.debug(
                 f"Processing channel '{channel_name}': {len(summary) if summary else 0} chars"
             )
-            if not summary or "ошибка" in summary.lower():
+            if not summary or "error processing channel" in summary.lower():
                 self.logger.warning(f"Skipping channel '{channel_name}': empty or contains error")
                 continue
 

@@ -38,6 +38,7 @@ class Settings:
     ai_provider: str = "openai"
     ai_model: str = ""
     ollama_base_url: str = "http://localhost:11434"
+    output_language: str = "Russian"
 
 
 @dataclass
@@ -110,6 +111,7 @@ def load_config(config_path: str = "config.yaml") -> Config:
         ai_provider=ai_provider,
         ai_model=ai_model,
         ollama_base_url=settings_dict.get("ollama_base_url", "http://localhost:11434"),
+        output_language=settings_dict.get("output_language", "Russian"),
     )
 
     if settings.target_user_id == 0:

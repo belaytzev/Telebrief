@@ -22,6 +22,27 @@ def test_load_config_success(temp_config_file, mock_env_vars):
     assert config.openai_api_key == "sk-test-key"
     assert config.settings.ai_provider == "openai"
     assert config.settings.ai_model == "gpt-5-nano"
+    assert config.settings.output_language == "Russian"
+
+
+@pytest.mark.unit
+def test_load_config_custom_output_language(tmp_path, mock_env_vars):
+    """Test config loading with custom output_language."""
+    config_content = """
+channels:
+  - id: "@test_channel"
+    name: "Test Channel"
+
+settings:
+  target_user_id: 123456789
+  output_language: "English"
+"""
+    config_file = tmp_path / "config.yaml"
+    config_file.write_text(config_content)
+
+    config = load_config(str(config_file))
+
+    assert config.settings.output_language == "English"
 
 
 @pytest.mark.unit

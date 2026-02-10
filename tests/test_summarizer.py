@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from src.summarizer import Summarizer
+from src.summarizer import SYSTEM_PROMPT_TEMPLATE, Summarizer
 
 
 @pytest.mark.unit
@@ -18,6 +18,7 @@ async def test_summarizer_initialization(sample_config, mock_logger):
         assert summarizer.logger == mock_logger
         assert summarizer.model == "gpt-5-nano"
         assert summarizer.temperature == 0.7
+        assert summarizer.output_language == "Russian"
 
 
 @pytest.mark.unit
@@ -105,3 +106,44 @@ def test_format_messages_truncate_long(sample_config, mock_logger):
 
         # Should be truncated to 500 chars
         assert len(formatted.split(": ", 1)[1]) <= 505  # 500 + some slack
+
+
+@pytest.mark.unit
+def test_system_prompt_template_language():
+    """Test system prompt template accepts language parameter."""
+    prompt = SYSTEM_PROMPT_TEMPLATE.format(language="English")
+    assert "English" in prompt
+    assert "{language}" not in prompt
+
+    prompt_ru = SYSTEM_PROMPT_TEMPLATE.format(language="Russian")
+    assert "Russian" in prompt_ru
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_summarizer_custom_output_language(sample_config, mock_logger, sample_messages):
+    """Test summarizer uses configured output language in prompts."""
+    sample_config.settings.output_language = "Spanish"
+
+    with patch("src.ai_providers.AsyncOpenAI"):
+        summarizer = Summarizer(sample_config, mock_logger)
+        assert summarizer.output_language == "Spanish"
+
+        # Mock the provider's chat_completion to capture the messages
+        captured_messages = []
+
+        async def capture_chat(*args, **kwargs):
+            captured_messages.append(kwargs.get("messages", args[0] if args else []))
+            return "Test summary in Spanish"
+
+        summarizer.provider.chat_completion = capture_chat
+
+        result = await summarizer.summarize_all({"Test Channel": sample_messages})
+
+        assert result["channel_summaries"]["Test Channel"] == "Test summary in Spanish"
+        # Verify the system prompt contains "Spanish"
+        assert len(captured_messages) == 1
+        system_msg = captured_messages[0][0]["content"]
+        user_msg = captured_messages[0][1]["content"]
+        assert "Spanish" in system_msg
+        assert "Spanish" in user_msg

@@ -5,7 +5,7 @@
 
   **Automated Telegram Digest Generator powered by AI**
 
-  Telebrief collects messages from your Telegram channels (in any language), generates AI-powered summaries, and delivers beautiful daily digests **in Russian** directly to your Telegram account. Supports multiple AI providers: **OpenAI**, **Ollama** (local), and **Anthropic**.
+  Telebrief collects messages from your Telegram channels (in any language), generates AI-powered summaries, and delivers beautiful daily digests directly to your Telegram account. Supports multiple AI providers: **OpenAI**, **Ollama** (local), and **Anthropic**. Output language is configurable (default: Russian).
 </div>
 
 ---
@@ -13,7 +13,7 @@
 ## ✨ Features
 
 - 🌐 **Multi-language Support** - Reads channels in ANY language (English, Russian, Ukrainian, Chinese, etc.)
-- 🇷🇺 **Russian Output Only** - All summaries generated in Russian regardless of source language
+- 🌍 **Configurable Output Language** - Summaries generated in any language (default: Russian)
 - 🤖 **Multi-Provider AI** - Supports OpenAI, Ollama (local), and Anthropic for summarization
 - ⏰ **Scheduled & On-Demand** - Daily automatic digests + instant generation via bot commands
 - 🔒 **Private Channel Support** - Access your private chats and channels
@@ -132,8 +132,8 @@ make format
 
 ## ❓ FAQ
 
-**Q: Can I use this for non-Russian output?**
-A: Yes! Edit the prompts in `src/summarizer.py` to change output language.
+**Q: Can I change the output language?**
+A: Yes! Set `output_language` in `config.yaml` to any language (e.g., "English", "Spanish", "Chinese").
 
 **Q: How many channels can I monitor?**
 A: Tested up to 50 channels. Performance depends on message volume.

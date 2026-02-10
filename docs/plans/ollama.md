@@ -17,9 +17,9 @@ Add support Ollama and other Chat bots plus use output language as a parameter
 - [x] Update documentation to reflect changes
 
 ### Task 2: Add an option to use output language as a parameter
-- [ ] Refactor AI summarization to use output language as a parameter
-- [ ] Update promt and translate it to English
-- [ ] Update documentation to reflect changes
+- [x] Refactor AI summarization to use output language as a parameter
+- [x] Update promt and translate it to English
+- [x] Update documentation to reflect changes
 
 ### Task 3: Commit and push changes
 - [ ] Commit changes with a descriptive message
