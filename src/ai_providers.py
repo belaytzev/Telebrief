@@ -54,6 +54,8 @@ class OpenAIProvider(AIProvider):
         response = await self.client.chat.completions.create(
             model=model,
             messages=messages,  # type: ignore[arg-type]
+            temperature=temperature,
+            max_tokens=max_tokens,
         )
         content = response.choices[0].message.content
         return content.strip() if content else ""
@@ -131,7 +133,7 @@ class AnthropicProvider(AIProvider):
         }
         if system_text:
             payload["system"] = system_text
-        if temperature > 0:
+        if temperature >= 0:
             payload["temperature"] = temperature
 
         async with aiohttp.ClientSession() as session:

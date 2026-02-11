@@ -161,7 +161,7 @@ def load_config(config_path: str = "config.yaml") -> Config:
         telegram_api_id=int(telegram_api_id),
         telegram_api_hash=telegram_api_hash,
         telegram_bot_token=telegram_bot_token,
-        openai_api_key=openai_api_key or "",
+        openai_api_key=openai_api_key,
         anthropic_api_key=anthropic_api_key,
         log_level=log_level,
     )

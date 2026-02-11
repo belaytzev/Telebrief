@@ -175,7 +175,7 @@ async def generate_and_send_channel_digests(
 
         for channel_name, summary in channel_summaries.items():
             # Skip empty summaries or errors
-            if not summary or "ошибка" in summary.lower():
+            if not summary or "error processing channel" in summary.lower():
                 logger.warning(f"Skipping channel '{channel_name}': empty or error summary")
                 continue
 

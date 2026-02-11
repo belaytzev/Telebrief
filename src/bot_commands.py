@@ -257,11 +257,15 @@ class BotCommandHandler:
 
 **Возможности:**
 • Обработка каналов на любых языках
-• Вывод всегда на русском языке
-• Умные суммаризации с помощью GPT-5
+• Вывод на {output_lang}
+• Умные суммаризации ({provider})
 • Ссылки на оригинальные сообщения
 • Автоматическая очистка старых дайджестов (настраивается)
-        """.format(self.config.settings.schedule_time + " UTC")
+        """.format(
+            self.config.settings.schedule_time + " UTC",
+            output_lang=self.config.settings.output_language,
+            provider=self.config.settings.ai_provider,
+        )
 
         await update.message.reply_text(help_text, parse_mode="Markdown")
 

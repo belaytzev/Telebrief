@@ -133,7 +133,7 @@ def save_digest_message_ids(message_ids: List[int], user_id: int) -> None:
         try:
             with open(storage_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
-        except (json.JSONDecodeError, IOError):
+        except json.JSONDecodeError, IOError:
             data = {}
 
     # Store message IDs with timestamp
@@ -172,7 +172,7 @@ def get_digest_message_ids(user_id: int) -> List[int]:
             message_ids: List[int] = data[user_key].get("message_ids", [])
             return message_ids
 
-    except (json.JSONDecodeError, IOError, KeyError):
+    except json.JSONDecodeError, IOError, KeyError:
         pass
 
     return []
@@ -202,5 +202,5 @@ def clear_digest_message_ids(user_id: int) -> None:
         with open(storage_path, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
 
-    except (json.JSONDecodeError, IOError, KeyError):
+    except json.JSONDecodeError, IOError, KeyError:
         pass
