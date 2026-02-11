@@ -194,7 +194,7 @@ class BotCommandHandler:
             return
 
         # Gather status information
-        ai_model = self.config.settings.ai_model or self.config.settings.openai_model
+        ai_model = self.config.settings.ai_model
         status_lines = [
             "📊 **Статус Telebrief**\n",
             f"🤖 Провайдер: {self.config.settings.ai_provider}",
@@ -253,7 +253,7 @@ class BotCommandHandler:
 /help - Показать эту справку
 
 **Автоматический режим:**
-Дайджест генерируется автоматически каждый день в {}
+Дайджест генерируется автоматически каждый день в {schedule}
 
 **Возможности:**
 • Обработка каналов на любых языках
@@ -262,7 +262,7 @@ class BotCommandHandler:
 • Ссылки на оригинальные сообщения
 • Автоматическая очистка старых дайджестов (настраивается)
         """.format(
-            self.config.settings.schedule_time + " UTC",
+            schedule=self.config.settings.schedule_time + " UTC",
             output_lang=self.config.settings.output_language,
             provider=self.config.settings.ai_provider,
         )

@@ -64,9 +64,10 @@ class OpenAIProvider(AIProvider):
 class OllamaProvider(AIProvider):
     """Ollama local LLM provider."""
 
-    def __init__(self, base_url: str, logger: logging.Logger):
+    def __init__(self, base_url: str, logger: logging.Logger, timeout: int = 120):
         self.base_url = base_url.rstrip("/")
         self.logger = logger
+        self.timeout = aiohttp.ClientTimeout(total=timeout)
 
     async def chat_completion(
         self,
@@ -86,7 +87,7 @@ class OllamaProvider(AIProvider):
             },
         }
 
-        async with aiohttp.ClientSession() as session:
+        async with aiohttp.ClientSession(timeout=self.timeout) as session:
             async with session.post(url, json=payload) as resp:
                 if resp.status != 200:
                     body = await resp.text()
@@ -100,9 +101,10 @@ class OllamaProvider(AIProvider):
 class AnthropicProvider(AIProvider):
     """Anthropic Claude API provider."""
 
-    def __init__(self, api_key: str, logger: logging.Logger):
+    def __init__(self, api_key: str, logger: logging.Logger, timeout: int = 60):
         self.api_key = api_key
         self.logger = logger
+        self.timeout = aiohttp.ClientTimeout(total=timeout)
 
     async def chat_completion(
         self,
@@ -133,10 +135,9 @@ class AnthropicProvider(AIProvider):
         }
         if system_text:
             payload["system"] = system_text
-        if temperature >= 0:
-            payload["temperature"] = temperature
+        payload["temperature"] = temperature
 
-        async with aiohttp.ClientSession() as session:
+        async with aiohttp.ClientSession(timeout=self.timeout) as session:
             async with session.post(url, json=payload, headers=headers) as resp:
                 if resp.status != 200:
                     body = await resp.text()
@@ -151,9 +152,11 @@ class AnthropicProvider(AIProvider):
 def create_provider(
     provider_name: str,
     logger: logging.Logger,
+    *,
     openai_api_key: str = "",
     anthropic_api_key: str = "",
     ollama_base_url: str = "http://localhost:11434",
+    api_timeout: int = 60,
 ) -> AIProvider:
     """
     Factory function to create an AI provider.
@@ -164,6 +167,7 @@ def create_provider(
         openai_api_key: OpenAI API key (required for 'openai' provider)
         anthropic_api_key: Anthropic API key (required for 'anthropic' provider)
         ollama_base_url: Ollama server URL (for 'ollama' provider)
+        api_timeout: HTTP request timeout in seconds
 
     Returns:
         AIProvider instance
@@ -179,12 +183,12 @@ def create_provider(
         return OpenAIProvider(api_key=openai_api_key, logger=logger)
 
     if name == "ollama":
-        return OllamaProvider(base_url=ollama_base_url, logger=logger)
+        return OllamaProvider(base_url=ollama_base_url, logger=logger, timeout=api_timeout)
 
     if name == "anthropic":
         if not anthropic_api_key:
             raise ValueError("ANTHROPIC_API_KEY is required for Anthropic provider")
-        return AnthropicProvider(api_key=anthropic_api_key, logger=logger)
+        return AnthropicProvider(api_key=anthropic_api_key, logger=logger, timeout=api_timeout)
 
     raise ValueError(
         f"Unknown AI provider: '{provider_name}'. "

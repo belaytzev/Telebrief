@@ -91,9 +91,9 @@ def load_config(config_path: str = "config.yaml") -> Config:
 
     # Parse settings
     settings_dict = yaml_config.get("settings", {})
-    ai_provider = settings_dict.get("ai_provider", "openai")
+    ai_provider = settings_dict.get("ai_provider", "openai").lower()
     # ai_model overrides openai_model; fall back to openai_model for backward compat
-    ai_model = settings_dict.get("ai_model", settings_dict.get("openai_model", "gpt-5-nano"))
+    ai_model = settings_dict.get("ai_model") or settings_dict.get("openai_model", "gpt-5-nano")
 
     settings = Settings(
         schedule_time=settings_dict.get("schedule_time", "08:00"),

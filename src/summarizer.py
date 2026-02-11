@@ -81,8 +81,9 @@ class Summarizer:
             openai_api_key=config.openai_api_key,
             anthropic_api_key=config.anthropic_api_key,
             ollama_base_url=config.settings.ollama_base_url,
+            api_timeout=config.settings.api_timeout,
         )
-        self.model = config.settings.ai_model or config.settings.openai_model
+        self.model = config.settings.ai_model
         self.temperature = config.settings.openai_temperature
         self.max_tokens = config.settings.max_tokens_per_summary
         self.output_language = config.settings.output_language
