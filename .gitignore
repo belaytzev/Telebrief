@@ -217,9 +217,14 @@ config.yaml
 # Message ID storage
 data/
 
-# ralphex progress logs
-progress*.txt
-.DS_Store
-CLAUDE.md
-PROJECT_INDEX.json
+# Index file
 PROJECT_INDEX.md
+PROJECT_INDEX.json
+
+# Mac
+.DS_Store
+
+# Claude Code
+CLAUDE.md
+
+progress*.txt

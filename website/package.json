@@ -1,0 +1,13 @@
+{
+  "name": "telebrief-website",
+  "version": "1.0.0",
+  "description": "Landing page for Telebrief - AI-Powered Telegram Digest Generator",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "astro": "^4.0.0"
+  }
+}
