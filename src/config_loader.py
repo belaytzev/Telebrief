@@ -176,6 +176,6 @@ if __name__ == "__main__":
         print("✅ Configuration loaded successfully!")
         print(f"Channels: {len(config.channels)}")
         print(f"Target user: {config.settings.target_user_id}")
-        print(f"Model: {config.settings.openai_model}")
+        print(f"AI provider: {config.settings.ai_provider}, model: {config.settings.ai_model}")
     except Exception as e:
         print(f"❌ Configuration error: {e}")

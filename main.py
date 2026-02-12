@@ -47,7 +47,7 @@ class TelebriefApp:
 
             self.logger.info(f"Schedule: Daily at {self.config.settings.schedule_time} {self.config.settings.timezone}")
             self.logger.info(f"Target user: {self.config.settings.target_user_id}")
-            self.logger.info(f"OpenAI model: {self.config.settings.openai_model}")
+            self.logger.info(f"AI provider: {self.config.settings.ai_provider}, model: {self.config.settings.ai_model}")
 
             # Initialize scheduler
             self.logger.info("Initializing scheduler...")
