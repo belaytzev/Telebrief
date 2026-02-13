@@ -131,7 +131,9 @@ class BotCommandHandler:
 
         except Exception as e:
             self.logger.error(f"Error in /digest command: {e}", exc_info=True)
-            await update.message.reply_text(f"❌ Ошибка: {str(e)}")
+            await update.message.reply_text(
+                "❌ Произошла ошибка при генерации дайджеста. Проверьте логи."
+            )
 
     async def handle_cleanup(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
@@ -172,7 +174,7 @@ class BotCommandHandler:
 
         except Exception as e:
             self.logger.error(f"Error in /cleanup command: {e}", exc_info=True)
-            await update.message.reply_text(f"❌ Ошибка: {str(e)}")
+            await update.message.reply_text("❌ Произошла ошибка при очистке. Проверьте логи.")
 
     async def handle_status(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """

@@ -57,6 +57,43 @@ class Config:
     anthropic_api_key: str = ""
 
 
+_SUPPORTED_PROVIDERS = {"openai", "ollama", "anthropic"}
+_PROVIDER_DEFAULT_MODELS = {
+    "openai": "gpt-5-nano",
+    "anthropic": "claude-sonnet-4-5-20250929",
+    "ollama": "llama3",
+}
+
+
+def _resolve_ai_settings(settings_dict: dict) -> tuple:
+    """Resolve ai_provider and ai_model from settings dict.
+
+    Returns:
+        Tuple of (ai_provider, ai_model)
+
+    Raises:
+        ValueError: If ai_provider is unsupported
+    """
+    ai_provider = settings_dict.get("ai_provider", "openai").lower()
+
+    if ai_provider not in _SUPPORTED_PROVIDERS:
+        raise ValueError(
+            f"Unsupported ai_provider: '{ai_provider}'. "
+            f"Supported providers: {', '.join(sorted(_SUPPORTED_PROVIDERS))}"
+        )
+
+    default_model = _PROVIDER_DEFAULT_MODELS.get(ai_provider, "gpt-5-nano")
+
+    # ai_model takes priority; openai_model is only a fallback for the openai provider
+    ai_model = settings_dict.get("ai_model") or (
+        settings_dict.get("openai_model", default_model)
+        if ai_provider == "openai"
+        else default_model
+    )
+
+    return ai_provider, ai_model
+
+
 def load_config(config_path: str = "config.yaml") -> Config:
     """
     Load configuration from YAML file and environment variables.
@@ -91,22 +128,7 @@ def load_config(config_path: str = "config.yaml") -> Config:
 
     # Parse settings
     settings_dict = yaml_config.get("settings", {})
-    ai_provider = settings_dict.get("ai_provider", "openai").lower()
-
-    # Provider-specific default models
-    provider_default_models = {
-        "openai": "gpt-5-nano",
-        "anthropic": "claude-sonnet-4-5-20250929",
-        "ollama": "llama3",
-    }
-    default_model = provider_default_models.get(ai_provider, "gpt-5-nano")
-
-    # ai_model takes priority; openai_model is only a fallback for the openai provider
-    ai_model = settings_dict.get("ai_model") or (
-        settings_dict.get("openai_model", default_model)
-        if ai_provider == "openai"
-        else default_model
-    )
+    ai_provider, ai_model = _resolve_ai_settings(settings_dict)
 
     settings = Settings(
         schedule_time=settings_dict.get("schedule_time", "08:00"),
