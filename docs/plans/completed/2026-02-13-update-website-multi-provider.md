@@ -53,4 +53,4 @@ Update the Telebrief landing page to accurately reflect current capabilities: mu
 
 ## Cleanup
 
-- [ ] Move this plan to `docs/plans/completed/`
+- [x] Move this plan to `docs/plans/completed/`
