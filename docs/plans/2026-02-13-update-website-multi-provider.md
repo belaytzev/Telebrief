@@ -46,10 +46,10 @@ Update the Telebrief landing page to accurately reflect current capabilities: mu
 
 ## Verification
 
-- [ ] Run full build: `cd website && npm run build`
-- [ ] Manual review: verify no mention of "GPT-5-nano" remains as the sole AI option
-- [ ] Manual review: verify "Russian" is not described as the only output language
-- [ ] Manual review: verify Ollama/local AI is mentioned as a provider option
+- [x] Run full build: `cd website && npm run build`
+- [x] Manual review: verify no mention of "GPT-5-nano" remains as the sole AI option
+- [x] Manual review: verify "Russian" is not described as the only output language
+- [x] Manual review: verify Ollama/local AI is mentioned as a provider option
 
 ## Cleanup
 
