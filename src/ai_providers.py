@@ -9,6 +9,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict, List
 
 import aiohttp
+import httpx
 from openai import AsyncOpenAI
 
 
@@ -40,8 +41,11 @@ class AIProvider(ABC):
 class OpenAIProvider(AIProvider):
     """OpenAI API provider."""
 
-    def __init__(self, api_key: str, logger: logging.Logger):
-        self.client = AsyncOpenAI(api_key=api_key)
+    def __init__(self, api_key: str, logger: logging.Logger, timeout: int = 60):
+        self.client = AsyncOpenAI(
+            api_key=api_key,
+            timeout=httpx.Timeout(timeout, connect=min(10.0, float(timeout))),
+        )
         self.logger = logger
 
     async def chat_completion(
@@ -180,7 +184,7 @@ def create_provider(
     if name == "openai":
         if not openai_api_key:
             raise ValueError("OPENAI_API_KEY is required for OpenAI provider")
-        return OpenAIProvider(api_key=openai_api_key, logger=logger)
+        return OpenAIProvider(api_key=openai_api_key, logger=logger, timeout=api_timeout)
 
     if name == "ollama":
         return OllamaProvider(base_url=ollama_base_url, logger=logger, timeout=api_timeout)

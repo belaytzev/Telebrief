@@ -92,8 +92,21 @@ def load_config(config_path: str = "config.yaml") -> Config:
     # Parse settings
     settings_dict = yaml_config.get("settings", {})
     ai_provider = settings_dict.get("ai_provider", "openai").lower()
-    # ai_model overrides openai_model; fall back to openai_model for backward compat
-    ai_model = settings_dict.get("ai_model") or settings_dict.get("openai_model", "gpt-5-nano")
+
+    # Provider-specific default models
+    provider_default_models = {
+        "openai": "gpt-5-nano",
+        "anthropic": "claude-sonnet-4-5-20250929",
+        "ollama": "llama3",
+    }
+    default_model = provider_default_models.get(ai_provider, "gpt-5-nano")
+
+    # ai_model takes priority; openai_model is only a fallback for the openai provider
+    ai_model = settings_dict.get("ai_model") or (
+        settings_dict.get("openai_model", default_model)
+        if ai_provider == "openai"
+        else default_model
+    )
 
     settings = Settings(
         schedule_time=settings_dict.get("schedule_time", "08:00"),
