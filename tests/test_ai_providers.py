@@ -4,12 +4,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from src.ai_providers import (
-    AnthropicProvider,
-    OllamaProvider,
-    OpenAIProvider,
-    create_provider,
-)
+from src.ai_providers import AnthropicProvider, OllamaProvider, OpenAIProvider, create_provider
 
 # --- Factory tests ---
 

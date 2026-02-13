@@ -57,7 +57,7 @@ class OpenAIProvider(AIProvider):
     ) -> str:
         response = await self.client.chat.completions.create(
             model=model,
-            messages=messages,  # type: ignore[arg-type]
+            messages=messages,
             temperature=temperature,
             max_tokens=max_tokens,
         )
