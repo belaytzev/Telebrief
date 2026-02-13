@@ -30,10 +30,10 @@ Update the Telebrief landing page to accurately reflect current capabilities: mu
 - Modify: `website/src/pages/index.astro`
 
 **Steps:**
-- [ ] Update "AI-Powered Summaries" card: change "Advanced GPT-5-nano technology generates concise, intelligent summaries of your Telegram channels in Russian" to mention multi-provider AI (OpenAI, Anthropic, Ollama) and configurable output language
-- [ ] Update "Multi-Language Support" card: change "Summaries are always in Russian" to "Output language is fully configurable" (or similar)
-- [ ] Update "Ultra Affordable" card: change "Runs on GPT-5-nano for just ~$0.30 per month" to mention free option with Ollama and paid cloud options
-- [ ] Run `cd website && npm run build` - must pass before task 3
+- [x] Update "AI-Powered Summaries" card: change "Advanced GPT-5-nano technology generates concise, intelligent summaries of your Telegram channels in Russian" to mention multi-provider AI (OpenAI, Anthropic, Ollama) and configurable output language
+- [x] Update "Multi-Language Support" card: change "Summaries are always in Russian" to "Output language is fully configurable" (or similar)
+- [x] Update "Ultra Affordable" card: change "Runs on GPT-5-nano for just ~$0.30 per month" to mention free option with Ollama and paid cloud options
+- [x] Run `cd website && npm run build` - must pass before task 3
 
 ## Task 3: Update How It Works Section
 
