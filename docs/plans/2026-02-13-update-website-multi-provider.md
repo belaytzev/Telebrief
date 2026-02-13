@@ -41,8 +41,8 @@ Update the Telebrief landing page to accurately reflect current capabilities: mu
 - Modify: `website/src/pages/index.astro`
 
 **Steps:**
-- [ ] Update step 2 "AI Summarization" description: change "GPT-5-nano analyzes and generates intelligent summaries" to reference the user's chosen AI provider instead of a specific model
-- [ ] Run `cd website && npm run build` - must pass
+- [x] Update step 2 "AI Summarization" description: change "GPT-5-nano analyzes and generates intelligent summaries" to reference the user's chosen AI provider instead of a specific model
+- [x] Run `cd website && npm run build` - must pass
 
 ## Verification
 
