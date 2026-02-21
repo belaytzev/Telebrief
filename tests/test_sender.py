@@ -365,9 +365,7 @@ async def test_send_channel_messages_loop_channel_id_map_with_failure(sample_con
         mock_msg_a = MagicMock()
         mock_msg_a.message_id = 201
 
-        mock_bot.send_message = AsyncMock(
-            side_effect=[mock_msg_a, TelegramError("API Error")]
-        )
+        mock_bot.send_message = AsyncMock(side_effect=[mock_msg_a, TelegramError("API Error")])
         mock_bot_class.return_value = mock_bot
 
         sender = DigestSender(sample_config, mock_logger)
@@ -405,9 +403,7 @@ async def test_summary_message_sent_with_toc_keyboard(
         mock_summary_msg = MagicMock()
         mock_summary_msg.message_id = 103
 
-        mock_bot.send_message = AsyncMock(
-            side_effect=[mock_msg1, mock_msg2, mock_summary_msg]
-        )
+        mock_bot.send_message = AsyncMock(side_effect=[mock_msg1, mock_msg2, mock_summary_msg])
         mock_bot_class.return_value = mock_bot
 
         sender = DigestSender(sample_config, mock_logger)

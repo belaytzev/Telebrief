@@ -35,6 +35,7 @@ class DigestSender:
         self.logger = logger
         self.bot = Bot(token=config.telegram_bot_token)
         self.target_user_id = config.settings.target_user_id
+        self.bot_id = int(config.telegram_bot_token.split(":")[0])
         self.formatter = DigestFormatter(config, logger)
 
     async def _send_message_part(self, user_id: int, text: str, part_num: int) -> None:
@@ -431,7 +432,9 @@ class DigestSender:
 
         # Send summary message if provided
         if summary_message and success_count > 0:
-            keyboard = self.formatter.build_toc_keyboard(channel_id_map, user_id)
+            # Use bot_id so tg://openmessage?user_id=BOT_ID opens the chat with the bot
+            toc_peer_id = self.bot_id if user_id > 0 else user_id
+            keyboard = self.formatter.build_toc_keyboard(channel_id_map, toc_peer_id)
             summary_id = await self._send_summary_message(
                 user_id, summary_message, reply_markup=keyboard
             )
@@ -475,6 +478,4 @@ async def main():
 
 
 if __name__ == "__main__":
-    import asyncio
-
     asyncio.run(main())

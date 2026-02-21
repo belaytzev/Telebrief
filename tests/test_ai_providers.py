@@ -406,6 +406,109 @@ async def test_openai_provider_falls_back_when_reasoning_effort_rejected(mock_lo
         assert "reasoning_effort" in debug_calls.lower()
 
 
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_openai_provider_falls_back_to_max_tokens_without_reasoning_effort(mock_logger):
+    """When max_completion_tokens is rejected and reasoning_effort is None, retries with max_tokens."""
+    import httpx
+    from openai import BadRequestError
+
+    with patch("src.ai_providers.AsyncOpenAI"):
+        provider = OpenAIProvider(api_key="sk-test", logger=mock_logger)
+
+        mock_choice = MagicMock()
+        mock_choice.message.content = "Summary via max_tokens"
+        mock_choice.message.refusal = None
+        mock_choice.finish_reason = "stop"
+        mock_response = MagicMock()
+        mock_response.choices = [mock_choice]
+        mock_response.usage.prompt_tokens = 100
+        mock_response.usage.completion_tokens = 50
+        mock_response.usage.total_tokens = 150
+
+        bad_request = BadRequestError(
+            message="Unsupported parameter: max_completion_tokens",
+            response=httpx.Response(
+                400,
+                json={"error": {"message": "Unsupported parameter: max_completion_tokens"}},
+                request=httpx.Request("POST", "https://api.openai.com/v1/chat/completions"),
+            ),
+            body={"error": {"message": "Unsupported parameter: max_completion_tokens"}},
+        )
+
+        provider.client.chat.completions.create = AsyncMock(
+            side_effect=[bad_request, mock_response]
+        )
+
+        result = await provider.chat_completion(
+            messages=[{"role": "user", "content": "Hello"}],
+            model="gpt-3.5-turbo",
+            temperature=0.7,
+            max_tokens=500,
+            reasoning_effort=None,
+        )
+
+        assert result == "Summary via max_tokens"
+        assert provider.client.chat.completions.create.call_count == 2
+
+        second_call_kwargs = provider.client.chat.completions.create.call_args_list[1][1]
+        assert "max_tokens" in second_call_kwargs
+        assert "max_completion_tokens" not in second_call_kwargs
+        assert second_call_kwargs["max_tokens"] == 500
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_openai_provider_falls_back_to_max_tokens_after_reasoning_effort_retry(mock_logger):
+    """When both reasoning_effort retry and max_completion_tokens fail, falls back to max_tokens."""
+    import httpx
+    from openai import BadRequestError
+
+    with patch("src.ai_providers.AsyncOpenAI"):
+        provider = OpenAIProvider(api_key="sk-test", logger=mock_logger)
+
+        mock_choice = MagicMock()
+        mock_choice.message.content = "Summary via max_tokens fallback"
+        mock_choice.message.refusal = None
+        mock_choice.finish_reason = "stop"
+        mock_response = MagicMock()
+        mock_response.choices = [mock_choice]
+        mock_response.usage.prompt_tokens = 100
+        mock_response.usage.completion_tokens = 50
+        mock_response.usage.total_tokens = 150
+
+        bad_request = BadRequestError(
+            message="Unsupported parameter",
+            response=httpx.Response(
+                400,
+                json={"error": {"message": "Unsupported parameter"}},
+                request=httpx.Request("POST", "https://api.openai.com/v1/chat/completions"),
+            ),
+            body={"error": {"message": "Unsupported parameter"}},
+        )
+
+        provider.client.chat.completions.create = AsyncMock(
+            side_effect=[bad_request, bad_request, mock_response]
+        )
+
+        result = await provider.chat_completion(
+            messages=[{"role": "user", "content": "Hello"}],
+            model="gpt-3.5-turbo",
+            temperature=0.7,
+            max_tokens=500,
+            reasoning_effort="low",
+        )
+
+        assert result == "Summary via max_tokens fallback"
+        assert provider.client.chat.completions.create.call_count == 3
+
+        third_call_kwargs = provider.client.chat.completions.create.call_args_list[2][1]
+        assert "max_tokens" in third_call_kwargs
+        assert "max_completion_tokens" not in third_call_kwargs
+        assert "reasoning_effort" not in third_call_kwargs
+        assert third_call_kwargs["max_tokens"] == 500
+
+
 # --- Ollama provider tests ---
 
 

@@ -88,16 +88,7 @@ class OpenAIProvider(AIProvider):
         try:
             response = await self.client.chat.completions.create(**create_kwargs)
         except OpenAIBadRequestError as exc:
-            if reasoning_effort is not None:
-                self.logger.debug(
-                    "reasoning_effort=%r rejected by model, retrying without it: %s",
-                    reasoning_effort,
-                    exc,
-                )
-                create_kwargs.pop("reasoning_effort")
-                response = await self.client.chat.completions.create(**create_kwargs)
-            else:
-                raise
+            response = await self._handle_bad_request(create_kwargs, exc, reasoning_effort)
 
         if not response.choices:
             raise RuntimeError("OpenAI returned no choices in response")
@@ -142,6 +133,31 @@ class OpenAIProvider(AIProvider):
                 "Consider increasing max_tokens_per_summary in config.yaml."
             )
         return text
+
+    async def _handle_bad_request(
+        self,
+        create_kwargs: Dict[str, Any],
+        original_exc: OpenAIBadRequestError,
+        reasoning_effort: str | None,
+    ):
+        """Handle a BadRequestError by retrying with stripped parameters."""
+        if reasoning_effort is not None:
+            self.logger.debug(
+                "reasoning_effort=%r rejected by model, retrying without it: %s",
+                reasoning_effort,
+                original_exc,
+            )
+            create_kwargs.pop("reasoning_effort")
+            try:
+                return await self.client.chat.completions.create(**create_kwargs)
+            except OpenAIBadRequestError:
+                pass  # fall through to max_tokens fallback
+        self.logger.debug(
+            "max_completion_tokens rejected by model, retrying with max_tokens: %s",
+            original_exc,
+        )
+        create_kwargs["max_tokens"] = create_kwargs.pop("max_completion_tokens")
+        return await self.client.chat.completions.create(**create_kwargs)
 
 
 class OllamaProvider(AIProvider):
