@@ -231,6 +231,68 @@ async def test_openai_provider_logs_response_metadata(mock_logger):
         assert "prompt_tokens" in debug_text
 
 
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_openai_provider_length_with_content_returns_truncated(mock_logger):
+    """Test OpenAI returns truncated content and warns when finish_reason=length."""
+    with patch("src.ai_providers.AsyncOpenAI"):
+        provider = OpenAIProvider(api_key="sk-test", logger=mock_logger)
+
+        mock_choice = MagicMock()
+        mock_choice.message.content = "Partial summary that was cut off mid-sentence"
+        mock_choice.message.refusal = None
+        mock_choice.finish_reason = "length"
+
+        mock_response = MagicMock()
+        mock_response.choices = [mock_choice]
+        mock_response.usage.prompt_tokens = 6617
+        mock_response.usage.completion_tokens = 500
+        mock_response.usage.total_tokens = 7117
+        provider.client.chat.completions.create = AsyncMock(return_value=mock_response)
+
+        result = await provider.chat_completion(
+            messages=[{"role": "user", "content": "Hello"}],
+            model="gpt-5-nano",
+            temperature=0.7,
+            max_tokens=500,
+        )
+
+        assert result == "Partial summary that was cut off mid-sentence"
+        warning_messages = [str(call) for call in mock_logger.warning.call_args_list]
+        warning_text = " ".join(warning_messages)
+        assert "truncat" in warning_text.lower() or "max_tokens_per_summary" in warning_text
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_openai_provider_length_empty_content_raises_with_guidance(mock_logger):
+    """Test OpenAI raises with actionable guidance when finish_reason=length and content empty."""
+    with patch("src.ai_providers.AsyncOpenAI"):
+        provider = OpenAIProvider(api_key="sk-test", logger=mock_logger)
+
+        mock_choice = MagicMock()
+        mock_choice.message.content = None
+        mock_choice.message.refusal = None
+        mock_choice.finish_reason = "length"
+
+        mock_response = MagicMock()
+        mock_response.choices = [mock_choice]
+        mock_response.usage.prompt_tokens = 6617
+        mock_response.usage.completion_tokens = 500
+        mock_response.usage.total_tokens = 7117
+        provider.client.chat.completions.create = AsyncMock(return_value=mock_response)
+
+        with pytest.raises(RuntimeError) as exc_info:
+            await provider.chat_completion(
+                messages=[{"role": "user", "content": "Hello"}],
+                model="gpt-5-nano",
+                temperature=0.7,
+                max_tokens=500,
+            )
+
+        assert "max_tokens_per_summary" in str(exc_info.value)
+
+
 # --- Ollama provider tests ---
 
 
@@ -492,6 +554,80 @@ async def test_ollama_provider_missing_message_key_raises(mock_logger):
             )
 
 
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_ollama_provider_length_with_content_returns_truncated(mock_logger):
+    """Test Ollama returns truncated content and warns when done_reason=length."""
+    provider = OllamaProvider(base_url="http://localhost:11434", logger=mock_logger)
+
+    mock_response = MagicMock()
+    mock_response.status = 200
+    mock_response.content_length = 80
+    mock_response.json = AsyncMock(
+        return_value={
+            "message": {"content": "Partial summary cut off mid-sentence"},
+            "model": "llama3",
+            "done_reason": "length",
+            "eval_count": 500,
+            "prompt_eval_count": 100,
+        }
+    )
+
+    mock_session = MagicMock()
+    mock_session.post = MagicMock(return_value=AsyncContextManager(mock_response))
+    mock_session.close = AsyncMock()
+
+    with patch("src.ai_providers.aiohttp.ClientSession") as mock_cs:
+        mock_cs.return_value = AsyncContextManager(mock_session)
+        result = await provider.chat_completion(
+            messages=[{"role": "user", "content": "Hello"}],
+            model="llama3",
+            temperature=0.7,
+            max_tokens=500,
+        )
+
+    assert result == "Partial summary cut off mid-sentence"
+    warning_messages = [str(call) for call in mock_logger.warning.call_args_list]
+    warning_text = " ".join(warning_messages)
+    assert "truncat" in warning_text.lower() or "max_tokens_per_summary" in warning_text
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_ollama_provider_length_empty_content_raises_with_guidance(mock_logger):
+    """Test Ollama raises with actionable guidance when done_reason=length and content empty."""
+    provider = OllamaProvider(base_url="http://localhost:11434", logger=mock_logger)
+
+    mock_response = MagicMock()
+    mock_response.status = 200
+    mock_response.content_length = 20
+    mock_response.json = AsyncMock(
+        return_value={
+            "message": {"content": ""},
+            "model": "llama3",
+            "done_reason": "length",
+            "eval_count": 500,
+            "prompt_eval_count": 100,
+        }
+    )
+
+    mock_session = MagicMock()
+    mock_session.post = MagicMock(return_value=AsyncContextManager(mock_response))
+    mock_session.close = AsyncMock()
+
+    with patch("src.ai_providers.aiohttp.ClientSession") as mock_cs:
+        mock_cs.return_value = AsyncContextManager(mock_session)
+        with pytest.raises(RuntimeError) as exc_info:
+            await provider.chat_completion(
+                messages=[{"role": "user", "content": "Hello"}],
+                model="llama3",
+                temperature=0.7,
+                max_tokens=500,
+            )
+
+    assert "max_tokens_per_summary" in str(exc_info.value)
+
+
 # --- Anthropic provider tests ---
 
 
@@ -679,6 +815,74 @@ async def test_anthropic_provider_logs_response_metadata(mock_logger):
     assert "stop_reason" in debug_text
     assert "end_turn" in debug_text
     assert "input_tokens" in debug_text
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_anthropic_provider_max_tokens_with_content_returns_truncated(mock_logger):
+    """Test Anthropic returns truncated content and warns when stop_reason=max_tokens."""
+    provider = AnthropicProvider(api_key="sk-ant-test", logger=mock_logger)
+
+    mock_response = MagicMock()
+    mock_response.status = 200
+    mock_response.json = AsyncMock(
+        return_value={
+            "content": [{"type": "text", "text": "Partial summary that was cut off"}],
+            "stop_reason": "max_tokens",
+            "usage": {"input_tokens": 3834, "output_tokens": 500},
+        }
+    )
+
+    mock_session = MagicMock()
+    mock_session.post = MagicMock(return_value=AsyncContextManager(mock_response))
+    mock_session.close = AsyncMock()
+
+    with patch("src.ai_providers.aiohttp.ClientSession") as mock_cs:
+        mock_cs.return_value = AsyncContextManager(mock_session)
+        result = await provider.chat_completion(
+            messages=[{"role": "user", "content": "Hello"}],
+            model="claude-sonnet-4-5-20250929",
+            temperature=0.7,
+            max_tokens=500,
+        )
+
+    assert result == "Partial summary that was cut off"
+    warning_messages = [str(call) for call in mock_logger.warning.call_args_list]
+    warning_text = " ".join(warning_messages)
+    assert "truncat" in warning_text.lower() or "max_tokens_per_summary" in warning_text
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_anthropic_provider_max_tokens_empty_content_raises_with_guidance(mock_logger):
+    """Test Anthropic raises with actionable guidance when stop_reason=max_tokens, content empty."""
+    provider = AnthropicProvider(api_key="sk-ant-test", logger=mock_logger)
+
+    mock_response = MagicMock()
+    mock_response.status = 200
+    mock_response.json = AsyncMock(
+        return_value={
+            "content": [],
+            "stop_reason": "max_tokens",
+            "usage": {"input_tokens": 3834, "output_tokens": 500},
+        }
+    )
+
+    mock_session = MagicMock()
+    mock_session.post = MagicMock(return_value=AsyncContextManager(mock_response))
+    mock_session.close = AsyncMock()
+
+    with patch("src.ai_providers.aiohttp.ClientSession") as mock_cs:
+        mock_cs.return_value = AsyncContextManager(mock_session)
+        with pytest.raises(RuntimeError) as exc_info:
+            await provider.chat_completion(
+                messages=[{"role": "user", "content": "Hello"}],
+                model="claude-sonnet-4-5-20250929",
+                temperature=0.7,
+                max_tokens=500,
+            )
+
+    assert "max_tokens_per_summary" in str(exc_info.value)
 
 
 # --- URL redaction tests ---

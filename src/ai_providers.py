@@ -96,11 +96,24 @@ class OpenAIProvider(AIProvider):
         content = choice.message.content
         text = content.strip() if content else ""
         if not text:
+            if finish_reason == "length":
+                raise RuntimeError(
+                    f"OpenAI returned empty content with finish_reason=length — the model "
+                    f"exhausted its token budget (possibly in reasoning) without producing output. "
+                    f"Consider increasing max_tokens_per_summary in config.yaml. "
+                    f"(prompt_tokens={usage.prompt_tokens if usage else 'N/A'}, "
+                    f"completion_tokens={usage.completion_tokens if usage else 'N/A'})"
+                )
             raise RuntimeError(
                 f"OpenAI returned empty content "
                 f"(finish_reason={finish_reason}, "
                 f"prompt_tokens={usage.prompt_tokens if usage else 'N/A'}, "
                 f"completion_tokens={usage.completion_tokens if usage else 'N/A'})"
+            )
+        if finish_reason == "length":
+            self.logger.warning(
+                "OpenAI response was truncated (finish_reason=length); returning partial content. "
+                "Consider increasing max_tokens_per_summary in config.yaml."
             )
         return text
 
@@ -153,20 +166,35 @@ class OllamaProvider(AIProvider):
         resp_model = data.get("model", "unknown")
         eval_count = data.get("eval_count")
         prompt_eval_count = data.get("prompt_eval_count")
+        done_reason = data.get("done_reason")
         self.logger.debug(
-            "Ollama metadata: model=%s eval_count=%s prompt_eval_count=%s",
+            "Ollama metadata: model=%s eval_count=%s prompt_eval_count=%s done_reason=%s",
             resp_model,
             eval_count,
             prompt_eval_count,
+            done_reason,
         )
 
         content: str = data.get("message", {}).get("content", "")
         text = content.strip()
         if not text:
+            if done_reason == "length":
+                raise RuntimeError(
+                    f"Ollama returned empty content with done_reason=length — the model "
+                    f"exhausted its token budget without producing output. "
+                    f"Consider increasing max_tokens_per_summary in config.yaml. "
+                    f"(model={resp_model}, eval_count={eval_count}, "
+                    f"prompt_eval_count={prompt_eval_count})"
+                )
             raise RuntimeError(
                 f"Ollama returned empty content "
                 f"(model={resp_model}, eval_count={eval_count}, "
                 f"prompt_eval_count={prompt_eval_count})"
+            )
+        if done_reason == "length":
+            self.logger.warning(
+                "Ollama response was truncated (done_reason=length); returning partial content. "
+                "Consider increasing max_tokens_per_summary in config.yaml."
             )
         return text
 
@@ -230,11 +258,24 @@ class AnthropicProvider(AIProvider):
         texts = [block.get("text", "") for block in content_blocks if block.get("type") == "text"]
         text = "\n".join(texts).strip()
         if not text:
+            if stop_reason == "max_tokens":
+                raise RuntimeError(
+                    f"Anthropic returned empty content with stop_reason=max_tokens — the model "
+                    f"exhausted its token budget without producing output. "
+                    f"Consider increasing max_tokens_per_summary in config.yaml. "
+                    f"(input_tokens={usage.get('input_tokens', 'N/A')}, "
+                    f"output_tokens={usage.get('output_tokens', 'N/A')})"
+                )
             raise RuntimeError(
                 f"Anthropic returned empty content "
                 f"(stop_reason={stop_reason}, "
                 f"input_tokens={usage.get('input_tokens', 'N/A')}, "
                 f"output_tokens={usage.get('output_tokens', 'N/A')})"
+            )
+        if stop_reason == "max_tokens":
+            self.logger.warning(
+                "Anthropic response was truncated (stop_reason=max_tokens); returning partial content. "
+                "Consider increasing max_tokens_per_summary in config.yaml."
             )
         return text
 
