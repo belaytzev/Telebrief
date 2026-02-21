@@ -94,11 +94,11 @@ The link type is determined at send time by inspecting the sign of `user_id`.
 **Files:**
 - Modify: `src/core.py`
 
-- [ ] After `_send_channel_messages_loop` result is available (inside `send_channel_messages_with_tracking`), the `channel_id_map` is now returned automatically from Task 1 - so `core.py` requires NO changes if Task 3 uses the internal approach
-- [ ] If the caller-builds-keyboard approach was chosen in Task 3, update `generate_and_send_channel_digests` in `core.py`:
+- [x] After `_send_channel_messages_loop` result is available (inside `send_channel_messages_with_tracking`), the `channel_id_map` is now returned automatically from Task 1 - so `core.py` requires NO changes if Task 3 uses the internal approach
+- [x] If the caller-builds-keyboard approach was chosen in Task 3, update `generate_and_send_channel_digests` in `core.py`:
   - Build keyboard with `formatter.build_toc_keyboard(channel_id_map, user_id)` before calling `send_channel_messages_with_tracking`
   - Pass `reply_markup=keyboard` to `send_channel_messages_with_tracking`
-- [ ] Run `pytest tests/` - all tests must pass
+- [x] Run `pytest tests/` - all tests must pass
 
 ### Task 5: Verify acceptance criteria
 
