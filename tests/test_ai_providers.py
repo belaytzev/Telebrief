@@ -4,7 +4,12 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from src.ai_providers import AnthropicProvider, OllamaProvider, OpenAIProvider, create_provider
+from src.ai_providers import (  # isort: skip
+    AnthropicProvider,
+    create_provider,
+    OllamaProvider,
+    OpenAIProvider,
+)
 
 # --- Factory tests ---
 
@@ -190,10 +195,6 @@ async def test_ollama_provider_ndjson_content_type(mock_logger):
     Ollama returns application/x-ndjson even with stream: false.
     aiohttp's resp.json() rejects non-application/json by default.
     """
-    import json
-
-    import aiohttp
-
     provider = OllamaProvider(base_url="http://localhost:11434", logger=mock_logger)
 
     response_data = {"message": {"content": "Ollama ndjson response"}}

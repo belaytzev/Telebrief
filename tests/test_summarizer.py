@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from src.summarizer import SYSTEM_PROMPT_TEMPLATE, Summarizer
+from src.summarizer import Summarizer, SYSTEM_PROMPT_TEMPLATE  # isort: skip
 
 
 @pytest.mark.unit

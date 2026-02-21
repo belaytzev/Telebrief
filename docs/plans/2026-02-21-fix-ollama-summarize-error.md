@@ -64,11 +64,11 @@ Secondary issue: The default `api_timeout` in config is 30 seconds, which is oft
 
 ### Task 4: Verify acceptance criteria
 
-- [ ] Run full test suite: `source .venv/bin/activate && make test`
-- [ ] Run linter: `source .venv/bin/activate && make lint`
-- [ ] Verify that the OllamaProvider test with mocked `application/x-ndjson` content type passes
-- [ ] Verify that timeout enforcement test passes
-- [ ] Verify test coverage meets 80%+
+- [x] Run full test suite: `source .venv/bin/activate && make test`
+- [x] Run linter: `source .venv/bin/activate && make lint`
+- [x] Verify that the OllamaProvider test with mocked `application/x-ndjson` content type passes
+- [x] Verify that timeout enforcement test passes
+- [x] Verify test coverage meets 80%+
 
 ### Task 5: Update documentation
 
