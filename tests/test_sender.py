@@ -3,6 +3,7 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from telegram import InlineKeyboardMarkup
 
 from src.sender import DigestSender
 
@@ -416,7 +417,11 @@ async def test_summary_message_sent_with_toc_keyboard(
 
     # The 3rd send_message call is the summary and should carry reply_markup
     summary_call_kwargs = mock_bot.send_message.call_args_list[2][1]
-    assert summary_call_kwargs.get("reply_markup") is not None
+    markup = summary_call_kwargs.get("reply_markup")
+    assert isinstance(markup, InlineKeyboardMarkup)
+    assert len(markup.inline_keyboard) == 2
+    assert "message_id=101" in markup.inline_keyboard[0][0].url
+    assert "message_id=102" in markup.inline_keyboard[1][0].url
 
 
 @pytest.mark.unit
@@ -444,6 +449,50 @@ async def test_summary_message_sent_without_toc_keyboard_when_all_fail(
 
     # Only the failed channel attempt; summary is never called (success_count == 0)
     assert mock_bot.send_message.call_count == 1
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_summary_toc_keyboard_contains_only_successful_channels(
+    sample_config, mock_logger, tmp_path, monkeypatch
+):
+    """Test that TOC keyboard only includes channels that were sent successfully."""
+    from telegram.error import TelegramError
+
+    storage_file = tmp_path / "digest_messages.json"
+    monkeypatch.setattr("src.utils.MESSAGE_STORAGE_FILE", str(storage_file))
+
+    channel_messages = [
+        ("Channel 1", "Message 1"),
+        ("Channel 2", "Message 2"),
+    ]
+
+    with patch("src.sender.Bot") as mock_bot_class:
+        mock_bot = MagicMock()
+
+        mock_msg1 = MagicMock()
+        mock_msg1.message_id = 101
+        mock_summary_msg = MagicMock()
+        mock_summary_msg.message_id = 103
+
+        # Channel 1 succeeds, Channel 2 fails, then summary is sent
+        mock_bot.send_message = AsyncMock(
+            side_effect=[mock_msg1, TelegramError("API Error"), mock_summary_msg]
+        )
+        mock_bot_class.return_value = mock_bot
+
+        sender = DigestSender(sample_config, mock_logger)
+        await sender.send_channel_messages_with_tracking(
+            channel_messages, summary_message="Summary", user_id=123456789
+        )
+
+    # Summary is the 3rd call (index 2)
+    summary_call_kwargs = mock_bot.send_message.call_args_list[2][1]
+    markup = summary_call_kwargs.get("reply_markup")
+    assert isinstance(markup, InlineKeyboardMarkup)
+    # Only Channel 1 succeeded, so keyboard has exactly one button
+    assert len(markup.inline_keyboard) == 1
+    assert "message_id=101" in markup.inline_keyboard[0][0].url
 
 
 @pytest.mark.unit

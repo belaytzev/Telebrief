@@ -200,3 +200,17 @@ def test_build_toc_keyboard_empty_returns_none(sample_config, mock_logger):
     result = formatter.build_toc_keyboard([], chat_id=123)
 
     assert result is None
+
+
+@pytest.mark.unit
+def test_build_toc_keyboard_negative_non_supergroup_chat(sample_config, mock_logger):
+    """Test TOC keyboard uses full abs ID when negative chat_id does not start with -100."""
+    formatter = DigestFormatter(sample_config, mock_logger)
+    channel_id_map = [("Tech News", 500)]
+    chat_id = -987654321  # abs = "987654321", does not start with "100"
+
+    keyboard = formatter.build_toc_keyboard(channel_id_map, chat_id)
+
+    assert keyboard is not None
+    btn = keyboard.inline_keyboard[0][0]
+    assert btn.url == "https://t.me/c/987654321/500"

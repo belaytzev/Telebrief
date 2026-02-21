@@ -376,9 +376,8 @@ class DigestSender:
                 if message_id:
                     sent_message_ids.append(message_id)
                     channel_id_map.append((channel_name, message_id))
-
-                success_count += 1
-                self.logger.info(f"✅ Successfully sent message for {channel_name}")
+                    success_count += 1
+                    self.logger.info(f"✅ Successfully sent message for {channel_name}")
 
                 if i < len(channel_messages):
                     import asyncio
