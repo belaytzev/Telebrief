@@ -4,7 +4,9 @@ Markdown formatter for digest output.
 
 import logging
 from datetime import datetime, timedelta
-from typing import Dict, List
+from typing import Dict, List, Optional
+
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 from src.collector import Message
 from src.config_loader import Config
@@ -297,6 +299,38 @@ class DigestFormatter:
 ⏱️ Период: {start_time.strftime('%d.%m %H:%M')} - {end_time.strftime('%d.%m %H:%M')} UTC
 """
         return message
+
+    def build_toc_keyboard(
+        self,
+        channel_id_map: List[tuple],
+        chat_id: int,
+    ) -> Optional[InlineKeyboardMarkup]:
+        """
+        Build an inline keyboard TOC for the digest summary message.
+
+        Args:
+            channel_id_map: List of (channel_name, message_id) pairs
+            chat_id: The chat/user ID the digest was sent to
+
+        Returns:
+            InlineKeyboardMarkup with one button per channel, or None if list is empty
+        """
+        if not channel_id_map:
+            return None
+
+        buttons = []
+        for channel_name, message_id in channel_id_map:
+            label = f"{self._pick_emoji(channel_name)} {channel_name}"
+            if chat_id > 0:
+                url = f"tg://openmessage?user_id={chat_id}&message_id={message_id}"
+            else:
+                abs_str = str(abs(chat_id))
+                channel_part = abs_str[3:] if abs_str.startswith("100") else abs_str
+                url = f"https://t.me/c/{channel_part}/{message_id}"
+            buttons.append(InlineKeyboardButton(text=label, url=url))
+
+        keyboard = [[btn] for btn in buttons]
+        return InlineKeyboardMarkup(keyboard)
 
     def _create_statistics(self, messages_by_channel: Dict[str, List[Message]], hours: int) -> str:
         """

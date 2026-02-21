@@ -1,6 +1,9 @@
 """Tests for formatter module."""
 
 import pytest
+from unittest.mock import MagicMock, patch
+
+from telegram import InlineKeyboardMarkup
 
 from src.formatter import DigestFormatter
 
@@ -123,3 +126,79 @@ def test_formatter_without_stats(sample_config, mock_logger, sample_messages):
 
     # Stats should not be included
     assert "Статистика" not in digest
+
+
+@pytest.mark.unit
+def test_build_toc_keyboard_private_chat(sample_config, mock_logger):
+    """Test TOC keyboard uses tg://openmessage URLs for positive (private) chat_id."""
+    formatter = DigestFormatter(sample_config, mock_logger)
+    channel_id_map = [("Tech News", 101), ("Crypto News", 202)]
+    chat_id = 123456
+
+    keyboard = formatter.build_toc_keyboard(channel_id_map, chat_id)
+
+    assert keyboard is not None
+    assert isinstance(keyboard, InlineKeyboardMarkup)
+    rows = keyboard.inline_keyboard
+    assert len(rows) == 2
+    btn0 = rows[0][0]
+    btn1 = rows[1][0]
+    assert btn0.url == "tg://openmessage?user_id=123456&message_id=101"
+    assert btn1.url == "tg://openmessage?user_id=123456&message_id=202"
+
+
+@pytest.mark.unit
+def test_build_toc_keyboard_supergroup_chat(sample_config, mock_logger):
+    """Test TOC keyboard uses https://t.me/c/ URLs for negative (supergroup) chat_id."""
+    formatter = DigestFormatter(sample_config, mock_logger)
+    channel_id_map = [("Tech News", 500)]
+    chat_id = -1001234567890
+
+    keyboard = formatter.build_toc_keyboard(channel_id_map, chat_id)
+
+    assert keyboard is not None
+    rows = keyboard.inline_keyboard
+    assert len(rows) == 1
+    btn = rows[0][0]
+    assert btn.url == "https://t.me/c/1234567890/500"
+
+
+@pytest.mark.unit
+def test_build_toc_keyboard_button_labels(sample_config, mock_logger):
+    """Test that button labels include the emoji and channel name."""
+    formatter = DigestFormatter(sample_config, mock_logger)
+    channel_id_map = [("Tech News", 1), ("Random Channel", 2)]
+    chat_id = 99999
+
+    keyboard = formatter.build_toc_keyboard(channel_id_map, chat_id)
+
+    rows = keyboard.inline_keyboard
+    assert "Tech News" in rows[0][0].text
+    assert "💻" in rows[0][0].text  # tech emoji
+    assert "Random Channel" in rows[1][0].text
+    assert "📺" in rows[1][0].text  # default emoji
+
+
+@pytest.mark.unit
+def test_build_toc_keyboard_one_button_per_row(sample_config, mock_logger):
+    """Test that each button is on its own row."""
+    formatter = DigestFormatter(sample_config, mock_logger)
+    channel_id_map = [("A", 1), ("B", 2), ("C", 3)]
+    chat_id = 1
+
+    keyboard = formatter.build_toc_keyboard(channel_id_map, chat_id)
+
+    rows = keyboard.inline_keyboard
+    assert len(rows) == 3
+    for row in rows:
+        assert len(row) == 1
+
+
+@pytest.mark.unit
+def test_build_toc_keyboard_empty_returns_none(sample_config, mock_logger):
+    """Test that an empty channel_id_map returns None."""
+    formatter = DigestFormatter(sample_config, mock_logger)
+
+    result = formatter.build_toc_keyboard([], chat_id=123)
+
+    assert result is None

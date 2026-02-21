@@ -53,8 +53,8 @@ The link type is determined at send time by inspecting the sign of `user_id`.
 **Files:**
 - Modify: `src/formatter.py`
 
-- [ ] Add import at top: `from telegram import InlineKeyboardMarkup, InlineKeyboardButton`
-- [ ] Add method `build_toc_keyboard(channel_id_map: list[tuple[str, int]], chat_id: int) -> InlineKeyboardMarkup`:
+- [x] Add import at top: `from telegram import InlineKeyboardMarkup, InlineKeyboardButton`
+- [x] Add method `build_toc_keyboard(channel_id_map: list[tuple[str, int]], chat_id: int) -> InlineKeyboardMarkup`:
   - For each `(channel_name, message_id)` in `channel_id_map`:
     - Generate label: `f"{self._pick_emoji(channel_name)} {channel_name}"`
     - Generate URL: if `chat_id > 0` → `f"tg://openmessage?user_id={chat_id}&message_id={message_id}"`, else → `f"https://t.me/c/{str(abs(chat_id)).lstrip('100')}/{message_id}"` (strip the -100 prefix by removing leading "100" after taking abs)
@@ -62,12 +62,12 @@ The link type is determined at send time by inspecting the sign of `user_id`.
     - Create `InlineKeyboardButton(text=label, url=url)`
   - Arrange buttons 1 per row: `[[btn] for btn in buttons]`
   - Return `InlineKeyboardMarkup(keyboard)`
-- [ ] Write tests in `tests/test_formatter.py`:
+- [x] Write tests in `tests/test_formatter.py`:
   - Test that for positive `chat_id=123456`, URLs use `tg://openmessage?user_id=123456&message_id=...`
   - Test that for negative `chat_id=-1001234567890`, URLs use `https://t.me/c/1234567890/...`
   - Test that button labels include the emoji and channel name
   - Test that each button is on its own row
-- [ ] Run `pytest tests/test_formatter.py` - must pass before task 3
+- [x] Run `pytest tests/test_formatter.py` - must pass before task 3
 
 ### Task 3: Attach TOC keyboard to summary message
 
