@@ -47,11 +47,11 @@ Secondary issue: The default `api_timeout` in config is 30 seconds, which is oft
 - Modify: `config.yaml.example`
 - Modify: `tests/test_ai_providers.py`
 
-- [ ] Update `OllamaProvider.__init__()` default timeout from 120 to 300 seconds (5 minutes) to handle slow local models and first-load cold starts
-- [ ] In `create_provider()`, when provider is `ollama`, use `max(api_timeout, 120)` to ensure Ollama always gets at least 120 seconds regardless of the global config setting
-- [ ] Update `config.yaml.example` to add a comment noting that Ollama may need higher timeouts (e.g., 120-300) for local models
-- [ ] Add a test verifying that Ollama provider gets at least 120 second timeout even when a lower api_timeout is configured
-- [ ] Run `source .venv/bin/activate && make test` - must pass before task 3
+- [x] Update `OllamaProvider.__init__()` default timeout from 120 to 300 seconds (5 minutes) to handle slow local models and first-load cold starts
+- [x] In `create_provider()`, when provider is `ollama`, use `max(api_timeout, 120)` to ensure Ollama always gets at least 120 seconds regardless of the global config setting
+- [x] Update `config.yaml.example` to add a comment noting that Ollama may need higher timeouts (e.g., 120-300) for local models
+- [x] Add a test verifying that Ollama provider gets at least 120 second timeout even when a lower api_timeout is configured
+- [x] Run `source .venv/bin/activate && make test` - must pass before task 3
 
 ### Task 3: Improve error logging for debugging
 

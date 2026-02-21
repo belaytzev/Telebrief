@@ -49,4 +49,4 @@ settings:
 
   # Safety limits
   max_messages_per_channel: 500
-  api_timeout: 30
+  api_timeout: 30  # Ollama may need 120-300s for local models (enforced minimum: 120s)

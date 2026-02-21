@@ -68,7 +68,7 @@ class OpenAIProvider(AIProvider):
 class OllamaProvider(AIProvider):
     """Ollama local LLM provider."""
 
-    def __init__(self, base_url: str, logger: logging.Logger, timeout: int = 120):
+    def __init__(self, base_url: str, logger: logging.Logger, timeout: int = 300):
         self.base_url = base_url.rstrip("/")
         self.logger = logger
         self.timeout = aiohttp.ClientTimeout(total=timeout)
@@ -187,7 +187,8 @@ def create_provider(
         return OpenAIProvider(api_key=openai_api_key, logger=logger, timeout=api_timeout)
 
     if name == "ollama":
-        return OllamaProvider(base_url=ollama_base_url, logger=logger, timeout=api_timeout)
+        ollama_timeout = max(api_timeout, 120)
+        return OllamaProvider(base_url=ollama_base_url, logger=logger, timeout=ollama_timeout)
 
     if name == "anthropic":
         if not anthropic_api_key:

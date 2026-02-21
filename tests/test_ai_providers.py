@@ -223,6 +223,32 @@ async def test_ollama_provider_ndjson_content_type(mock_logger):
     mock_response.json.assert_called_once_with(content_type=None)
 
 
+@pytest.mark.unit
+def test_ollama_provider_minimum_timeout(mock_logger):
+    """Test that Ollama provider gets at least 120s timeout even when lower value is configured."""
+    provider = create_provider(
+        provider_name="ollama",
+        logger=mock_logger,
+        ollama_base_url="http://localhost:11434",
+        api_timeout=30,
+    )
+    assert isinstance(provider, OllamaProvider)
+    assert provider.timeout.total >= 120
+
+
+@pytest.mark.unit
+def test_ollama_provider_respects_higher_timeout(mock_logger):
+    """Test that Ollama provider uses the configured timeout when it exceeds the minimum."""
+    provider = create_provider(
+        provider_name="ollama",
+        logger=mock_logger,
+        ollama_base_url="http://localhost:11434",
+        api_timeout=300,
+    )
+    assert isinstance(provider, OllamaProvider)
+    assert provider.timeout.total == 300
+
+
 # --- Anthropic provider tests ---
 
 
