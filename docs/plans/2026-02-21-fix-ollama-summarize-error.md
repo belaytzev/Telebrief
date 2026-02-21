@@ -58,9 +58,9 @@ Secondary issue: The default `api_timeout` in config is 30 seconds, which is oft
 **Files:**
 - Modify: `src/ai_providers.py`
 
-- [ ] Add debug-level logging in `OllamaProvider.chat_completion()` before the HTTP call: log the Ollama URL, model name, and timeout value
-- [ ] Add debug-level logging after successful response: log response status and content length
-- [ ] Run `source .venv/bin/activate && make test` - must pass before task 4
+- [x] Add debug-level logging in `OllamaProvider.chat_completion()` before the HTTP call: log the Ollama URL, model name, and timeout value
+- [x] Add debug-level logging after successful response: log response status and content length
+- [x] Run `source .venv/bin/activate && make test` - must pass before task 4
 
 ### Task 4: Verify acceptance criteria
 

@@ -224,6 +224,44 @@ async def test_ollama_provider_ndjson_content_type(mock_logger):
 
 
 @pytest.mark.unit
+@pytest.mark.asyncio
+async def test_ollama_provider_debug_logging(mock_logger):
+    """Test that OllamaProvider emits debug logs before and after the HTTP call."""
+    provider = OllamaProvider(base_url="http://localhost:11434", logger=mock_logger)
+
+    mock_response = MagicMock()
+    mock_response.status = 200
+    mock_response.content_length = 42
+    mock_response.json = AsyncMock(return_value={"message": {"content": "ok"}})
+
+    mock_session = MagicMock()
+    mock_session.post = MagicMock(return_value=AsyncContextManager(mock_response))
+    mock_session.close = AsyncMock()
+
+    with patch("src.ai_providers.aiohttp.ClientSession") as mock_cs:
+        mock_cs.return_value = AsyncContextManager(mock_session)
+        await provider.chat_completion(
+            messages=[{"role": "user", "content": "Hello"}],
+            model="llama3",
+            temperature=0.7,
+            max_tokens=500,
+        )
+
+    debug_calls = [call for call in mock_logger.debug.call_args_list]
+    assert len(debug_calls) == 2
+
+    # First call: request log
+    assert "Ollama request" in debug_calls[0][0][0]
+    assert debug_calls[0][0][1] == "http://localhost:11434/api/chat"
+    assert debug_calls[0][0][2] == "llama3"
+
+    # Second call: response log
+    assert "Ollama response" in debug_calls[1][0][0]
+    assert debug_calls[1][0][1] == 200
+    assert debug_calls[1][0][2] == 42
+
+
+@pytest.mark.unit
 def test_ollama_provider_minimum_timeout(mock_logger):
     """Test that Ollama provider gets at least 120s timeout even when lower value is configured."""
     provider = create_provider(

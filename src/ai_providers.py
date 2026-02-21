@@ -91,12 +91,24 @@ class OllamaProvider(AIProvider):
             },
         }
 
+        self.logger.debug(
+            "Ollama request: url=%s model=%s timeout=%s",
+            url,
+            model,
+            self.timeout.total,
+        )
+
         async with aiohttp.ClientSession(timeout=self.timeout) as session:
             async with session.post(url, json=payload) as resp:
                 if resp.status != 200:
                     body = await resp.text()
                     raise RuntimeError(f"Ollama API error {resp.status}: {body}")
                 data = await resp.json(content_type=None)
+                self.logger.debug(
+                    "Ollama response: status=%s content_length=%s",
+                    resp.status,
+                    resp.content_length,
+                )
 
         content: str = data.get("message", {}).get("content", "")
         return content.strip()
