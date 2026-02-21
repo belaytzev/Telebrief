@@ -426,17 +426,17 @@ async def test_summary_message_sent_with_toc_keyboard(
     markup = edit_kwargs["reply_markup"]
     assert isinstance(markup, InlineKeyboardMarkup)
     assert len(markup.inline_keyboard) == 2
-    # Private chat (user_id > 0): buttons use callback_data, not URL
-    assert "101" in markup.inline_keyboard[0][0].callback_data
-    assert "102" in markup.inline_keyboard[1][0].callback_data
+    # Private chat (user_id > 0): buttons use callback_data with full toc:{user_id}:{message_id} format
+    assert markup.inline_keyboard[0][0].callback_data == "toc:123456789:101"
+    assert markup.inline_keyboard[1][0].callback_data == "toc:123456789:102"
 
 
 @pytest.mark.unit
 @pytest.mark.asyncio
-async def test_toc_keyboard_uses_bot_id_not_user_id_for_private_chat(
+async def test_toc_keyboard_uses_user_id_for_private_chat(
     mock_logger, tmp_path, monkeypatch
 ):
-    """Test that TOC buttons for private chats use callback_data (not URL) for cross-platform compatibility."""
+    """Test that TOC buttons for private chats embed user_id in callback_data (not bot_id) for cross-platform compatibility."""
     from src.config_loader import ChannelConfig, Config, Settings
 
     storage_file = tmp_path / "digest_messages.json"
@@ -488,7 +488,7 @@ async def test_toc_keyboard_uses_bot_id_not_user_id_for_private_chat(
         mock_bot_class.return_value = mock_bot
 
         sender = DigestSender(config, mock_logger)
-        # user_id=123456789 is positive (private chat), so bot_id=555000 should be used
+        # user_id=123456789 is positive (private chat), so user_id is embedded in callback_data
         await sender.send_channel_messages_with_tracking(
             channel_messages, summary_message="Summary", user_id=123456789
         )
@@ -499,10 +499,9 @@ async def test_toc_keyboard_uses_bot_id_not_user_id_for_private_chat(
     markup = edit_kwargs["reply_markup"]
     assert isinstance(markup, InlineKeyboardMarkup)
     btn = markup.inline_keyboard[0][0]
-    # Private chat (user_id > 0): buttons use callback_data, not URL
+    # Private chat: buttons embed user_id (123456789), not bot_id (555000)
     assert btn.url is None
-    assert btn.callback_data is not None
-    assert "101" in btn.callback_data
+    assert btn.callback_data == "toc:123456789:101"
 
 
 @pytest.mark.unit
@@ -581,8 +580,8 @@ async def test_summary_toc_keyboard_contains_only_successful_channels(
     assert isinstance(markup, InlineKeyboardMarkup)
     # Only Channel 1 succeeded, so keyboard has exactly one button
     assert len(markup.inline_keyboard) == 1
-    # Private chat (user_id > 0): buttons use callback_data, not URL
-    assert "101" in markup.inline_keyboard[0][0].callback_data
+    # Private chat (user_id > 0): buttons use callback_data with full toc:{user_id}:{message_id} format
+    assert markup.inline_keyboard[0][0].callback_data == "toc:123456789:101"
 
 
 @pytest.mark.unit
@@ -688,6 +687,6 @@ async def test_summary_keyboard_edited_with_toc_after_channels(
     markup = edit_kwargs["reply_markup"]
     assert isinstance(markup, InlineKeyboardMarkup)
     assert len(markup.inline_keyboard) == 2
-    # Private chat (user_id > 0): buttons use callback_data, not URL
-    assert "101" in markup.inline_keyboard[0][0].callback_data
-    assert "102" in markup.inline_keyboard[1][0].callback_data
+    # Private chat (user_id > 0): buttons use callback_data with full toc:{user_id}:{message_id} format
+    assert markup.inline_keyboard[0][0].callback_data == "toc:123456789:101"
+    assert markup.inline_keyboard[1][0].callback_data == "toc:123456789:102"

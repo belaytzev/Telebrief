@@ -257,7 +257,7 @@ class BotCommandHandler:
 
         await update.message.reply_text(help_text, parse_mode="Markdown")
 
-    async def handle_toc_callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def handle_toc_callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """
         Handle TOC inline button callbacks for private chats.
 
@@ -266,8 +266,8 @@ class BotCommandHandler:
         Copies the original channel message back to the private chat so the
         user can jump to it on any platform (including Telegram Desktop).
         """
-        assert update.callback_query is not None
-        assert update.effective_user is not None
+        if update.callback_query is None or update.effective_user is None:
+            return
 
         query = update.callback_query
         caller_id = update.effective_user.id
@@ -284,6 +284,12 @@ class BotCommandHandler:
             message_id = int(parts[2])
         except (AttributeError, IndexError, ValueError) as exc:
             self.logger.error(f"Malformed TOC callback data '{query.data}': {exc}")
+            await query.answer()
+            return
+
+        # Security check — the user_id embedded in callback_data must match the caller
+        if user_id != caller_id:
+            self.logger.warning(f"TOC callback user_id mismatch: {user_id} vs {caller_id}")
             await query.answer()
             return
 
