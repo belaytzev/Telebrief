@@ -464,8 +464,8 @@ class DigestSender:
 
         # Edit the placeholder to add the TOC keyboard now that channel IDs are known
         if summary_message and summary_id and success_count > 0:
-            # Use bot_id so tg://openmessage?user_id=BOT_ID opens the chat with the bot
-            toc_peer_id = self.bot_id if user_id > 0 else user_id
+            # Pass user_id directly; formatter uses sign to distinguish private vs group
+            toc_peer_id = user_id
             keyboard = self.formatter.build_toc_keyboard(channel_id_map, toc_peer_id)
             await self._edit_summary_keyboard(user_id, summary_id, keyboard)
 

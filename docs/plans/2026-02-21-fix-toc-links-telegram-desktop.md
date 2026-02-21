@@ -58,7 +58,7 @@ back to the chat — working on all platforms.
 **Files:**
 - Modify: `src/sender.py`
 
-- [ ] In `send_channel_messages_with_tracking`, change:
+- [x] In `send_channel_messages_with_tracking`, change:
   ```python
   toc_peer_id = self.bot_id if user_id > 0 else user_id
   ```
