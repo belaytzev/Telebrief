@@ -6,7 +6,7 @@ import asyncio
 import logging
 from typing import Any, Dict, List
 
-from src.ai_providers import AIProvider, create_provider
+from src.ai_providers import AIProvider, TokenBudgetExhaustedError, create_provider
 from src.collector import Message
 from src.config_loader import Config
 
@@ -152,7 +152,9 @@ class Summarizer:
             Summary in the configured output language
         """
         # Format messages for prompt
-        messages_text = self._format_messages_for_prompt(messages)
+        messages_text = self._format_messages_for_prompt(
+            messages, max_chars=self.config.settings.max_prompt_chars
+        )
 
         prompt = f"""
 Analyze the following messages from Telegram channel "{channel_name}" \
@@ -185,44 +187,78 @@ Messages (total: {len(messages)}):
 Respond ONLY in {self.output_language}. Remember: maximum 3500 characters!
 """
 
+        system_prompt = SYSTEM_PROMPT_TEMPLATE.replace("{language}", self.output_language)
+        chat_messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": prompt},
+        ]
+
         try:
-            system_prompt = SYSTEM_PROMPT_TEMPLATE.replace("{language}", self.output_language)
-            chat_messages = [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": prompt},
-            ]
             summary = await self.provider.chat_completion(
                 messages=chat_messages,
                 model=self.model,
                 temperature=self.temperature,
                 max_tokens=self.max_tokens,
             )
-
-            self.logger.debug(f"Summary for {channel_name}: {len(summary)} chars")
-            return summary
-
+        except TokenBudgetExhaustedError:
+            retry_max_tokens = self.max_tokens * 3
+            self.logger.warning(
+                "Token budget exhausted for %s; retrying with max_tokens=%d",
+                channel_name,
+                retry_max_tokens,
+            )
+            summary = await self.provider.chat_completion(
+                messages=chat_messages,
+                model=self.model,
+                temperature=self.temperature,
+                max_tokens=retry_max_tokens,
+            )
         except Exception as e:
             self.logger.error(f"AI provider error for {channel_name}: {e}")
             raise
 
-    def _format_messages_for_prompt(self, messages: List[Message]) -> str:
+        self.logger.debug(f"Summary for {channel_name}: {len(summary)} chars")
+        return summary
+
+    def _format_messages_for_prompt(self, messages: List[Message], max_chars: int = 8000) -> str:
         """
-        Format messages for inclusion in prompt.
+        Format messages for inclusion in prompt, keeping the most recent ones within budget.
 
         Args:
-            messages: List of messages
+            messages: List of messages (oldest-first)
+            max_chars: Maximum total characters of the returned string
 
         Returns:
-            Formatted string
+            Formatted string with the most recent messages that fit within max_chars
         """
         formatted = []
-
         for i, msg in enumerate(messages, 1):
             timestamp = msg.timestamp.strftime("%H:%M")
-            text = msg.text[:500] if len(msg.text) > 500 else msg.text  # Truncate long messages
+            text = msg.text[:500] if len(msg.text) > 500 else msg.text
             formatted.append(f"{i}. [{timestamp}] {msg.sender}: {text}")
 
-        return "\n".join(formatted)
+        # Select most recent messages that fit within the character budget.
+        # Always include at least one message (the most recent).
+        selected: List[str] = []
+        total = 0
+        for line in reversed(formatted):
+            added_len = len(line) + (1 if selected else 0)  # +1 for the \n separator
+            if total + added_len > max_chars and selected:
+                break
+            selected.append(line)
+            total += added_len
+
+        if len(selected) < len(formatted):
+            self.logger.warning(
+                "Prompt input truncated: kept %d/%d messages (%d chars) "
+                "to fit max_prompt_chars=%d. Oldest messages were dropped.",
+                len(selected),
+                len(formatted),
+                total,
+                max_chars,
+            )
+
+        return "\n".join(reversed(selected))
 
 
 async def main():
