@@ -75,14 +75,14 @@ Switch the Telebrief landing page from its current light skeuomorphic design to 
 
 ### Task 4: Verify acceptance criteria
 
-- [ ] Manual check: run `cd website && npm run build` — zero errors
-- [ ] Visual verify: `cd website && npm run dev` — open in browser and confirm dark theme renders correctly
-- [ ] Confirm nav bar is dark (not white)
-- [ ] Confirm cards have dark background
-- [ ] Confirm text is readable (light on dark)
-- [ ] Confirm /help command card is present in bot commands section
-- [ ] Confirm "Table of Contents Navigation" feature card is present
-- [ ] Confirm code blocks / command codes use accent teal color
+- [x] Manual check: run `cd website && npm run build` — zero errors
+- [x] Visual verify: `cd website && npm run dev` — open in browser and confirm dark theme renders correctly
+- [x] Confirm nav bar is dark (not white)
+- [x] Confirm cards have dark background
+- [x] Confirm text is readable (light on dark)
+- [x] Confirm /help command card is present in bot commands section
+- [x] Confirm "Table of Contents Navigation" feature card is present
+- [x] Confirm code blocks / command codes use accent teal color
 
 ### Task 5: Update documentation
 
