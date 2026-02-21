@@ -6,7 +6,7 @@ import asyncio
 import logging
 from typing import Any, Dict, List
 
-from src.ai_providers import AIProvider, TokenBudgetExhaustedError, create_provider
+from src.ai_providers import AIProvider, create_provider, TokenBudgetExhaustedError
 from src.collector import Message
 from src.config_loader import Config
 
