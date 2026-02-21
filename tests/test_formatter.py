@@ -1,8 +1,6 @@
 """Tests for formatter module."""
 
 import pytest
-from unittest.mock import MagicMock, patch
-
 from telegram import InlineKeyboardMarkup
 
 from src.formatter import DigestFormatter

@@ -102,13 +102,13 @@ The link type is determined at send time by inspecting the sign of `user_id`.
 
 ### Task 5: Verify acceptance criteria
 
-- [ ] Manual test: trigger `/digest` command and verify:
+- [x] Manual test: trigger `/digest` command and verify:
   - The final summary message has inline keyboard buttons
   - Each button is labeled `{emoji} {channel_name}`
   - Clicking a button navigates to that channel's digest message in the chat
-- [ ] Run full test suite: `pytest tests/`
-- [ ] Run linter: `ruff check src/ tests/` (or `flake8` if that's what the project uses)
-- [ ] Verify no regression in cleanup functionality (message IDs still saved correctly)
+- [x] Run full test suite: `pytest tests/`
+- [x] Run linter: `ruff check src/ tests/` (or `flake8` if that's what the project uses)
+- [x] Verify no regression in cleanup functionality (message IDs still saved correctly)
 
 ### Task 6: Update documentation
 
