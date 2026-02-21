@@ -111,11 +111,11 @@ def test_format_messages_truncate_long(sample_config, mock_logger):
 @pytest.mark.unit
 def test_system_prompt_template_language():
     """Test system prompt template accepts language parameter."""
-    prompt = SYSTEM_PROMPT_TEMPLATE.format(language="English")
+    prompt = SYSTEM_PROMPT_TEMPLATE.replace("{language}", "English")
     assert "English" in prompt
     assert "{language}" not in prompt
 
-    prompt_ru = SYSTEM_PROMPT_TEMPLATE.format(language="Russian")
+    prompt_ru = SYSTEM_PROMPT_TEMPLATE.replace("{language}", "Russian")
     assert "Russian" in prompt_ru
 
 

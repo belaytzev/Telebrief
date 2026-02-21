@@ -174,7 +174,7 @@ class AnthropicProvider(AIProvider):
                     raise RuntimeError(f"Anthropic API error {resp.status}: {body[:200]}")
                 data = await resp.json(content_type=None)
 
-        content_blocks = data.get("content", [])
+        content_blocks = data.get("content") or []
         texts = [block.get("text", "") for block in content_blocks if block.get("type") == "text"]
         return "\n".join(texts).strip()
 

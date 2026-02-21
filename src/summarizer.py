@@ -186,7 +186,7 @@ Respond ONLY in {self.output_language}. Remember: maximum 3500 characters!
 """
 
         try:
-            system_prompt = SYSTEM_PROMPT_TEMPLATE.format(language=self.output_language)
+            system_prompt = SYSTEM_PROMPT_TEMPLATE.replace("{language}", self.output_language)
             chat_messages = [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": prompt},
