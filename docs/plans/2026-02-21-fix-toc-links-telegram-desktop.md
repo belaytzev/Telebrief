@@ -73,12 +73,12 @@ back to the chat — working on all platforms.
 **Files:**
 - Modify: `src/bot_commands.py`
 
-- [ ] Import `CallbackQueryHandler` from `telegram.ext`
-- [ ] Register handler in `setup_application`:
+- [x] Import `CallbackQueryHandler` from `telegram.ext`
+- [x] Register handler in `setup_application`:
   ```python
   self.app.add_handler(CallbackQueryHandler(self.handle_toc_callback, pattern=r"^toc:"))
   ```
-- [ ] Implement `handle_toc_callback`:
+- [x] Implement `handle_toc_callback`:
   - Parse `callback_data`: split on `:` to get `user_id` (int) and `message_id` (int)
   - Verify the calling user is authorized (`self.is_authorized(update.effective_user.id)`)
   - Call `await context.bot.copy_message(chat_id=user_id, from_chat_id=user_id, message_id=message_id)`
