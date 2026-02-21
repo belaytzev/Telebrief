@@ -245,3 +245,24 @@ settings:
     config = load_config(str(config_file))
 
     assert config.settings.temperature == 0.9
+
+
+@pytest.mark.unit
+def test_load_config_api_timeout_string_coercion(tmp_path, mock_env_vars):
+    """Test that api_timeout is coerced to int even when YAML provides a string."""
+    config_content = """
+channels:
+  - id: "@test"
+    name: "Test"
+
+settings:
+  target_user_id: 123456789
+  api_timeout: "60"
+"""
+    config_file = tmp_path / "config.yaml"
+    config_file.write_text(config_content)
+
+    config = load_config(str(config_file))
+
+    assert config.settings.api_timeout == 60
+    assert isinstance(config.settings.api_timeout, int)

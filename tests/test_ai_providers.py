@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from src.ai_providers import (  # isort: skip
+    _redact_url,
     AnthropicProvider,
     create_provider,
     OllamaProvider,
@@ -411,6 +412,37 @@ async def test_anthropic_provider_error(mock_logger):
                 temperature=0.7,
                 max_tokens=500,
             )
+
+
+# --- URL redaction tests ---
+
+
+@pytest.mark.unit
+def test_redact_url_no_credentials():
+    """Test that URLs without credentials are returned unchanged."""
+    url = "http://localhost:11434/api/chat"
+    assert _redact_url(url) == url
+
+
+@pytest.mark.unit
+def test_redact_url_with_credentials():
+    """Test that URLs with embedded credentials are redacted."""
+    url = "http://user:secret@myhost:11434/api/chat"
+    redacted = _redact_url(url)
+    assert "user" not in redacted
+    assert "secret" not in redacted
+    assert "myhost" in redacted
+    assert "11434" in redacted
+    assert "***@" in redacted
+
+
+@pytest.mark.unit
+def test_redact_url_with_username_only():
+    """Test that URLs with only a username are redacted."""
+    url = "http://admin@myhost:11434/api/chat"
+    redacted = _redact_url(url)
+    assert "admin" not in redacted
+    assert "***@" in redacted
 
 
 # --- Helper for async context managers ---

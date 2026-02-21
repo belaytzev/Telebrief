@@ -227,4 +227,5 @@ PROJECT_INDEX.json
 # Claude Code
 CLAUDE.md
 
-progress*.txt
+# Ralphex
+.ralphex/

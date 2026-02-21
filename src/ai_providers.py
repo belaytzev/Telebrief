@@ -7,10 +7,22 @@ Supports OpenAI, Ollama, and Anthropic providers.
 import logging
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List
+from urllib.parse import urlparse, urlunparse
 
 import aiohttp
 import httpx
 from openai import AsyncOpenAI
+
+
+def _redact_url(url: str) -> str:
+    """Redact credentials from a URL for safe logging."""
+    parsed = urlparse(url)
+    if parsed.username or parsed.password:
+        redacted_netloc = f"***@{parsed.hostname}"
+        if parsed.port:
+            redacted_netloc += f":{parsed.port}"
+        return urlunparse(parsed._replace(netloc=redacted_netloc))
+    return url
 
 
 class AIProvider(ABC):
@@ -95,7 +107,7 @@ class OllamaProvider(AIProvider):
 
         self.logger.debug(
             "Ollama request: url=%s model=%s timeout=%s",
-            url,
+            _redact_url(url),
             model,
             self.timeout.total,
         )
