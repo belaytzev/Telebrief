@@ -299,11 +299,14 @@ class BotCommandHandler:
                 from_chat_id=user_id,
                 message_id=message_id,
             )
-            await query.answer()
             self.logger.debug(f"TOC callback: copied message {message_id} for user {user_id}")
+            await query.answer(text="↓ Sent below")
         except TelegramError as exc:
             self.logger.error(f"TOC callback copy_message failed: {exc}")
             await query.answer(text=str(exc)[:200])
+        except Exception:
+            await query.answer()
+            raise
 
     async def run(self):
         """Run the bot (polling mode)."""

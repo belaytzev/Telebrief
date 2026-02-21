@@ -35,7 +35,6 @@ class DigestSender:
         self.logger = logger
         self.bot = Bot(token=config.telegram_bot_token)
         self.target_user_id = config.settings.target_user_id
-        self.bot_id = int(config.telegram_bot_token.split(":")[0])
         self.formatter = DigestFormatter(config, logger)
 
     async def _send_message_part(self, user_id: int, text: str, part_num: int) -> None:
@@ -383,7 +382,7 @@ class DigestSender:
                 message_id = await self._send_message_with_tracking(
                     user_id, message_text, channel_name
                 )
-                if message_id:
+                if message_id is not None:
                     sent_message_ids.append(message_id)
                     channel_id_map.append((channel_name, message_id))
                     success_count += 1
@@ -463,7 +462,7 @@ class DigestSender:
         )
 
         # Edit the placeholder to add the TOC keyboard now that channel IDs are known
-        if summary_message and summary_id and success_count > 0:
+        if summary_message and summary_id is not None and success_count > 0:
             # Pass user_id directly; formatter uses sign to distinguish private vs group
             toc_peer_id = user_id
             keyboard = self.formatter.build_toc_keyboard(channel_id_map, toc_peer_id)
