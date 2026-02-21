@@ -12,6 +12,7 @@ from urllib.parse import urlparse, urlunparse
 import aiohttp
 import httpx
 from openai import AsyncOpenAI
+from openai import BadRequestError as OpenAIBadRequestError
 
 
 def _redact_url(url: str) -> str:
@@ -39,6 +40,7 @@ class AIProvider(ABC):
         model: str,
         temperature: float,
         max_tokens: int,
+        reasoning_effort: str | None = None,
     ) -> str:
         """
         Generate a chat completion.
@@ -48,6 +50,8 @@ class AIProvider(ABC):
             model: Model name
             temperature: Sampling temperature
             max_tokens: Maximum tokens in response
+            reasoning_effort: Optional reasoning effort hint passed to the API when not None.
+                Supported by some providers (e.g. OpenAI). Ignored by others.
 
         Returns:
             Generated text content
@@ -70,13 +74,31 @@ class OpenAIProvider(AIProvider):
         model: str,
         temperature: float,
         max_tokens: int,
+        reasoning_effort: str | None = None,
     ) -> str:
-        response = await self.client.chat.completions.create(
+        create_kwargs: Dict[str, Any] = dict(
             model=model,
-            messages=messages,  # type: ignore[arg-type]
+            messages=messages,
             temperature=temperature,
             max_completion_tokens=max_tokens,
         )
+        if reasoning_effort is not None:
+            create_kwargs["reasoning_effort"] = reasoning_effort
+
+        try:
+            response = await self.client.chat.completions.create(**create_kwargs)
+        except OpenAIBadRequestError as exc:
+            if reasoning_effort is not None:
+                self.logger.debug(
+                    "reasoning_effort=%r rejected by model, retrying without it: %s",
+                    reasoning_effort,
+                    exc,
+                )
+                create_kwargs.pop("reasoning_effort")
+                response = await self.client.chat.completions.create(**create_kwargs)
+            else:
+                raise
+
         if not response.choices:
             raise RuntimeError("OpenAI returned no choices in response")
 
@@ -136,6 +158,7 @@ class OllamaProvider(AIProvider):
         model: str,
         temperature: float,
         max_tokens: int,
+        reasoning_effort: str | None = None,  # noqa: ARG002 — accepted, not used by Ollama
     ) -> str:
         url = f"{self.base_url}/api/chat"
         payload: Dict[str, Any] = {
@@ -217,6 +240,7 @@ class AnthropicProvider(AIProvider):
         model: str,
         temperature: float,
         max_tokens: int,
+        reasoning_effort: str | None = None,  # noqa: ARG002 — accepted, not used by Anthropic
     ) -> str:
         # Extract system message and user messages
         system_text = ""
