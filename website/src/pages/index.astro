@@ -40,8 +40,8 @@ import logoImage from '../../public/logo.webp';
           </h1>
           <p class="hero-description">
             Telebrief automatically collects messages from your Telegram channels,
-            generates AI-powered summaries, and delivers beautiful daily digests
-            directly to your Telegram account.
+            generates AI-powered summaries using OpenAI, Anthropic, or local Ollama,
+            and delivers beautiful daily digests directly to your Telegram account.
           </p>
           <div class="hero-buttons">
             <a href="https://github.com/belaytzev/Telebrief#quick-start" class="btn btn-primary" target="_blank" rel="noopener noreferrer">
@@ -114,6 +114,11 @@ import logoImage from '../../public/logo.webp';
           <h3>Docker Ready</h3>
           <p>Complete Docker containerization with docker-compose support for easy deployment and management.</p>
         </div>
+        <div class="card feature-card">
+          <div class="icon">🗂️</div>
+          <h3>Table of Contents Navigation</h3>
+          <p>Each digest includes an interactive summary with inline navigation buttons, letting you jump directly to any channel's summary with a single tap.</p>
+        </div>
       </div>
     </div>
   </section>
@@ -170,6 +175,10 @@ import logoImage from '../../public/logo.webp';
           <div class="command-card">
             <code>/cleanup</code>
             <p>Delete old digest messages</p>
+          </div>
+          <div class="command-card">
+            <code>/help</code>
+            <p>Show all available commands and usage guide</p>
           </div>
         </div>
       </div>

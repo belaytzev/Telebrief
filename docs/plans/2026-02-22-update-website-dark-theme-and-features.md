@@ -66,12 +66,12 @@ Switch the Telebrief landing page from its current light skeuomorphic design to 
 **Files:**
 - Modify: `website/src/pages/index.astro`
 
-- [ ] Add `/help` command card to the bot commands grid (currently missing; README shows it exists)
-- [ ] Add "Table of Contents Navigation" feature card (summary message with inline buttons per channel) to the features grid — use 🗂️ or 📋 emoji
-- [ ] Update hero stat "3 AI Providers" label stays correct (OpenAI, Ollama, Anthropic)
-- [ ] Verify hero description mentions Ollama (local AI) — update if missing
-- [ ] Update footer copyright year if needed (currently 2026, OK)
-- [ ] Run `cd website && npm run build` — must complete with no errors
+- [x] Add `/help` command card to the bot commands grid (currently missing; README shows it exists)
+- [x] Add "Table of Contents Navigation" feature card (summary message with inline buttons per channel) to the features grid — use 🗂️ or 📋 emoji
+- [x] Update hero stat "3 AI Providers" label stays correct (OpenAI, Ollama, Anthropic)
+- [x] Verify hero description mentions Ollama (local AI) — update if missing
+- [x] Update footer copyright year if needed (currently 2026, OK)
+- [x] Run `cd website && npm run build` — must complete with no errors
 
 ### Task 4: Verify acceptance criteria
 
