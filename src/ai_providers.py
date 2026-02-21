@@ -96,7 +96,7 @@ class OllamaProvider(AIProvider):
                 if resp.status != 200:
                     body = await resp.text()
                     raise RuntimeError(f"Ollama API error {resp.status}: {body}")
-                data = await resp.json()
+                data = await resp.json(content_type=None)
 
         content: str = data.get("message", {}).get("content", "")
         return content.strip()
@@ -146,7 +146,7 @@ class AnthropicProvider(AIProvider):
                 if resp.status != 200:
                     body = await resp.text()
                     raise RuntimeError(f"Anthropic API error {resp.status}: {body}")
-                data = await resp.json()
+                data = await resp.json(content_type=None)
 
         content_blocks = data.get("content", [])
         texts = [block["text"] for block in content_blocks if block.get("type") == "text"]

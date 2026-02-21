@@ -182,6 +182,47 @@ def test_ollama_provider_url_trailing_slash(mock_logger):
     assert provider.base_url == "http://localhost:11434"
 
 
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_ollama_provider_ndjson_content_type(mock_logger):
+    """Test Ollama provider handles application/x-ndjson content type.
+
+    Ollama returns application/x-ndjson even with stream: false.
+    aiohttp's resp.json() rejects non-application/json by default.
+    """
+    import json
+
+    import aiohttp
+
+    provider = OllamaProvider(base_url="http://localhost:11434", logger=mock_logger)
+
+    response_data = {"message": {"content": "Ollama ndjson response"}}
+
+    mock_response = MagicMock()
+    mock_response.status = 200
+    # Simulate the real behavior: json() with strict content_type raises ContentTypeError
+    # when Content-Type is application/x-ndjson
+    mock_response.headers = {"Content-Type": "application/x-ndjson"}
+    mock_response.json = AsyncMock(return_value=response_data)
+
+    mock_session = MagicMock()
+    mock_session.post = MagicMock(return_value=AsyncContextManager(mock_response))
+    mock_session.close = AsyncMock()
+
+    with patch("src.ai_providers.aiohttp.ClientSession") as mock_cs:
+        mock_cs.return_value = AsyncContextManager(mock_session)
+        result = await provider.chat_completion(
+            messages=[{"role": "user", "content": "Hello"}],
+            model="llama3",
+            temperature=0.7,
+            max_tokens=500,
+        )
+
+    assert result == "Ollama ndjson response"
+    # Verify json() was called with content_type=None to bypass strict checking
+    mock_response.json.assert_called_once_with(content_type=None)
+
+
 # --- Anthropic provider tests ---
 
 
