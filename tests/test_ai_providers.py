@@ -10,6 +10,7 @@ from src.ai_providers import (  # isort: skip
     create_provider,
     OllamaProvider,
     OpenAIProvider,
+    TokenBudgetExhaustedError,
 )
 
 # --- Factory tests ---
@@ -282,7 +283,7 @@ async def test_openai_provider_length_empty_content_raises_with_guidance(mock_lo
         mock_response.usage.total_tokens = 7117
         provider.client.chat.completions.create = AsyncMock(return_value=mock_response)
 
-        with pytest.raises(RuntimeError) as exc_info:
+        with pytest.raises(TokenBudgetExhaustedError) as exc_info:
             await provider.chat_completion(
                 messages=[{"role": "user", "content": "Hello"}],
                 model="gpt-5-nano",
@@ -617,7 +618,7 @@ async def test_ollama_provider_length_empty_content_raises_with_guidance(mock_lo
 
     with patch("src.ai_providers.aiohttp.ClientSession") as mock_cs:
         mock_cs.return_value = AsyncContextManager(mock_session)
-        with pytest.raises(RuntimeError) as exc_info:
+        with pytest.raises(TokenBudgetExhaustedError) as exc_info:
             await provider.chat_completion(
                 messages=[{"role": "user", "content": "Hello"}],
                 model="llama3",
@@ -874,7 +875,7 @@ async def test_anthropic_provider_max_tokens_empty_content_raises_with_guidance(
 
     with patch("src.ai_providers.aiohttp.ClientSession") as mock_cs:
         mock_cs.return_value = AsyncContextManager(mock_session)
-        with pytest.raises(RuntimeError) as exc_info:
+        with pytest.raises(TokenBudgetExhaustedError) as exc_info:
             await provider.chat_completion(
                 messages=[{"role": "user", "content": "Hello"}],
                 model="claude-sonnet-4-5-20250929",

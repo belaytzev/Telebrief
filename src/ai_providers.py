@@ -25,6 +25,9 @@ def _redact_url(url: str) -> str:
     return url
 
 
+class TokenBudgetExhaustedError(RuntimeError):
+    """Raised when a provider exhausts its token budget without producing visible output."""
+
 class AIProvider(ABC):
     """Abstract base class for AI providers."""
 
@@ -97,7 +100,7 @@ class OpenAIProvider(AIProvider):
         text = content.strip() if content else ""
         if not text:
             if finish_reason == "length":
-                raise RuntimeError(
+                raise TokenBudgetExhaustedError(
                     f"OpenAI returned empty content with finish_reason=length — the model "
                     f"exhausted its token budget (possibly in reasoning) without producing output. "
                     f"Consider increasing max_tokens_per_summary in config.yaml. "
@@ -179,7 +182,7 @@ class OllamaProvider(AIProvider):
         text = content.strip()
         if not text:
             if done_reason == "length":
-                raise RuntimeError(
+                raise TokenBudgetExhaustedError(
                     f"Ollama returned empty content with done_reason=length — the model "
                     f"exhausted its token budget without producing output. "
                     f"Consider increasing max_tokens_per_summary in config.yaml. "
@@ -259,7 +262,7 @@ class AnthropicProvider(AIProvider):
         text = "\n".join(texts).strip()
         if not text:
             if stop_reason == "max_tokens":
-                raise RuntimeError(
+                raise TokenBudgetExhaustedError(
                     f"Anthropic returned empty content with stop_reason=max_tokens — the model "
                     f"exhausted its token budget without producing output. "
                     f"Consider increasing max_tokens_per_summary in config.yaml. "
