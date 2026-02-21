@@ -72,4 +72,4 @@ Secondary issue: The default `api_timeout` in config is 30 seconds, which is oft
 
 ### Task 5: Update documentation
 
-- [ ] Move this plan to `docs/plans/completed/`
+- [x] Move this plan to `docs/plans/completed/`
