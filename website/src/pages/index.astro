@@ -246,14 +246,15 @@ import logoImage from '../../public/logo.webp';
 <style>
   /* Navigation */
   .nav {
-    background: var(--color-white);
+    background: var(--color-bg-surface);
     box-shadow: var(--shadow-soft);
     padding: var(--spacing-md) 0;
     position: sticky;
     top: 0;
     z-index: 1000;
     backdrop-filter: blur(10px);
-    background: rgba(255, 255, 255, 0.95);
+    background: rgba(22, 22, 22, 0.95);
+    border-bottom: 1px solid var(--color-border);
   }
 
   .nav-content {
@@ -278,7 +279,7 @@ import logoImage from '../../public/logo.webp';
   .nav-title {
     font-size: 1.5rem;
     font-weight: 700;
-    color: var(--color-secondary);
+    color: var(--color-text-primary);
   }
 
   .nav-links {
@@ -288,7 +289,7 @@ import logoImage from '../../public/logo.webp';
   }
 
   .nav-link {
-    color: var(--color-gray-dark);
+    color: var(--color-text-secondary);
     text-decoration: none;
     font-weight: 500;
     transition: color 0.3s ease;
@@ -301,7 +302,7 @@ import logoImage from '../../public/logo.webp';
   /* Hero Section */
   .hero {
     padding: var(--spacing-3xl) 0;
-    background: linear-gradient(180deg, var(--color-gray-light) 0%, var(--color-white) 100%);
+    background: linear-gradient(180deg, var(--color-bg-raised) 0%, var(--color-bg-base) 100%);
   }
 
   .hero-content {
@@ -351,7 +352,7 @@ import logoImage from '../../public/logo.webp';
 
   .stat-label {
     font-size: 0.875rem;
-    color: var(--color-gray-dark);
+    color: var(--color-text-secondary);
   }
 
   .phone-mockup {
@@ -365,7 +366,7 @@ import logoImage from '../../public/logo.webp';
     width: 100%;
     border-radius: var(--radius-xl);
     box-shadow: var(--shadow-raised);
-    background: var(--color-white);
+    background: var(--color-bg-surface);
     padding: var(--spacing-xl);
   }
 
@@ -384,7 +385,7 @@ import logoImage from '../../public/logo.webp';
 
   /* Features Section */
   .features {
-    background: var(--color-white);
+    background: var(--color-bg-surface);
   }
 
   .section-header {
@@ -412,7 +413,7 @@ import logoImage from '../../public/logo.webp';
 
   /* How It Works */
   .how-it-works {
-    background: var(--color-gray-light);
+    background: var(--color-bg-raised);
   }
 
   .steps {
@@ -468,10 +469,11 @@ import logoImage from '../../public/logo.webp';
   }
 
   .bot-commands {
-    background: var(--color-white);
+    background: var(--color-bg-surface);
     padding: var(--spacing-xl);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-medium);
+    border: 1px solid var(--color-border);
   }
 
   .bot-commands h3 {
@@ -486,18 +488,19 @@ import logoImage from '../../public/logo.webp';
   }
 
   .command-card {
-    background: var(--color-gray-light);
+    background: var(--color-bg-raised);
     padding: var(--spacing-md);
     border-radius: var(--radius-md);
     text-align: center;
     box-shadow: var(--shadow-inner);
+    border: 1px solid var(--color-border);
   }
 
   .command-card code {
     display: block;
     font-size: 1.25rem;
     font-weight: 600;
-    color: var(--color-primary);
+    color: var(--color-accent);
     margin-bottom: var(--spacing-xs);
     font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
   }
@@ -508,13 +511,15 @@ import logoImage from '../../public/logo.webp';
 
   /* CTA Section */
   .cta {
-    background: var(--gradient-primary);
-    color: var(--color-white);
+    background: linear-gradient(135deg, var(--color-bg-surface) 0%, #0d1f2d 100%);
+    color: var(--color-text-primary);
     text-align: center;
+    border-top: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border);
   }
 
   .cta h2, .cta p {
-    color: var(--color-white);
+    color: var(--color-text-primary);
   }
 
   .cta h2 {
@@ -534,9 +539,10 @@ import logoImage from '../../public/logo.webp';
 
   /* Footer */
   .footer {
-    background: var(--color-secondary);
-    color: var(--color-white);
+    background: var(--color-bg-base);
+    color: var(--color-text-primary);
     padding: var(--spacing-3xl) 0 var(--spacing-lg);
+    border-top: 1px solid var(--color-border);
   }
 
   .footer-content {
@@ -565,12 +571,12 @@ import logoImage from '../../public/logo.webp';
   }
 
   .footer-description {
-    color: var(--color-accent);
+    color: var(--color-text-secondary);
     font-size: 0.875rem;
   }
 
   .footer-section h4 {
-    color: var(--color-white);
+    color: var(--color-text-primary);
     margin-bottom: var(--spacing-md);
   }
 
@@ -583,24 +589,24 @@ import logoImage from '../../public/logo.webp';
   }
 
   .footer-links a {
-    color: var(--color-accent);
+    color: var(--color-text-secondary);
     text-decoration: none;
     font-size: 0.875rem;
     transition: color 0.3s ease;
   }
 
   .footer-links a:hover {
-    color: var(--color-white);
+    color: var(--color-accent);
   }
 
   .footer-bottom {
-    border-top: 1px solid rgba(184, 229, 240, 0.2);
+    border-top: 1px solid var(--color-border);
     padding-top: var(--spacing-md);
     text-align: center;
   }
 
   .footer-bottom p {
-    color: var(--color-accent);
+    color: var(--color-text-secondary);
     font-size: 0.875rem;
   }
 

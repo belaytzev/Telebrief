@@ -48,18 +48,18 @@ Switch the Telebrief landing page from its current light skeuomorphic design to 
 **Files:**
 - Modify: `website/src/pages/index.astro`
 
-- [ ] Update `.nav` background: dark surface with blur, not white
-- [ ] Update `.nav-title` and `.nav-link` colors for dark background
-- [ ] Update `.hero` background: dark gradient (dark to slightly lighter dark)
-- [ ] Update `.features` section background: dark surface
-- [ ] Update `.how-it-works` section background: slightly different dark shade for contrast
-- [ ] Update `.bot-commands` background: dark surface
-- [ ] Update `.command-card` background: dark raised surface
-- [ ] Update `.command-card code` color: teal accent instead of blue primary
-- [ ] Update `.cta` section: keep gradient but adapt to dark-friendly colors
-- [ ] Update `.footer` background: deepest dark color
-- [ ] Update `--color-gray-light` references to use dark equivalents inline
-- [ ] Run `cd website && npm run build` — must complete with no errors
+- [x] Update `.nav` background: dark surface with blur, not white
+- [x] Update `.nav-title` and `.nav-link` colors for dark background
+- [x] Update `.hero` background: dark gradient (dark to slightly lighter dark)
+- [x] Update `.features` section background: dark surface
+- [x] Update `.how-it-works` section background: slightly different dark shade for contrast
+- [x] Update `.bot-commands` background: dark surface
+- [x] Update `.command-card` background: dark raised surface
+- [x] Update `.command-card code` color: teal accent instead of blue primary
+- [x] Update `.cta` section: keep gradient but adapt to dark-friendly colors
+- [x] Update `.footer` background: deepest dark color
+- [x] Update `--color-gray-light` references to use dark equivalents inline
+- [x] Run `cd website && npm run build` — must complete with no errors
 
 ### Task 3: Update website content to match current features
 
