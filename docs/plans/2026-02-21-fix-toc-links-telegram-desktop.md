@@ -111,10 +111,10 @@ back to the chat — working on all platforms.
 
 ### Task 5: Verify acceptance criteria
 
-- [ ] Run full test suite: `uv run pytest tests/ -v` — must pass
-- [ ] Run type check: `uv run mypy src/` — must pass
-- [ ] Run linter: `uv tool run ruff check src/ tests/` — must pass
-- [ ] Verify test coverage: `uv run pytest tests/ --cov=src --cov-report=term-missing`
+- [x] Run full test suite: `uv run pytest tests/ -v` — must pass
+- [x] Run type check: `uv run mypy src/` — must pass
+- [x] Run linter: `uv tool run ruff check src/ tests/` — must pass
+- [x] Verify test coverage: `uv run pytest tests/ --cov=src --cov-report=term-missing`
 
 ### Task 6: Update documentation
 
