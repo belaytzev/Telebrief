@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from src.summarizer import Summarizer, SYSTEM_PROMPT_TEMPLATE  # isort: skip
+from src.summarizer import ERROR_SUMMARY_PREFIX, Summarizer, SYSTEM_PROMPT_TEMPLATE  # isort: skip
 
 
 @pytest.mark.unit
@@ -111,11 +111,11 @@ def test_format_messages_truncate_long(sample_config, mock_logger):
 @pytest.mark.unit
 def test_system_prompt_template_language():
     """Test system prompt template accepts language parameter."""
-    prompt = SYSTEM_PROMPT_TEMPLATE.replace("{language}", "English")
+    prompt = SYSTEM_PROMPT_TEMPLATE.format(language="English")
     assert "English" in prompt
     assert "{language}" not in prompt
 
-    prompt_ru = SYSTEM_PROMPT_TEMPLATE.replace("{language}", "Russian")
+    prompt_ru = SYSTEM_PROMPT_TEMPLATE.format(language="Russian")
     assert "Russian" in prompt_ru
 
 
@@ -131,7 +131,7 @@ async def test_summarize_all_partial_failure(sample_config, mock_logger, sample_
         result = await summarizer.summarize_all({"Failing Channel": sample_messages})
 
         assert "Failing Channel" in result["channel_summaries"]
-        assert "Error processing channel" in result["channel_summaries"]["Failing Channel"]
+        assert ERROR_SUMMARY_PREFIX in result["channel_summaries"]["Failing Channel"]
 
 
 @pytest.mark.unit

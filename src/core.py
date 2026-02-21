@@ -10,7 +10,7 @@ from src.collector import MessageCollector
 from src.config_loader import Config
 from src.formatter import DigestFormatter
 from src.sender import DigestSender
-from src.summarizer import Summarizer
+from src.summarizer import ERROR_SUMMARY_PREFIX, Summarizer
 
 
 async def generate_digest(config: Config, logger: logging.Logger, hours: int = 24) -> str:
@@ -175,7 +175,7 @@ async def generate_and_send_channel_digests(
 
         for channel_name, summary in channel_summaries.items():
             # Skip empty summaries or errors
-            if not summary or "error processing channel" in summary.lower():
+            if not summary or ERROR_SUMMARY_PREFIX.lower() in summary.lower():
                 logger.warning(f"Skipping channel '{channel_name}': empty or error summary")
                 continue
 

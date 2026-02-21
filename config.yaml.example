@@ -22,6 +22,10 @@ settings:
   lookback_hours: 24       # Message collection window
 
   # AI Provider: "openai", "ollama", or "anthropic"
+  # Required env vars per provider:
+  #   openai    -> OPENAI_API_KEY in .env
+  #   anthropic -> ANTHROPIC_API_KEY in .env
+  #   ollama    -> no API key needed
   ai_provider: "openai"
 
   # AI Model (provider-specific)

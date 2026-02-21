@@ -10,6 +10,8 @@ from src.ai_providers import AIProvider, create_provider
 from src.collector import Message
 from src.config_loader import Config
 
+ERROR_SUMMARY_PREFIX = "Error processing channel"
+
 # System prompt template with configurable output language
 SYSTEM_PROMPT_TEMPLATE = """
 You are a professional assistant for creating news digests for Telegram.
@@ -134,7 +136,7 @@ class Summarizer:
                 self.logger.info(f"Summarized {channel_name}")
             except Exception as e:
                 self.logger.error(f"Failed to summarize {channel_name}: {e}")
-                summaries[channel_name] = f"Error processing channel: {str(e)}"
+                summaries[channel_name] = f"{ERROR_SUMMARY_PREFIX}: {str(e)}"
 
         return summaries
 
@@ -184,7 +186,7 @@ Respond ONLY in {self.output_language}. Remember: maximum 3500 characters!
 """
 
         try:
-            system_prompt = SYSTEM_PROMPT_TEMPLATE.replace("{language}", self.output_language)
+            system_prompt = SYSTEM_PROMPT_TEMPLATE.format(language=self.output_language)
             chat_messages = [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": prompt},

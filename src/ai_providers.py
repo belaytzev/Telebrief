@@ -61,6 +61,8 @@ class OpenAIProvider(AIProvider):
             temperature=temperature,
             max_completion_tokens=max_tokens,
         )
+        if not response.choices:
+            raise RuntimeError("OpenAI returned no choices in response")
         content = response.choices[0].message.content
         return content.strip() if content else ""
 
@@ -161,7 +163,7 @@ class AnthropicProvider(AIProvider):
                 data = await resp.json(content_type=None)
 
         content_blocks = data.get("content", [])
-        texts = [block["text"] for block in content_blocks if block.get("type") == "text"]
+        texts = [block.get("text", "") for block in content_blocks if block.get("type") == "text"]
         return "\n".join(texts).strip()
 
 
