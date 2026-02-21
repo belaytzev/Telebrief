@@ -19,6 +19,7 @@
 - 🔒 **Private Channel Support** - Access your private chats and channels
 - 🎨 **Smart Formatting** - Markdown with emojis, bullet points, and clickable message links
 - 🔐 **Secure** - Single-user only, credentials stored safely
+- 🗂️ **Table of Contents Navigation** - Summary message includes inline keyboard buttons linking directly to each channel's digest
 - 🧹 **Auto-cleanup** - Automatically removes old digest messages
 
 ---
@@ -106,7 +107,11 @@ Open Telegram and message your bot:
 
 ---
 📈 **Статистика**: 20 каналов, 1,847 сообщений обработано
+
+[ 💻 TechCrunch ] [ 💰 Crypto News ] [ ... ]
 ```
+
+> The summary message includes inline keyboard buttons (one per channel) for quick navigation to each channel's digest.
 
 ---
 

@@ -112,5 +112,5 @@ The link type is determined at send time by inspecting the sign of `user_id`.
 
 ### Task 6: Update documentation
 
-- [ ] Update `README.md` if it describes the digest output format
-- [ ] Move this plan to `docs/plans/completed/`
+- [x] Update `README.md` if it describes the digest output format
+- [x] Move this plan to `docs/plans/completed/`
