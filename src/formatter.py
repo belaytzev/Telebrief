@@ -11,7 +11,7 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from src.collector import Message
 from src.config_loader import Config
 from src.summarizer import ERROR_SUMMARY_PREFIX
-from src.ui_strings import get_ui_strings
+from src.ui_strings import get_month_names, get_ui_strings
 
 
 class DigestFormatter:
@@ -29,7 +29,18 @@ class DigestFormatter:
         self.logger = logger
         self.use_emojis = config.settings.use_emojis
         self.include_stats = config.settings.include_statistics
-        self._ui = get_ui_strings(config.settings.output_language)
+        self._language = config.settings.output_language
+        self._ui = get_ui_strings(self._language)
+        self._month_names = get_month_names(self._language)
+
+    def _format_date(self, dt: datetime) -> str:
+        """Return date string with month name translated to output_language.
+
+        Uses the month index rather than strftime %B to avoid depending on the
+        host system's locale setting.
+        """
+        month_name = self._month_names[dt.month - 1]
+        return f"{dt.day:02d} {month_name} {dt.year}"
 
     def create_digest(
         self,
@@ -107,7 +118,7 @@ class DigestFormatter:
         Returns:
             Header string
         """
-        date_str = datetime.utcnow().strftime("%d %B %Y")
+        date_str = self._format_date(datetime.utcnow())
         emoji = "📊" if self.use_emojis else ""
         return f"# {emoji} {self._ui['daily_digest']} - {date_str}\n"
 
@@ -195,7 +206,7 @@ class DigestFormatter:
         parts = []
 
         # Channel header with date
-        date_str = datetime.utcnow().strftime("%d %B %Y")
+        date_str = self._format_date(datetime.utcnow())
         emoji = self._pick_emoji(channel_name)
         header = f"# {emoji} {channel_name}\n*{date_str}*\n"
         parts.append(header)
@@ -237,7 +248,7 @@ class DigestFormatter:
         Returns:
             Summary message
         """
-        date_str = datetime.utcnow().strftime("%d %B %Y")
+        date_str = self._format_date(datetime.utcnow())
         end_time = datetime.utcnow()
         start_time = end_time - timedelta(hours=hours)
 
@@ -278,12 +289,15 @@ class DigestFormatter:
         buttons = []
         for channel_name, message_id in channel_id_map:
             label = f"{self._pick_emoji(channel_name)} {channel_name}"
-            if chat_id > 0:
+            abs_str = str(abs(chat_id))
+            if chat_id > 0 or not abs_str.startswith("100"):
+                # Private chats and basic groups: use callback buttons (t.me/c URLs
+                # only work for supergroups/channels with -100… IDs)
                 callback_data = f"toc:{chat_id}:{message_id}"
                 buttons.append(InlineKeyboardButton(text=label, callback_data=callback_data))
             else:
-                abs_str = str(abs(chat_id))
-                channel_part = abs_str[3:] if abs_str.startswith("100") else abs_str
+                # Supergroup/channel (chat_id starts with -100): t.me/c URL works
+                channel_part = abs_str[3:]
                 url = f"https://t.me/c/{channel_part}/{message_id}"
                 buttons.append(InlineKeyboardButton(text=label, url=url))
 

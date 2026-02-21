@@ -5,6 +5,32 @@ Provides get_ui_strings(language) which returns a dict of UI labels
 in the requested language, falling back to English for unsupported languages.
 """
 
+_ENGLISH_MONTHS = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December",
+]
+
+_MONTH_NAMES: dict[str, list[str]] = {
+    "English": _ENGLISH_MONTHS,
+    "Russian": [
+        "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
+        "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь",
+    ],
+    "Spanish": [
+        "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+        "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
+    ],
+    "German": [
+        "Januar", "Februar", "März", "April", "Mai", "Juni",
+        "Juli", "August", "September", "Oktober", "November", "Dezember",
+    ],
+    "French": [
+        "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
+        "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre",
+    ],
+}
+
+
 _STRINGS: dict[str, dict[str, str]] = {
     "English": {
         # formatter.py
@@ -290,3 +316,16 @@ def get_ui_strings(language: str) -> dict[str, str]:
         Dict mapping string keys to translated values
     """
     return _STRINGS.get(language, _STRINGS["English"])
+
+
+def get_month_names(language: str) -> list[str]:
+    """
+    Return month names list for the given language, falling back to English.
+
+    Args:
+        language: Language name (e.g. "Russian", "English", "Spanish")
+
+    Returns:
+        List of 12 month name strings, January-indexed
+    """
+    return _MONTH_NAMES.get(language, _ENGLISH_MONTHS)

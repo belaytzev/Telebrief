@@ -259,12 +259,13 @@ class BotCommandHandler:
 
     async def handle_toc_callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """
-        Handle TOC inline button callbacks for private chats.
+        Handle TOC inline button callbacks for private chats and basic groups.
 
-        Callback data format: ``toc:<user_id>:<message_id>``
+        Callback data format: ``toc:<chat_id>:<message_id>``
 
-        Copies the original channel message back to the private chat so the
-        user can jump to it on any platform (including Telegram Desktop).
+        For private chats (chat_id > 0), copies the original channel message back to
+        the private chat so the user can jump to it on any platform (including Telegram
+        Desktop).  For basic groups (chat_id < 0), copies the message back to the group.
         """
         if update.callback_query is None or update.effective_user is None:
             return
@@ -272,34 +273,35 @@ class BotCommandHandler:
         query = update.callback_query
         caller_id = update.effective_user.id
 
-        # Security check — only the authorised user may trigger this
-        if not self.is_authorized(caller_id):
-            self.logger.warning(f"Unauthorized TOC callback from user {caller_id}")
-            await query.answer()
-            return
-
         try:
             parts = query.data.split(":")  # type: ignore[union-attr]
-            user_id = int(parts[1])
+            target_chat_id = int(parts[1])
             message_id = int(parts[2])
         except (AttributeError, IndexError, ValueError) as exc:
             self.logger.error(f"Malformed TOC callback data '{query.data}': {exc}")
             await query.answer()
             return
 
-        # Security check — the user_id embedded in callback_data must match the caller
-        if user_id != caller_id:
-            self.logger.warning(f"TOC callback user_id mismatch: {user_id} vs {caller_id}")
-            await query.answer()
-            return
+        # Security checks for private chats only.
+        # For group chats (target_chat_id < 0) any group member may use the TOC —
+        # restricting by user ID is not meaningful (multiple members share the group).
+        if target_chat_id > 0:
+            if not self.is_authorized(caller_id):
+                self.logger.warning(f"Unauthorized TOC callback from user {caller_id}")
+                await query.answer()
+                return
+            if target_chat_id != caller_id:
+                self.logger.warning(f"TOC callback chat_id mismatch: {target_chat_id} vs {caller_id}")
+                await query.answer()
+                return
 
         try:
             await context.bot.copy_message(
-                chat_id=user_id,
-                from_chat_id=user_id,
+                chat_id=target_chat_id,
+                from_chat_id=target_chat_id,
                 message_id=message_id,
             )
-            self.logger.debug(f"TOC callback: copied message {message_id} for user {user_id}")
+            self.logger.debug(f"TOC callback: copied message {message_id} to chat {target_chat_id}")
             await query.answer(text="↓ Sent below")
         except TelegramError as exc:
             self.logger.error(f"TOC callback copy_message failed: {exc}")

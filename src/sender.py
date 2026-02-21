@@ -467,6 +467,14 @@ class DigestSender:
             toc_peer_id = user_id
             keyboard = self.formatter.build_toc_keyboard(channel_id_map, toc_peer_id)
             await self._edit_summary_keyboard(user_id, summary_id, keyboard)
+        elif summary_id is not None and success_count == 0:
+            # All channel sends failed; remove the orphaned placeholder
+            try:
+                await self.bot.delete_message(chat_id=user_id, message_id=summary_id)
+                self.logger.info("🗑️ Removed orphaned summary placeholder (no channels succeeded)")
+                summary_id = None
+            except TelegramError as e:
+                self.logger.warning(f"⚠️ Failed to delete orphaned summary placeholder: {e}")
 
         # Save all message IDs for future cleanup (summary first for correct order)
         all_ids = ([summary_id] if summary_id else []) + sent_message_ids

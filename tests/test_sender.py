@@ -524,6 +524,7 @@ async def test_toc_keyboard_not_edited_when_all_channels_fail(
         # Summary placeholder succeeds; channel fails
         mock_bot.send_message = AsyncMock(side_effect=[mock_summary, TelegramError("API Error")])
         mock_bot.edit_message_reply_markup = AsyncMock()
+        mock_bot.delete_message = AsyncMock()
         mock_bot_class.return_value = mock_bot
 
         sender = DigestSender(sample_config, mock_logger)
@@ -535,6 +536,8 @@ async def test_toc_keyboard_not_edited_when_all_channels_fail(
     assert mock_bot.send_message.call_count == 2
     # edit_message_reply_markup must NOT be called (no successful channels = no TOC)
     assert mock_bot.edit_message_reply_markup.call_count == 0
+    # Orphaned summary placeholder must be deleted
+    mock_bot.delete_message.assert_called_once_with(chat_id=123456789, message_id=100)
 
 
 @pytest.mark.unit

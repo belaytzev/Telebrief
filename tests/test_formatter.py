@@ -213,7 +213,7 @@ def test_build_toc_keyboard_empty_returns_none(sample_config, mock_logger):
 
 @pytest.mark.unit
 def test_build_toc_keyboard_negative_non_supergroup_chat(sample_config, mock_logger):
-    """Test TOC keyboard uses full abs ID when negative chat_id does not start with -100."""
+    """Test TOC keyboard uses callback buttons for basic groups (negative IDs without -100 prefix)."""
     formatter = DigestFormatter(sample_config, mock_logger)
     channel_id_map = [("Tech News", 500)]
     chat_id = -987654321  # abs = "987654321", does not start with "100"
@@ -222,7 +222,9 @@ def test_build_toc_keyboard_negative_non_supergroup_chat(sample_config, mock_log
 
     assert keyboard is not None
     btn = keyboard.inline_keyboard[0][0]
-    assert btn.url == "https://t.me/c/987654321/500"
+    # Basic groups don't support t.me/c URLs; use callback instead
+    assert btn.callback_data == f"toc:{chat_id}:500"
+    assert btn.url is None
 
 
 # --- Language / output_language tests ---
@@ -306,3 +308,42 @@ def test_truncation_message_uses_output_language(english_config, mock_logger, sa
 
     assert "truncated due to length limit" in msg
     assert "усечено" not in msg
+
+
+@pytest.mark.unit
+def test_format_date_russian_month_names(sample_config, mock_logger):
+    """_format_date returns Russian month names when output_language is Russian."""
+    from datetime import datetime
+
+    formatter = DigestFormatter(sample_config, mock_logger)  # output_language=Russian
+    # February in Russian is "Февраль"
+    dt = datetime(2026, 2, 22)
+    result = formatter._format_date(dt)
+
+    assert "Февраль" in result
+    assert "February" not in result
+
+
+@pytest.mark.unit
+def test_format_date_english_month_names(english_config, mock_logger):
+    """_format_date returns English month names when output_language is English."""
+    from datetime import datetime
+
+    formatter = DigestFormatter(english_config, mock_logger)
+    dt = datetime(2026, 2, 22)
+    result = formatter._format_date(dt)
+
+    assert "February" in result
+    assert "Февраль" not in result
+
+
+@pytest.mark.unit
+def test_create_header_russian_month_name(sample_config, mock_logger):
+    """_create_header uses localized month name for Russian output_language."""
+    formatter = DigestFormatter(sample_config, mock_logger)
+    header = formatter._create_header(24)
+
+    # Month names in Russian must not contain English month strings (spot-check Jan-Mar)
+    assert "January" not in header
+    assert "February" not in header
+    assert "March" not in header

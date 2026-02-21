@@ -242,6 +242,35 @@ async def test_handle_toc_callback_user_id_mismatch(sample_config, mock_logger):
 
 @pytest.mark.unit
 @pytest.mark.asyncio
+async def test_handle_toc_callback_basic_group(sample_config, mock_logger):
+    """Any group member may trigger copy_message for a basic-group TOC callback.
+
+    The caller (user_id=777) is NOT the configured target_user_id (123456789),
+    but because the callback embeds a negative chat_id (a group), the auth gate
+    is skipped and copy_message is called.  This covers the real scenario where
+    target_user_id is a group ID or where multiple group members share a digest.
+    """
+    handler = BotCommandHandler(sample_config, mock_logger)
+    group_chat_id = -987654321
+    # Use a caller that is NOT the authorized user to prove auth is not required
+    update = _make_callback_update(
+        user_id=777, callback_data=f"toc:{group_chat_id}:500"
+    )
+    context = MagicMock()
+    context.bot.copy_message = AsyncMock()
+
+    await handler.handle_toc_callback(update, context)
+
+    context.bot.copy_message.assert_called_once_with(
+        chat_id=group_chat_id,
+        from_chat_id=group_chat_id,
+        message_id=500,
+    )
+    update.callback_query.answer.assert_called_once_with(text="↓ Sent below")
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
 async def test_handle_toc_callback_malformed_data(sample_config, mock_logger):
     """Malformed callback data does not trigger copy_message and still answers the query."""
     handler = BotCommandHandler(sample_config, mock_logger)
