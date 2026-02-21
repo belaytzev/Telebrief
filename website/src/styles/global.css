@@ -31,9 +31,6 @@
   --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --font-display: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
 
-  /* Performance */
-  font-display: swap;
-
   /* Spacing */
   --spacing-xs: 0.5rem;
   --spacing-sm: 1rem;
