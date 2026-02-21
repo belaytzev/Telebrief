@@ -118,5 +118,5 @@ back to the chat — working on all platforms.
 
 ### Task 6: Update documentation
 
-- [ ] Update MEMORY.md: replace `tg://openmessage` note with the new callback button approach
-- [ ] Move this plan to `docs/plans/completed/`
+- [x] Update MEMORY.md: replace `tg://openmessage` note with the new callback button approach
+- [x] Move this plan to `docs/plans/completed/`
