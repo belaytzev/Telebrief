@@ -318,6 +318,70 @@ async def test_send_channel_messages_with_tracking_no_summary(
 
 @pytest.mark.unit
 @pytest.mark.asyncio
+async def test_send_channel_messages_loop_channel_id_map(sample_config, mock_logger):
+    """Test that _send_channel_messages_loop returns correct channel_id_map."""
+    channel_messages = [
+        ("Channel A", "Message A"),
+        ("Channel B", "Message B"),
+    ]
+
+    with patch("src.sender.Bot") as mock_bot_class:
+        mock_bot = MagicMock()
+
+        mock_msg_a = MagicMock()
+        mock_msg_a.message_id = 201
+        mock_msg_b = MagicMock()
+        mock_msg_b.message_id = 202
+
+        mock_bot.send_message = AsyncMock(side_effect=[mock_msg_a, mock_msg_b])
+        mock_bot_class.return_value = mock_bot
+
+        sender = DigestSender(sample_config, mock_logger)
+        sent_ids, channel_id_map, success_count, failed_channels = (
+            await sender._send_channel_messages_loop(123456789, channel_messages)
+        )
+
+    assert sent_ids == [201, 202]
+    assert channel_id_map == [("Channel A", 201), ("Channel B", 202)]
+    assert success_count == 2
+    assert failed_channels == []
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_send_channel_messages_loop_channel_id_map_with_failure(sample_config, mock_logger):
+    """Test that channel_id_map only contains successful sends."""
+    from telegram.error import TelegramError
+
+    channel_messages = [
+        ("Channel A", "Message A"),
+        ("Channel B", "Message B"),
+    ]
+
+    with patch("src.sender.Bot") as mock_bot_class:
+        mock_bot = MagicMock()
+
+        mock_msg_a = MagicMock()
+        mock_msg_a.message_id = 201
+
+        mock_bot.send_message = AsyncMock(
+            side_effect=[mock_msg_a, TelegramError("API Error")]
+        )
+        mock_bot_class.return_value = mock_bot
+
+        sender = DigestSender(sample_config, mock_logger)
+        sent_ids, channel_id_map, success_count, failed_channels = (
+            await sender._send_channel_messages_loop(123456789, channel_messages)
+        )
+
+    assert sent_ids == [201]
+    assert channel_id_map == [("Channel A", 201)]
+    assert success_count == 1
+    assert failed_channels == ["Channel B"]
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
 async def test_send_channel_messages_long_message(sample_config, mock_logger):
     """Test sending channel message that exceeds length limit."""
     # Create a message longer than 4096 characters

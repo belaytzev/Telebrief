@@ -339,7 +339,7 @@ class DigestSender:
 
     async def _send_channel_messages_loop(
         self, user_id: int, channel_messages: list[tuple[str, str]]
-    ) -> tuple[list[int], int, list[str]]:
+    ) -> tuple[list[int], list[tuple[str, int]], int, list[str]]:
         """
         Send messages for all channels.
 
@@ -348,9 +348,10 @@ class DigestSender:
             channel_messages: List of (channel_name, message_text) tuples
 
         Returns:
-            Tuple of (sent_message_ids, success_count, failed_channels)
+            Tuple of (sent_message_ids, channel_id_map, success_count, failed_channels)
         """
         sent_message_ids = []
+        channel_id_map: list[tuple[str, int]] = []
         success_count = 0
         failed_channels = []
 
@@ -363,6 +364,7 @@ class DigestSender:
                 )
                 if message_id:
                     sent_message_ids.append(message_id)
+                    channel_id_map.append((channel_name, message_id))
 
                 success_count += 1
                 self.logger.info(f"✅ Successfully sent message for {channel_name}")
@@ -377,7 +379,7 @@ class DigestSender:
                 failed_channels.append(channel_name)
                 continue
 
-        return sent_message_ids, success_count, failed_channels
+        return sent_message_ids, channel_id_map, success_count, failed_channels
 
     async def send_channel_messages_with_tracking(
         self,
@@ -406,8 +408,8 @@ class DigestSender:
         self.logger.info(f"Sending {len(channel_messages)} channel messages to user {user_id}")
 
         # Send all channel messages
-        sent_message_ids, success_count, failed_channels = await self._send_channel_messages_loop(
-            user_id, channel_messages
+        sent_message_ids, channel_id_map, success_count, failed_channels = (
+            await self._send_channel_messages_loop(user_id, channel_messages)
         )
 
         # Send summary message if provided
