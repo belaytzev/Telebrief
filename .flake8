@@ -23,7 +23,8 @@ exclude =
 # W503 - line break before binary operator
 # D* - All docstring style warnings (using Google style, enforced by pylint instead)
 # I100 - Import order (enforced by isort instead)
-ignore = E203,E501,W503,D,I100
+# I101 - Import name order within a single import (enforced by isort instead)
+ignore = E203,E501,W503,D,I100,I101
 
 # Docstring conventions
 docstring-convention = google

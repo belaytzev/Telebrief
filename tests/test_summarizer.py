@@ -315,9 +315,7 @@ async def test_summarize_channel_retry_failure_propagates(
 
 @pytest.mark.unit
 @pytest.mark.asyncio
-async def test_summarize_channel_no_retry_on_success(
-    sample_config, mock_logger, sample_messages
-):
+async def test_summarize_channel_no_retry_on_success(sample_config, mock_logger, sample_messages):
     """_summarize_channel calls chat_completion exactly once when the first call succeeds."""
     with patch("src.ai_providers.AsyncOpenAI"):
         summarizer = Summarizer(sample_config, mock_logger)

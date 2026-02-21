@@ -28,6 +28,7 @@ def _redact_url(url: str) -> str:
 class TokenBudgetExhaustedError(RuntimeError):
     """Raised when a provider exhausts its token budget without producing visible output."""
 
+
 class AIProvider(ABC):
     """Abstract base class for AI providers."""
 
