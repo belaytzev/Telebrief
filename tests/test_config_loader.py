@@ -134,7 +134,8 @@ settings:
     config_file = tmp_path / "config.yaml"
     config_file.write_text(config_content)
 
-    config = load_config(str(config_file))
+    with patch("src.config_loader.load_dotenv"):
+        config = load_config(str(config_file))
 
     assert config.settings.ai_provider == "ollama"
     assert config.settings.ai_model == "llama3"

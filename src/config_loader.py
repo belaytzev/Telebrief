@@ -82,7 +82,7 @@ def _resolve_ai_settings(settings_dict: dict) -> tuple:
             f"Supported providers: {', '.join(sorted(_SUPPORTED_PROVIDERS))}"
         )
 
-    default_model = _PROVIDER_DEFAULT_MODELS.get(ai_provider, "gpt-5-nano")
+    default_model = _PROVIDER_DEFAULT_MODELS[ai_provider]
 
     # ai_model takes priority; openai_model is only a fallback for the openai provider
     ai_model = settings_dict.get("ai_model") or (

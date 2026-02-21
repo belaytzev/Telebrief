@@ -121,6 +121,21 @@ def test_system_prompt_template_language():
 
 @pytest.mark.unit
 @pytest.mark.asyncio
+async def test_summarize_all_partial_failure(sample_config, mock_logger, sample_messages):
+    """Test that summarize_all catches per-channel errors and continues."""
+    with patch("src.ai_providers.AsyncOpenAI"):
+        summarizer = Summarizer(sample_config, mock_logger)
+
+        summarizer.provider.chat_completion = AsyncMock(side_effect=Exception("API timeout"))
+
+        result = await summarizer.summarize_all({"Failing Channel": sample_messages})
+
+        assert "Failing Channel" in result["channel_summaries"]
+        assert "Error processing channel" in result["channel_summaries"]["Failing Channel"]
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
 async def test_summarizer_custom_output_language(sample_config, mock_logger, sample_messages):
     """Test summarizer uses configured output language in prompts."""
     sample_config.settings.output_language = "Spanish"
