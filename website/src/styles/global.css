@@ -12,13 +12,7 @@
   --color-primary-light: #1db4e0;
   --color-accent: #00c8a0;
 
-  /* Legacy aliases (kept for compatibility with inline styles) */
-  --color-secondary: #2D3748;
-  --color-secondary-dark: #1A202C;
   --color-white: #FFFFFF;
-  --color-gray-light: #1e1e1e;
-  --color-gray: rgba(255,255,255,0.08);
-  --color-gray-dark: #a0a0a0;
 
   /* Text */
   --color-text-primary: #f0f0f0;
