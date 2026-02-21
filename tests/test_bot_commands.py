@@ -7,6 +7,15 @@ import pytest
 from src.bot_commands import BotCommandHandler
 
 
+def _make_callback_update(user_id: int, callback_data: str):
+    """Return a minimal mock Update with a callback query."""
+    update = MagicMock()
+    update.effective_user.id = user_id
+    update.callback_query.data = callback_data
+    update.callback_query.answer = AsyncMock()
+    return update
+
+
 @pytest.fixture
 def english_config(sample_config):
     """sample_config with output_language set to English."""
@@ -174,3 +183,42 @@ async def test_handle_help_uses_output_language(english_config, mock_logger):
     assert "Команды:" not in help_text
     assert "Автоматический режим:" not in help_text
     assert "Возможности:" not in help_text
+
+
+# ---------------------------------------------------------------------------
+# handle_toc_callback
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_handle_toc_callback_success(sample_config, mock_logger):
+    """Authorized user triggers copy_message and query.answer is called."""
+    handler = BotCommandHandler(sample_config, mock_logger)
+    update = _make_callback_update(user_id=123456789, callback_data="toc:123456789:42")
+    context = MagicMock()
+    context.bot.copy_message = AsyncMock()
+
+    await handler.handle_toc_callback(update, context)
+
+    context.bot.copy_message.assert_called_once_with(
+        chat_id=123456789,
+        from_chat_id=123456789,
+        message_id=42,
+    )
+    update.callback_query.answer.assert_called_once()
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_handle_toc_callback_unauthorized(sample_config, mock_logger):
+    """Unauthorized user does not trigger copy_message."""
+    handler = BotCommandHandler(sample_config, mock_logger)
+    update = _make_callback_update(user_id=999999, callback_data="toc:999999:42")
+    context = MagicMock()
+    context.bot.copy_message = AsyncMock()
+
+    await handler.handle_toc_callback(update, context)
+
+    context.bot.copy_message.assert_not_called()
+    update.callback_query.answer.assert_called_once()

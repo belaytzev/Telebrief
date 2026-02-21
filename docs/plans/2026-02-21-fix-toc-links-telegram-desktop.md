@@ -91,13 +91,13 @@ back to the chat — working on all platforms.
 - Modify: `tests/test_formatter.py`
 - Create or modify: `tests/test_bot_commands.py`
 
-- [ ] In `test_formatter.py`, update `test_build_toc_keyboard_private_chat`:
+- [x] In `test_formatter.py`, update `test_build_toc_keyboard_private_chat`:
   - Remove assertion on `btn.url`
   - Assert `btn.callback_data == "toc:123456:101"` and `btn1.callback_data == "toc:123456:202"`
   - Assert `btn.url is None`
-- [ ] Keep `test_build_toc_keyboard_supergroup_chat` unchanged (URL path)
-- [ ] Add `test_build_toc_keyboard_one_button_per_row` still passes (labels unaffected)
-- [ ] In `test_bot_commands.py`, add `test_handle_toc_callback_success`:
+- [x] Keep `test_build_toc_keyboard_supergroup_chat` unchanged (URL path)
+- [x] Add `test_build_toc_keyboard_one_button_per_row` still passes (labels unaffected)
+- [x] In `test_bot_commands.py`, add `test_handle_toc_callback_success`:
   - Mock `update.callback_query.data = "toc:123456789:42"`
   - Mock `update.effective_user.id = 123456789` (authorized)
   - Mock `context.bot.copy_message = AsyncMock()`
@@ -105,7 +105,7 @@ back to the chat — working on all platforms.
   - Call `await handler.handle_toc_callback(update, context)`
   - Assert `copy_message` called with `chat_id=123456789, from_chat_id=123456789, message_id=42`
   - Assert `answer` called once
-- [ ] Add `test_handle_toc_callback_unauthorized`:
+- [x] Add `test_handle_toc_callback_unauthorized`:
   - Same but `update.effective_user.id = 999999` (not the target user)
   - Assert `copy_message` NOT called
 
