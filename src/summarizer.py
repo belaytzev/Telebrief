@@ -207,12 +207,21 @@ Respond ONLY in {self.output_language}. Remember: maximum 3500 characters!
                 channel_name,
                 retry_max_tokens,
             )
-            summary = await self.provider.chat_completion(
-                messages=chat_messages,
-                model=self.model,
-                temperature=self.temperature,
-                max_tokens=retry_max_tokens,
-            )
+            try:
+                summary = await self.provider.chat_completion(
+                    messages=chat_messages,
+                    model=self.model,
+                    temperature=self.temperature,
+                    max_tokens=retry_max_tokens,
+                )
+            except Exception as retry_exc:
+                self.logger.error(
+                    "Retry also failed for %s (max_tokens=%d): %s",
+                    channel_name,
+                    retry_max_tokens,
+                    retry_exc,
+                )
+                raise
         except Exception as e:
             self.logger.error(f"AI provider error for {channel_name}: {e}")
             raise

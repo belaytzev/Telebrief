@@ -325,3 +325,23 @@ async def test_summarize_channel_no_retry_on_success(sample_config, mock_logger,
 
         assert result == "Success summary"
         assert summarizer.provider.chat_completion.call_count == 1
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_summarize_channel_double_budget_exhaustion_propagates(
+    sample_config, mock_logger, sample_messages
+):
+    """If the retry also raises TokenBudgetExhaustedError it propagates without further retry."""
+    with patch("src.ai_providers.AsyncOpenAI"):
+        summarizer = Summarizer(sample_config, mock_logger)
+        summarizer.provider.chat_completion = AsyncMock(
+            side_effect=[
+                TokenBudgetExhaustedError("first exhaustion"),
+                TokenBudgetExhaustedError("second exhaustion"),
+            ]
+        )
+        with pytest.raises(TokenBudgetExhaustedError, match="second exhaustion"):
+            await summarizer._summarize_channel("Test Channel", sample_messages)
+
+        assert summarizer.provider.chat_completion.call_count == 2
