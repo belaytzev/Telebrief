@@ -12,6 +12,8 @@ from telegram.ext import Application, CommandHandler, ContextTypes
 from src.config_loader import Config
 from src.core import generate_and_send_channel_digests
 from src.scheduler import DigestScheduler
+from src.sender import DigestSender
+from src.ui_strings import get_ui_strings
 
 
 class BotCommandHandler:
@@ -32,6 +34,7 @@ class BotCommandHandler:
         self.logger = logger
         self.scheduler = scheduler
         self.app: Optional[Application] = None
+        self._ui = get_ui_strings(config.settings.output_language)
 
     def setup_application(self) -> Application:
         """
@@ -63,11 +66,11 @@ class BotCommandHandler:
             return
 
         commands = [
-            BotCommand("start", "Начать работу сботом"),
-            BotCommand("digest", "Сгенерировать дайджест за 24 часа"),
-            BotCommand("cleanup", "Удалить старые дайджесты"),
-            BotCommand("status", "Показать статус и настройки"),
-            BotCommand("help", "Показать справку"),
+            BotCommand("start", self._ui["cmd_start_desc"]),
+            BotCommand("digest", self._ui["cmd_digest_desc"]),
+            BotCommand("cleanup", self._ui["cmd_cleanup_desc"]),
+            BotCommand("status", self._ui["cmd_status_desc"]),
+            BotCommand("help", self._ui["cmd_help_desc"]),
         ]
 
         try:
@@ -110,9 +113,7 @@ class BotCommandHandler:
         self.logger.info(f"Manual digest requested by user {user_id}")
 
         # Send "processing" message
-        await update.message.reply_text(
-            "⏳ Генерирую дайджест за последние 24 часа...\n" "Это может занять 1-2 минуты."
-        )
+        await update.message.reply_text(self._ui["generating_digest"])
 
         try:
             # Generate and send digest
@@ -121,19 +122,13 @@ class BotCommandHandler:
             )
 
             if success:
-                await update.message.reply_text(
-                    "✅ Дайджест готов! Каждый канал отправлен отдельным сообщением."
-                )
+                await update.message.reply_text(self._ui["digest_done"])
             else:
-                await update.message.reply_text(
-                    "❌ Ошибка при генерации дайджеста. " "Проверьте логи для деталей."
-                )
+                await update.message.reply_text(self._ui["digest_error"])
 
         except Exception as e:
             self.logger.error(f"Error in /digest command: {e}", exc_info=True)
-            await update.message.reply_text(
-                "❌ Произошла ошибка при генерации дайджеста. Проверьте логи."
-            )
+            await update.message.reply_text(self._ui["digest_exception"])
 
     async def handle_cleanup(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
@@ -157,24 +152,20 @@ class BotCommandHandler:
         self.logger.info(f"Manual cleanup requested by user {user_id}")
 
         # Send "processing" message
-        await update.message.reply_text("🧹 Удаляю предыдущие дайджесты...")
+        await update.message.reply_text(self._ui["cleaning_up"])
 
         try:
-            from src.sender import DigestSender
-
             sender = DigestSender(self.config, self.logger)
             success = await sender.cleanup_old_digests(user_id)
 
             if success:
-                await update.message.reply_text("✅ Предыдущие дайджесты успешно удалены!")
+                await update.message.reply_text(self._ui["cleanup_done"])
             else:
-                await update.message.reply_text(
-                    "⚠️ Не удалось удалить некоторые сообщения. Проверьте логи для деталей."
-                )
+                await update.message.reply_text(self._ui["cleanup_partial"])
 
         except Exception as e:
             self.logger.error(f"Error in /cleanup command: {e}", exc_info=True)
-            await update.message.reply_text("❌ Произошла ошибка при очистке. Проверьте логи.")
+            await update.message.reply_text(self._ui["cleanup_error"])
 
     async def handle_status(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
@@ -197,28 +188,29 @@ class BotCommandHandler:
 
         # Gather status information
         ai_model = self.config.settings.ai_model
+        auto_cleanup_value = self._ui["enabled"] if self.config.settings.auto_cleanup_old_digests else self._ui["disabled"]
         status_lines = [
-            "📊 **Статус Telebrief**\n",
-            f"🤖 Провайдер: {self.config.settings.ai_provider}",
-            f"🧠 Модель: {ai_model}",
-            f"📺 Каналов настроено: {len(self.config.channels)}",
-            f"🧹 Автоочистка: {'Включена' if self.config.settings.auto_cleanup_old_digests else 'Выключена'}",
+            self._ui["status_header"],
+            f"{self._ui['provider_label']}: {self.config.settings.ai_provider}",
+            f"{self._ui['model_label']}: {ai_model}",
+            f"{self._ui['channels_configured']}: {len(self.config.channels)}",
+            f"{self._ui['auto_cleanup_label']}: {auto_cleanup_value}",
         ]
 
         if self.scheduler:
             next_run = self.scheduler.get_next_run_time()
-            status_lines.append(f"⏰ Следующий дайджест: {next_run}")
+            status_lines.append(f"{self._ui['next_digest']}: {next_run}")
         else:
-            status_lines.append("⏰ Планировщик не запущен")
+            status_lines.append(self._ui["scheduler_not_running"])
 
         status_lines.extend(
             [
                 "",
-                "**Доступные команды:**",
-                "/digest - Сгенерировать дайджест сейчас",
-                "/cleanup - Удалить предыдущие дайджесты",
-                "/status - Показать этот статус",
-                "/help - Помощь",
+                self._ui["available_commands"],
+                "/digest - " + self._ui["cmd_digest_desc"],
+                "/cleanup - " + self._ui["cmd_cleanup_desc"],
+                "/status - " + self._ui["cmd_status_desc"],
+                "/help - " + self._ui["cmd_help_desc"],
             ]
         )
 
@@ -242,31 +234,23 @@ class BotCommandHandler:
         if not self.is_authorized(user_id):
             return
 
-        help_text = """
-🤖 **Telebrief - Telegram Digest Generator**
-
-Я автоматически генерирую ежедневные дайджесты из ваших Telegram-каналов с помощью AI.
-
-**Команды:**
-
-/digest - Сгенерировать дайджест за последние 24 часа
-/cleanup - Удалить предыдущие дайджесты вручную
-/status - Показать статус и настройки
-/help - Показать эту справку
-
-**Автоматический режим:**
-Дайджест генерируется автоматически каждый день в {schedule}
-
-**Возможности:**
-• Обработка каналов на любых языках
-• Вывод на {output_lang}
-• Умные суммаризации ({provider})
-• Ссылки на оригинальные сообщения
-• Автоматическая очистка старых дайджестов (настраивается)
-        """.format(
-            schedule=self.config.settings.schedule_time + " UTC",
-            output_lang=self.config.settings.output_language,
-            provider=self.config.settings.ai_provider,
+        help_text = (
+            f"{self._ui['help_title']}\n\n"
+            f"{self._ui['help_intro']}\n\n"
+            f"{self._ui['help_commands_header']}\n\n"
+            f"/digest - {self._ui['cmd_digest_desc']}\n"
+            f"/cleanup - {self._ui['cmd_cleanup_desc']}\n"
+            f"/status - {self._ui['cmd_status_desc']}\n"
+            f"/help - {self._ui['cmd_help_desc']}\n\n"
+            f"{self._ui['help_auto_mode']}\n"
+            + self._ui["help_auto_desc"].format(
+                schedule=self.config.settings.schedule_time + " UTC"
+            )
+            + f"\n\n{self._ui['help_features']}\n"
+            + self._ui["help_features_list"].format(
+                output_lang=self.config.settings.output_language,
+                provider=self.config.settings.ai_provider,
+            )
         )
 
         await update.message.reply_text(help_text, parse_mode="Markdown")

@@ -13,13 +13,13 @@
 ## ✨ Features
 
 - 🌐 **Multi-language Support** - Reads channels in ANY language (English, Russian, Ukrainian, Chinese, etc.)
-- 🌍 **Configurable Output Language** - Summaries generated in any language (default: Russian)
+- 🌍 **Configurable Output Language** - All UI labels, summaries, and bot messages in any language (default: Russian)
 - 🤖 **Multi-Provider AI** - Supports OpenAI, Ollama (local), and Anthropic for summarization
 - ⏰ **Scheduled & On-Demand** - Daily automatic digests + instant generation via bot commands
 - 🔒 **Private Channel Support** - Access your private chats and channels
 - 🎨 **Smart Formatting** - Markdown with emojis, bullet points, and clickable message links
 - 🔐 **Secure** - Single-user only, credentials stored safely
-- 🗂️ **Table of Contents Navigation** - Summary message includes inline keyboard buttons linking directly to each channel's digest
+- 🗂️ **Table of Contents Navigation** - Summary message sent first with inline keyboard buttons linking directly to each channel's digest
 - 🧹 **Auto-cleanup** - Automatically removes old digest messages
 
 ---
@@ -111,7 +111,7 @@ Open Telegram and message your bot:
 [ 💻 TechCrunch ] [ 💰 Crypto News ] [ ... ]
 ```
 
-> The summary message includes inline keyboard buttons (one per channel) for quick navigation to each channel's digest.
+> The summary message is sent **first** with inline keyboard buttons (one per channel) for quick navigation. All labels (header, statistics, bot commands) use the configured `output_language` — the example above shows the default Russian output.
 
 ---
 

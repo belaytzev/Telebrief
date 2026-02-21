@@ -399,6 +399,30 @@ class DigestSender:
 
         return sent_message_ids, channel_id_map, success_count, failed_channels
 
+    async def _edit_summary_keyboard(
+        self,
+        user_id: int,
+        summary_id: int,
+        keyboard: Optional[InlineKeyboardMarkup],
+    ) -> None:
+        """
+        Edit the summary message to attach the TOC inline keyboard.
+
+        Args:
+            user_id: Chat ID the summary was sent to
+            summary_id: Message ID of the summary placeholder
+            keyboard: Inline keyboard to attach
+        """
+        try:
+            await self.bot.edit_message_reply_markup(
+                chat_id=user_id,
+                message_id=summary_id,
+                reply_markup=keyboard,
+            )
+            self.logger.info("✅ Summary TOC keyboard updated")
+        except TelegramError as e:
+            self.logger.warning(f"⚠️ Failed to update summary keyboard: {e}")
+
     async def send_channel_messages_with_tracking(
         self,
         channel_messages: list[tuple[str, str]],
@@ -408,9 +432,12 @@ class DigestSender:
         """
         Send separate messages for each channel and track message IDs for cleanup.
 
+        Sends the summary placeholder first so it appears at the top, then sends
+        each channel message, then edits the placeholder to add the TOC keyboard.
+
         Args:
             channel_messages: List of (channel_name, message_text) tuples
-            summary_message: Optional summary message to send at the end
+            summary_message: Optional summary message to send first as TOC header
             user_id: Target user ID (defaults to configured user)
 
         Returns:
@@ -425,26 +452,28 @@ class DigestSender:
 
         self.logger.info(f"Sending {len(channel_messages)} channel messages to user {user_id}")
 
-        # Send all channel messages
+        # Send summary placeholder FIRST so it appears at the top of the chat
+        summary_id = None
+        if summary_message:
+            summary_id = await self._send_summary_message(user_id, summary_message)
+
+        # Send all channel messages and collect their IDs
         sent_message_ids, channel_id_map, success_count, failed_channels = (
             await self._send_channel_messages_loop(user_id, channel_messages)
         )
 
-        # Send summary message if provided
-        if summary_message and success_count > 0:
+        # Edit the placeholder to add the TOC keyboard now that channel IDs are known
+        if summary_message and summary_id and success_count > 0:
             # Use bot_id so tg://openmessage?user_id=BOT_ID opens the chat with the bot
             toc_peer_id = self.bot_id if user_id > 0 else user_id
             keyboard = self.formatter.build_toc_keyboard(channel_id_map, toc_peer_id)
-            summary_id = await self._send_summary_message(
-                user_id, summary_message, reply_markup=keyboard
-            )
-            if summary_id:
-                sent_message_ids.append(summary_id)
+            await self._edit_summary_keyboard(user_id, summary_id, keyboard)
 
-        # Save message IDs for future cleanup
-        if sent_message_ids:
-            save_digest_message_ids(sent_message_ids, user_id)
-            self.logger.info(f"Saved {len(sent_message_ids)} message IDs for cleanup")
+        # Save all message IDs for future cleanup (summary first for correct order)
+        all_ids = ([summary_id] if summary_id else []) + sent_message_ids
+        if all_ids:
+            save_digest_message_ids(all_ids, user_id)
+            self.logger.info(f"Saved {len(all_ids)} message IDs for cleanup")
 
         return self._log_and_return_result(success_count, len(channel_messages), failed_channels)
 

@@ -6,6 +6,13 @@ from telegram import InlineKeyboardMarkup
 from src.formatter import DigestFormatter
 
 
+@pytest.fixture
+def english_config(sample_config):
+    """sample_config with output_language set to English."""
+    sample_config.settings.output_language = "English"
+    return sample_config
+
+
 @pytest.mark.unit
 def test_formatter_initialization(sample_config, mock_logger):
     """Test formatter initialization."""
@@ -214,3 +221,86 @@ def test_build_toc_keyboard_negative_non_supergroup_chat(sample_config, mock_log
     assert keyboard is not None
     btn = keyboard.inline_keyboard[0][0]
     assert btn.url == "https://t.me/c/987654321/500"
+
+
+# --- Language / output_language tests ---
+
+
+@pytest.mark.unit
+def test_create_header_uses_output_language(english_config, mock_logger):
+    """Header uses output_language: English config produces English header."""
+    formatter = DigestFormatter(english_config, mock_logger)
+    header = formatter._create_header(24)
+
+    assert "Daily Digest" in header
+    assert "Ежедневный дайджест" not in header
+
+
+@pytest.mark.unit
+def test_format_summary_message_uses_output_language(english_config, mock_logger):
+    """format_summary_message respects output_language."""
+    formatter = DigestFormatter(english_config, mock_logger)
+    msg = formatter.format_summary_message(total_channels=3, total_messages=42, hours=24)
+
+    assert "Digest completed" in msg
+    assert "Channels processed" in msg
+    assert "Total messages" in msg
+    assert "Period" in msg
+    assert "Дайджест завершён" not in msg
+    assert "Обработано каналов" not in msg
+
+
+@pytest.mark.unit
+def test_create_statistics_uses_output_language(english_config, mock_logger, sample_messages):
+    """_create_statistics respects output_language."""
+    formatter = DigestFormatter(english_config, mock_logger)
+    messages_by_channel = {"Ch1": sample_messages, "Ch2": sample_messages[:1]}
+
+    stats = formatter._create_statistics(messages_by_channel, 24)
+
+    assert "Statistics" in stats
+    assert "channels" in stats
+    assert "messages processed" in stats
+    assert "Статистика" not in stats
+    assert "каналов" not in stats
+
+
+@pytest.mark.unit
+def test_format_channel_message_stats_uses_output_language(
+    english_config, mock_logger, sample_messages
+):
+    """format_channel_message per-channel stats respect output_language."""
+    formatter = DigestFormatter(english_config, mock_logger)
+    msg = formatter.format_channel_message("MyChannel", "Summary text", sample_messages, hours=24)
+
+    assert "Messages processed" in msg
+    assert "Обработано сообщений" not in msg
+
+
+@pytest.mark.unit
+def test_overview_section_label_uses_output_language(
+    english_config, mock_logger, sample_messages
+):
+    """create_digest overview section label respects output_language."""
+    formatter = DigestFormatter(english_config, mock_logger)
+    digest = formatter.create_digest(
+        overview="Some overview",
+        channel_summaries={"Ch": "- point"},
+        messages_by_channel={"Ch": sample_messages},
+        hours=24,
+    )
+
+    assert "Brief Overview" in digest
+    assert "Краткий обзор" not in digest
+
+
+@pytest.mark.unit
+def test_truncation_message_uses_output_language(english_config, mock_logger, sample_messages):
+    """Truncation suffix in format_channel_message respects output_language."""
+    formatter = DigestFormatter(english_config, mock_logger)
+    # Long summary ensures total message exceeds 4096 chars and triggers truncation
+    long_summary = "word " * 1000
+    msg = formatter.format_channel_message("Ch", long_summary, sample_messages, hours=24)
+
+    assert "truncated due to length limit" in msg
+    assert "усечено" not in msg
