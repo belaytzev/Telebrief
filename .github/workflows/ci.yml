@@ -109,6 +109,29 @@ jobs:
     - name: Run Safety (dependency security check)
       run: safety check --json || true
 
+  website-build:
+    name: Website Build Check
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: website/package-lock.json
+
+    - name: Install website dependencies
+      run: npm ci
+      working-directory: website
+
+    - name: Build website
+      run: npm run build
+      working-directory: website
+
   build:
     name: Build Check
     runs-on: ubuntu-latest
