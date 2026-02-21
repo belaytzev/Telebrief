@@ -28,13 +28,14 @@ class Settings:
     lookback_hours: int
     openai_model: str
     openai_temperature: float
-    max_tokens_per_summary: int
-    use_emojis: bool
-    include_statistics: bool
-    target_user_id: int
-    auto_cleanup_old_digests: bool
-    max_messages_per_channel: int
-    api_timeout: int
+    temperature: float = 0.7
+    max_tokens_per_summary: int = 500
+    use_emojis: bool = True
+    include_statistics: bool = True
+    target_user_id: int = 0
+    auto_cleanup_old_digests: bool = True
+    max_messages_per_channel: int = 500
+    api_timeout: int = 30
     ai_provider: str = "openai"
     ai_model: str = ""
     ollama_base_url: str = "http://localhost:11434"
@@ -74,7 +75,10 @@ def _resolve_ai_settings(settings_dict: dict) -> tuple:
     Raises:
         ValueError: If ai_provider is unsupported
     """
-    ai_provider = settings_dict.get("ai_provider", "openai").lower()
+    raw_provider = settings_dict.get("ai_provider", "openai")
+    if not isinstance(raw_provider, str):
+        raise ValueError(f"ai_provider must be a string, got {type(raw_provider).__name__}")
+    ai_provider = raw_provider.lower()
 
     if ai_provider not in _SUPPORTED_PROVIDERS:
         raise ValueError(
@@ -136,6 +140,7 @@ def load_config(config_path: str = "config.yaml") -> Config:
         lookback_hours=settings_dict.get("lookback_hours", 24),
         openai_model=settings_dict.get("openai_model", "gpt-5-nano"),
         openai_temperature=settings_dict.get("openai_temperature", 0.7),
+        temperature=settings_dict.get("temperature", settings_dict.get("openai_temperature", 0.7)),
         max_tokens_per_summary=settings_dict.get("max_tokens_per_summary", 500),
         use_emojis=settings_dict.get("use_emojis", True),
         include_statistics=settings_dict.get("include_statistics", True),

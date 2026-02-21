@@ -84,7 +84,7 @@ class Summarizer:
             api_timeout=config.settings.api_timeout,
         )
         self.model = config.settings.ai_model
-        self.temperature = config.settings.openai_temperature
+        self.temperature = config.settings.temperature
         self.max_tokens = config.settings.max_tokens_per_summary
         self.output_language = config.settings.output_language
 

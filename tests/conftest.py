@@ -32,6 +32,7 @@ def sample_config():
         lookback_hours=24,
         openai_model="gpt-5-nano",
         openai_temperature=0.7,
+        temperature=0.7,
         max_tokens_per_summary=500,
         use_emojis=True,
         include_statistics=True,

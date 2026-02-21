@@ -184,3 +184,64 @@ settings:
 
     with pytest.raises(ValueError, match="Unsupported ai_provider"):
         load_config(str(config_file))
+
+
+@pytest.mark.unit
+def test_load_config_null_ai_provider(tmp_path, mock_env_vars):
+    """Test that ai_provider: null gives a clear ValueError, not AttributeError."""
+    config_content = """
+channels:
+  - id: "@test"
+    name: "Test"
+
+settings:
+  target_user_id: 123456789
+  ai_provider: null
+"""
+    config_file = tmp_path / "config.yaml"
+    config_file.write_text(config_content)
+
+    with pytest.raises(ValueError, match="ai_provider must be a string"):
+        load_config(str(config_file))
+
+
+@pytest.mark.unit
+def test_load_config_temperature_fallback(tmp_path, mock_env_vars):
+    """Test that temperature falls back to openai_temperature when not set."""
+    config_content = """
+channels:
+  - id: "@test"
+    name: "Test"
+
+settings:
+  target_user_id: 123456789
+  openai_temperature: 0.5
+"""
+    config_file = tmp_path / "config.yaml"
+    config_file.write_text(config_content)
+
+    config = load_config(str(config_file))
+
+    assert config.settings.temperature == 0.5
+    assert config.settings.openai_temperature == 0.5
+
+
+@pytest.mark.unit
+def test_load_config_temperature_override(tmp_path, mock_env_vars):
+    """Test that explicit temperature overrides openai_temperature."""
+    config_content = """
+channels:
+  - id: "@test"
+    name: "Test"
+
+settings:
+  target_user_id: 123456789
+  openai_temperature: 0.5
+  temperature: 0.9
+"""
+    config_file = tmp_path / "config.yaml"
+    config_file.write_text(config_content)
+
+    config = load_config(str(config_file))
+
+    assert config.settings.temperature == 0.9

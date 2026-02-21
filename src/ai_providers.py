@@ -102,7 +102,7 @@ class OllamaProvider(AIProvider):
             async with session.post(url, json=payload) as resp:
                 if resp.status != 200:
                     body = await resp.text()
-                    raise RuntimeError(f"Ollama API error {resp.status}: {body}")
+                    raise RuntimeError(f"Ollama API error {resp.status}: {body[:200]}")
                 data = await resp.json(content_type=None)
                 self.logger.debug(
                     "Ollama response: status=%s content_length=%s",
@@ -157,7 +157,7 @@ class AnthropicProvider(AIProvider):
             async with session.post(url, json=payload, headers=headers) as resp:
                 if resp.status != 200:
                     body = await resp.text()
-                    raise RuntimeError(f"Anthropic API error {resp.status}: {body}")
+                    raise RuntimeError(f"Anthropic API error {resp.status}: {body[:200]}")
                 data = await resp.json(content_type=None)
 
         content_blocks = data.get("content", [])

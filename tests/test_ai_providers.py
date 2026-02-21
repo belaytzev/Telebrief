@@ -181,6 +181,37 @@ async def test_ollama_provider_error(mock_logger):
 
 
 @pytest.mark.unit
+@pytest.mark.asyncio
+async def test_ollama_provider_error_body_truncated(mock_logger):
+    """Test that long error bodies are truncated in the exception message."""
+    provider = OllamaProvider(base_url="http://localhost:11434", logger=mock_logger)
+
+    long_body = "x" * 500
+    mock_response = MagicMock()
+    mock_response.status = 500
+    mock_response.text = AsyncMock(return_value=long_body)
+
+    mock_session = MagicMock()
+    mock_session.post = MagicMock(return_value=AsyncContextManager(mock_response))
+    mock_session.close = AsyncMock()
+
+    with patch("src.ai_providers.aiohttp.ClientSession") as mock_cs:
+        mock_cs.return_value = AsyncContextManager(mock_session)
+        with pytest.raises(RuntimeError) as exc_info:
+            await provider.chat_completion(
+                messages=[{"role": "user", "content": "Hello"}],
+                model="llama3",
+                temperature=0.7,
+                max_tokens=500,
+            )
+
+    # Error message should contain at most 200 chars of the body
+    error_msg = str(exc_info.value)
+    assert "Ollama API error 500" in error_msg
+    assert len(error_msg) < 250  # status prefix + 200 chars of body
+
+
+@pytest.mark.unit
 def test_ollama_provider_url_trailing_slash(mock_logger):
     """Test Ollama provider strips trailing slash from URL."""
     provider = OllamaProvider(base_url="http://localhost:11434/", logger=mock_logger)
@@ -320,6 +351,36 @@ async def test_anthropic_provider_chat_completion(mock_logger):
         )
 
     assert result == "Anthropic response"
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_anthropic_provider_error_body_truncated(mock_logger):
+    """Test that long Anthropic error bodies are truncated in the exception message."""
+    provider = AnthropicProvider(api_key="sk-ant-test", logger=mock_logger)
+
+    long_body = "y" * 500
+    mock_response = MagicMock()
+    mock_response.status = 500
+    mock_response.text = AsyncMock(return_value=long_body)
+
+    mock_session = MagicMock()
+    mock_session.post = MagicMock(return_value=AsyncContextManager(mock_response))
+    mock_session.close = AsyncMock()
+
+    with patch("src.ai_providers.aiohttp.ClientSession") as mock_cs:
+        mock_cs.return_value = AsyncContextManager(mock_session)
+        with pytest.raises(RuntimeError) as exc_info:
+            await provider.chat_completion(
+                messages=[{"role": "user", "content": "Hello"}],
+                model="claude-sonnet-4-5-20250929",
+                temperature=0.7,
+                max_tokens=500,
+            )
+
+    error_msg = str(exc_info.value)
+    assert "Anthropic API error 500" in error_msg
+    assert len(error_msg) < 250
 
 
 @pytest.mark.unit
