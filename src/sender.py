@@ -5,11 +5,12 @@ Telegram bot sender for delivering digests.
 import logging
 from typing import Optional
 
-from telegram import Bot
+from telegram import Bot, InlineKeyboardMarkup
 from telegram.constants import ParseMode
 from telegram.error import TelegramError
 
 from src.config_loader import Config
+from src.formatter import DigestFormatter
 from src.utils import (
     clear_digest_message_ids,
     get_digest_message_ids,
@@ -33,6 +34,7 @@ class DigestSender:
         self.logger = logger
         self.bot = Bot(token=config.telegram_bot_token)
         self.target_user_id = config.settings.target_user_id
+        self.formatter = DigestFormatter(config, logger)
 
     async def _send_message_part(self, user_id: int, text: str, part_num: int) -> None:
         """
@@ -293,20 +295,29 @@ class DigestSender:
                 return message.message_id
             raise
 
-    async def _send_summary_message(self, user_id: int, summary_message: str) -> Optional[int]:
+    async def _send_summary_message(
+        self,
+        user_id: int,
+        summary_message: str,
+        reply_markup: Optional[InlineKeyboardMarkup] = None,
+    ) -> Optional[int]:
         """
         Send summary message and return message ID.
 
         Args:
             user_id: Target user ID
             summary_message: Summary message text
+            reply_markup: Optional inline keyboard to attach
 
         Returns:
             Message ID if successful, None otherwise
         """
         try:
             message = await self.bot.send_message(
-                chat_id=user_id, text=summary_message, parse_mode=ParseMode.MARKDOWN
+                chat_id=user_id,
+                text=summary_message,
+                parse_mode=ParseMode.MARKDOWN,
+                reply_markup=reply_markup,
             )
             self.logger.info("✅ Summary message sent")
             return message.message_id
@@ -414,7 +425,10 @@ class DigestSender:
 
         # Send summary message if provided
         if summary_message and success_count > 0:
-            summary_id = await self._send_summary_message(user_id, summary_message)
+            keyboard = self.formatter.build_toc_keyboard(channel_id_map, user_id)
+            summary_id = await self._send_summary_message(
+                user_id, summary_message, reply_markup=keyboard
+            )
             if summary_id:
                 sent_message_ids.append(summary_id)
 

@@ -74,20 +74,20 @@ The link type is determined at send time by inspecting the sign of `user_id`.
 **Files:**
 - Modify: `src/sender.py`
 
-- [ ] Add import at top of sender.py: `from telegram import InlineKeyboardMarkup`
-- [ ] Modify `_send_summary_message` signature to accept an optional `reply_markup: Optional[InlineKeyboardMarkup] = None`
-- [ ] Pass `reply_markup=reply_markup` to `self.bot.send_message(...)` in `_send_summary_message`
-- [ ] Modify `send_channel_messages_with_tracking` to:
+- [x] Add import at top of sender.py: `from telegram import InlineKeyboardMarkup`
+- [x] Modify `_send_summary_message` signature to accept an optional `reply_markup: Optional[InlineKeyboardMarkup] = None`
+- [x] Pass `reply_markup=reply_markup` to `self.bot.send_message(...)` in `_send_summary_message`
+- [x] Modify `send_channel_messages_with_tracking` to:
   - Accept new optional parameter `channel_id_map: Optional[list[tuple[str, int]]] = None`
   - If `summary_message` and `channel_id_map` and `success_count > 0`:
     - Build `keyboard = self.formatter.build_toc_keyboard(channel_id_map, user_id)` — requires `DigestFormatter` reference (see note below)
     - Pass `reply_markup=keyboard` to `_send_summary_message`
-- [ ] Since `DigestSender` doesn't currently hold a formatter reference, add `self.formatter = DigestFormatter(config)` to `DigestSender.__init__` (check if `DigestFormatter` needs any config - if it only needs logger/config, pass both)
-- [ ] Alternatively (simpler): accept `reply_markup: Optional[InlineKeyboardMarkup] = None` as a parameter to `send_channel_messages_with_tracking` and have the caller build the keyboard - this avoids adding formatter to sender. Choose whichever is cleaner based on code review.
-- [ ] Write tests in `tests/test_sender.py`:
+- [x] Since `DigestSender` doesn't currently hold a formatter reference, add `self.formatter = DigestFormatter(config)` to `DigestSender.__init__` (check if `DigestFormatter` needs any config - if it only needs logger/config, pass both)
+- [x] Alternatively (simpler): accept `reply_markup: Optional[InlineKeyboardMarkup] = None` as a parameter to `send_channel_messages_with_tracking` and have the caller build the keyboard - this avoids adding formatter to sender. Choose whichever is cleaner based on code review.
+- [x] Write tests in `tests/test_sender.py`:
   - Test that when `channel_id_map` is provided, `_send_summary_message` is called with a non-None `reply_markup`
   - Test that when `channel_id_map` is empty or None, `reply_markup` is None (no keyboard)
-- [ ] Run `pytest tests/test_sender.py` - must pass before task 4
+- [x] Run `pytest tests/test_sender.py` - must pass before task 4
 
 ### Task 4: Wire up channel_id_map in `core.py`
 

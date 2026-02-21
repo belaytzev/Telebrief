@@ -382,6 +382,72 @@ async def test_send_channel_messages_loop_channel_id_map_with_failure(sample_con
 
 @pytest.mark.unit
 @pytest.mark.asyncio
+async def test_summary_message_sent_with_toc_keyboard(
+    sample_config, mock_logger, tmp_path, monkeypatch
+):
+    """Test that summary message includes a TOC keyboard when channels are sent successfully."""
+    storage_file = tmp_path / "digest_messages.json"
+    monkeypatch.setattr("src.utils.MESSAGE_STORAGE_FILE", str(storage_file))
+
+    channel_messages = [
+        ("Channel 1", "Message 1"),
+        ("Channel 2", "Message 2"),
+    ]
+
+    with patch("src.sender.Bot") as mock_bot_class:
+        mock_bot = MagicMock()
+
+        mock_msg1 = MagicMock()
+        mock_msg1.message_id = 101
+        mock_msg2 = MagicMock()
+        mock_msg2.message_id = 102
+        mock_summary_msg = MagicMock()
+        mock_summary_msg.message_id = 103
+
+        mock_bot.send_message = AsyncMock(
+            side_effect=[mock_msg1, mock_msg2, mock_summary_msg]
+        )
+        mock_bot_class.return_value = mock_bot
+
+        sender = DigestSender(sample_config, mock_logger)
+        await sender.send_channel_messages_with_tracking(
+            channel_messages, summary_message="Summary", user_id=123456789
+        )
+
+    # The 3rd send_message call is the summary and should carry reply_markup
+    summary_call_kwargs = mock_bot.send_message.call_args_list[2][1]
+    assert summary_call_kwargs.get("reply_markup") is not None
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_summary_message_sent_without_toc_keyboard_when_all_fail(
+    sample_config, mock_logger, tmp_path, monkeypatch
+):
+    """Test that summary message is not sent when all channel sends fail (success_count == 0)."""
+    from telegram.error import TelegramError
+
+    storage_file = tmp_path / "digest_messages.json"
+    monkeypatch.setattr("src.utils.MESSAGE_STORAGE_FILE", str(storage_file))
+
+    channel_messages = [("Channel 1", "Message 1")]
+
+    with patch("src.sender.Bot") as mock_bot_class:
+        mock_bot = MagicMock()
+        mock_bot.send_message = AsyncMock(side_effect=TelegramError("API Error"))
+        mock_bot_class.return_value = mock_bot
+
+        sender = DigestSender(sample_config, mock_logger)
+        await sender.send_channel_messages_with_tracking(
+            channel_messages, summary_message="Summary", user_id=123456789
+        )
+
+    # Only the failed channel attempt; summary is never called (success_count == 0)
+    assert mock_bot.send_message.call_count == 1
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
 async def test_send_channel_messages_long_message(sample_config, mock_logger):
     """Test sending channel message that exceeds length limit."""
     # Create a message longer than 4096 characters
