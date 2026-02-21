@@ -294,6 +294,118 @@ async def test_openai_provider_length_empty_content_raises_with_guidance(mock_lo
         assert "max_tokens_per_summary" in str(exc_info.value)
 
 
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_openai_provider_passes_reasoning_effort_when_provided(mock_logger):
+    """OpenAI provider passes reasoning_effort to the API when a value is given."""
+    with patch("src.ai_providers.AsyncOpenAI"):
+        provider = OpenAIProvider(api_key="sk-test", logger=mock_logger)
+
+        mock_choice = MagicMock()
+        mock_choice.message.content = "Summary"
+        mock_choice.message.refusal = None
+        mock_choice.finish_reason = "stop"
+        mock_response = MagicMock()
+        mock_response.choices = [mock_choice]
+        mock_response.usage.prompt_tokens = 100
+        mock_response.usage.completion_tokens = 50
+        mock_response.usage.total_tokens = 150
+        provider.client.chat.completions.create = AsyncMock(return_value=mock_response)
+
+        await provider.chat_completion(
+            messages=[{"role": "user", "content": "Hello"}],
+            model="gpt-5-nano",
+            temperature=0.7,
+            max_tokens=500,
+            reasoning_effort="low",
+        )
+
+        call_kwargs = provider.client.chat.completions.create.call_args[1]
+        assert call_kwargs.get("reasoning_effort") == "low"
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_openai_provider_omits_reasoning_effort_when_none(mock_logger):
+    """OpenAI provider does NOT include reasoning_effort in the API call when it is None."""
+    with patch("src.ai_providers.AsyncOpenAI"):
+        provider = OpenAIProvider(api_key="sk-test", logger=mock_logger)
+
+        mock_choice = MagicMock()
+        mock_choice.message.content = "response"
+        mock_choice.message.refusal = None
+        mock_choice.finish_reason = "stop"
+        mock_response = MagicMock()
+        mock_response.choices = [mock_choice]
+        mock_response.usage.prompt_tokens = 10
+        mock_response.usage.completion_tokens = 5
+        mock_response.usage.total_tokens = 15
+        provider.client.chat.completions.create = AsyncMock(return_value=mock_response)
+
+        await provider.chat_completion(
+            messages=[{"role": "user", "content": "Hello"}],
+            model="gpt-5-nano",
+            temperature=0.7,
+            max_tokens=500,
+            reasoning_effort=None,
+        )
+
+        call_kwargs = provider.client.chat.completions.create.call_args[1]
+        assert "reasoning_effort" not in call_kwargs
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_openai_provider_falls_back_when_reasoning_effort_rejected(mock_logger):
+    """When the API rejects reasoning_effort (BadRequestError), the provider retries without it."""
+    import httpx
+    from openai import BadRequestError
+
+    with patch("src.ai_providers.AsyncOpenAI"):
+        provider = OpenAIProvider(api_key="sk-test", logger=mock_logger)
+
+        mock_choice = MagicMock()
+        mock_choice.message.content = "Summary without reasoning"
+        mock_choice.message.refusal = None
+        mock_choice.finish_reason = "stop"
+        mock_response = MagicMock()
+        mock_response.choices = [mock_choice]
+        mock_response.usage.prompt_tokens = 100
+        mock_response.usage.completion_tokens = 50
+        mock_response.usage.total_tokens = 150
+
+        bad_request = BadRequestError(
+            message="Unsupported parameter: reasoning_effort",
+            response=httpx.Response(
+                400,
+                json={"error": {"message": "Unsupported parameter: reasoning_effort"}},
+                request=httpx.Request("POST", "https://api.openai.com/v1/chat/completions"),
+            ),
+            body={"error": {"message": "Unsupported parameter: reasoning_effort"}},
+        )
+
+        provider.client.chat.completions.create = AsyncMock(
+            side_effect=[bad_request, mock_response]
+        )
+
+        result = await provider.chat_completion(
+            messages=[{"role": "user", "content": "Hello"}],
+            model="gpt-5-nano",
+            temperature=0.7,
+            max_tokens=500,
+            reasoning_effort="low",
+        )
+
+        assert result == "Summary without reasoning"
+        assert provider.client.chat.completions.create.call_count == 2
+
+        second_call_kwargs = provider.client.chat.completions.create.call_args_list[1][1]
+        assert "reasoning_effort" not in second_call_kwargs
+
+        debug_calls = " ".join(str(c) for c in mock_logger.debug.call_args_list)
+        assert "reasoning_effort" in debug_calls.lower()
+
+
 # --- Ollama provider tests ---
 
 
