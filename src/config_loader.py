@@ -35,6 +35,7 @@ class Settings:
     target_user_id: int = 0
     auto_cleanup_old_digests: bool = True
     max_messages_per_channel: int = 500
+    max_prompt_chars: int = 8000
     api_timeout: int = 30
     ai_provider: str = "openai"
     ai_model: str = ""
@@ -147,6 +148,7 @@ def load_config(config_path: str = "config.yaml") -> Config:
         target_user_id=settings_dict.get("target_user_id", 0),
         auto_cleanup_old_digests=settings_dict.get("auto_cleanup_old_digests", True),
         max_messages_per_channel=settings_dict.get("max_messages_per_channel", 500),
+        max_prompt_chars=settings_dict.get("max_prompt_chars", 8000),
         api_timeout=int(settings_dict.get("api_timeout", 30)),
         ai_provider=ai_provider,
         ai_model=ai_model,

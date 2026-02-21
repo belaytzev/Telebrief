@@ -285,3 +285,42 @@ settings:
     config = load_config(str(config_file))
 
     assert config.settings.max_tokens_per_summary == 1500
+
+
+@pytest.mark.unit
+def test_load_config_default_max_prompt_chars(tmp_path, mock_env_vars):
+    """Test that max_prompt_chars defaults to 8000 when not specified."""
+    config_content = """
+channels:
+  - id: "@test"
+    name: "Test"
+
+settings:
+  target_user_id: 123456789
+"""
+    config_file = tmp_path / "config.yaml"
+    config_file.write_text(config_content)
+
+    config = load_config(str(config_file))
+
+    assert config.settings.max_prompt_chars == 8000
+
+
+@pytest.mark.unit
+def test_load_config_custom_max_prompt_chars(tmp_path, mock_env_vars):
+    """Test that max_prompt_chars is loaded correctly from YAML."""
+    config_content = """
+channels:
+  - id: "@test"
+    name: "Test"
+
+settings:
+  target_user_id: 123456789
+  max_prompt_chars: 4000
+"""
+    config_file = tmp_path / "config.yaml"
+    config_file.write_text(config_content)
+
+    config = load_config(str(config_file))
+
+    assert config.settings.max_prompt_chars == 4000

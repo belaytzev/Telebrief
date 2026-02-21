@@ -39,6 +39,7 @@ def sample_config():
         target_user_id=123456789,
         auto_cleanup_old_digests=True,
         max_messages_per_channel=500,
+        max_prompt_chars=8000,
         api_timeout=30,
         ai_provider="openai",
         ai_model="gpt-5-nano",

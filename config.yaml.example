@@ -53,4 +53,7 @@ settings:
 
   # Safety limits
   max_messages_per_channel: 500
+  max_prompt_chars: 8000  # Max characters of message content fed to AI per channel (~2000 tokens).
+                          # Keeps the most recent messages that fit. Increase for non-reasoning
+                          # models; decrease if you hit "empty content + finish_reason=length".
   api_timeout: 30  # Ollama may need 120-300s for local models (enforced minimum: 120s)
