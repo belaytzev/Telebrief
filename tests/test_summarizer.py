@@ -291,6 +291,9 @@ async def test_summarize_channel_retries_on_token_budget_exhausted(
         first_max = summarizer.provider.chat_completion.call_args_list[0].kwargs["max_tokens"]
         second_max = summarizer.provider.chat_completion.call_args_list[1].kwargs["max_tokens"]
         assert second_max == first_max * 3
+        # retry must include reasoning_effort="low"
+        second_kwargs = summarizer.provider.chat_completion.call_args_list[1].kwargs
+        assert second_kwargs.get("reasoning_effort") == "low"
 
 
 @pytest.mark.unit
@@ -345,3 +348,22 @@ async def test_summarize_channel_double_budget_exhaustion_propagates(
             await summarizer._summarize_channel("Test Channel", sample_messages)
 
         assert summarizer.provider.chat_completion.call_count == 2
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_summarize_channel_retry_passes_reasoning_effort_low(
+    sample_config, mock_logger, sample_messages
+):
+    """On retry after TokenBudgetExhaustedError, reasoning_effort='low' is passed."""
+    with patch("src.ai_providers.AsyncOpenAI"):
+        summarizer = Summarizer(sample_config, mock_logger)
+        summarizer.provider.chat_completion = AsyncMock(
+            side_effect=[TokenBudgetExhaustedError("budget"), "Retry summary"]
+        )
+
+        result = await summarizer._summarize_channel("Test Channel", sample_messages)
+
+        assert result == "Retry summary"
+        retry_kwargs = summarizer.provider.chat_completion.call_args_list[1].kwargs
+        assert retry_kwargs.get("reasoning_effort") == "low"

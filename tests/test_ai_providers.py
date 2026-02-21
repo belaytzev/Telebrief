@@ -741,6 +741,33 @@ async def test_ollama_provider_length_empty_content_raises_with_guidance(mock_lo
     assert "max_tokens_per_summary" in str(exc_info.value)
 
 
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_ollama_provider_accepts_reasoning_effort_param(mock_logger):
+    """Ollama provider silently accepts and ignores reasoning_effort."""
+    provider = OllamaProvider(base_url="http://localhost:11434", logger=mock_logger)
+
+    mock_response = MagicMock()
+    mock_response.status = 200
+    mock_response.content_length = 42
+    mock_response.json = AsyncMock(return_value={"message": {"content": "response"}})
+    mock_session = MagicMock()
+    mock_session.post = MagicMock(return_value=AsyncContextManager(mock_response))
+    mock_session.close = AsyncMock()
+
+    with patch("src.ai_providers.aiohttp.ClientSession") as mock_cs:
+        mock_cs.return_value = AsyncContextManager(mock_session)
+        result = await provider.chat_completion(
+            messages=[{"role": "user", "content": "Hello"}],
+            model="llama3",
+            temperature=0.7,
+            max_tokens=500,
+            reasoning_effort="low",
+        )
+
+    assert result == "response"
+
+
 # --- Anthropic provider tests ---
 
 
@@ -996,6 +1023,37 @@ async def test_anthropic_provider_max_tokens_empty_content_raises_with_guidance(
             )
 
     assert "max_tokens_per_summary" in str(exc_info.value)
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_anthropic_provider_accepts_reasoning_effort_param(mock_logger):
+    """Anthropic provider silently accepts and ignores reasoning_effort."""
+    provider = AnthropicProvider(api_key="sk-ant-test", logger=mock_logger)
+
+    mock_response = MagicMock()
+    mock_response.status = 200
+    mock_response.json = AsyncMock(
+        return_value={
+            "content": [{"type": "text", "text": "response"}],
+            "stop_reason": "end_turn",
+            "usage": {"input_tokens": 100, "output_tokens": 50},
+        }
+    )
+    mock_session = MagicMock()
+    mock_session.post = MagicMock(return_value=AsyncContextManager(mock_response))
+
+    with patch("src.ai_providers.aiohttp.ClientSession") as mock_cs:
+        mock_cs.return_value = AsyncContextManager(mock_session)
+        result = await provider.chat_completion(
+            messages=[{"role": "user", "content": "Hello"}],
+            model="claude-sonnet-4-6",
+            temperature=0.7,
+            max_tokens=500,
+            reasoning_effort="low",
+        )
+
+    assert result == "response"
 
 
 # --- URL redaction tests ---
