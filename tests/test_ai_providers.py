@@ -113,13 +113,105 @@ async def test_openai_provider_chat_completion(mock_logger):
 
 @pytest.mark.unit
 @pytest.mark.asyncio
-async def test_openai_provider_empty_content(mock_logger):
-    """Test OpenAI provider with empty content response."""
+async def test_openai_provider_none_content_raises(mock_logger):
+    """Test OpenAI provider raises RuntimeError when content is None."""
     with patch("src.ai_providers.AsyncOpenAI"):
         provider = OpenAIProvider(api_key="sk-test", logger=mock_logger)
 
+        mock_choice = MagicMock()
+        mock_choice.message.content = None
+        mock_choice.message.refusal = None
+        mock_choice.finish_reason = "length"
+
         mock_response = MagicMock()
-        mock_response.choices = [MagicMock(message=MagicMock(content=None))]
+        mock_response.choices = [mock_choice]
+        mock_response.usage.prompt_tokens = 1234
+        mock_response.usage.completion_tokens = 0
+        mock_response.usage.total_tokens = 1234
+        provider.client.chat.completions.create = AsyncMock(return_value=mock_response)
+
+        with pytest.raises(RuntimeError, match="empty content"):
+            await provider.chat_completion(
+                messages=[{"role": "user", "content": "Hello"}],
+                model="gpt-5-nano",
+                temperature=0.7,
+                max_tokens=500,
+            )
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_openai_provider_empty_string_content_raises(mock_logger):
+    """Test OpenAI provider raises RuntimeError when content is empty string."""
+    with patch("src.ai_providers.AsyncOpenAI"):
+        provider = OpenAIProvider(api_key="sk-test", logger=mock_logger)
+
+        mock_choice = MagicMock()
+        mock_choice.message.content = "   "
+        mock_choice.message.refusal = None
+        mock_choice.finish_reason = "stop"
+
+        mock_response = MagicMock()
+        mock_response.choices = [mock_choice]
+        mock_response.usage.prompt_tokens = 100
+        mock_response.usage.completion_tokens = 1
+        mock_response.usage.total_tokens = 101
+        provider.client.chat.completions.create = AsyncMock(return_value=mock_response)
+
+        with pytest.raises(RuntimeError, match="empty content"):
+            await provider.chat_completion(
+                messages=[{"role": "user", "content": "Hello"}],
+                model="gpt-5-nano",
+                temperature=0.7,
+                max_tokens=500,
+            )
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_openai_provider_refusal_raises(mock_logger):
+    """Test OpenAI provider raises RuntimeError when model refuses."""
+    with patch("src.ai_providers.AsyncOpenAI"):
+        provider = OpenAIProvider(api_key="sk-test", logger=mock_logger)
+
+        mock_choice = MagicMock()
+        mock_choice.message.content = None
+        mock_choice.message.refusal = "I cannot process this request"
+        mock_choice.finish_reason = "stop"
+
+        mock_response = MagicMock()
+        mock_response.choices = [mock_choice]
+        mock_response.usage.prompt_tokens = 100
+        mock_response.usage.completion_tokens = 10
+        mock_response.usage.total_tokens = 110
+        provider.client.chat.completions.create = AsyncMock(return_value=mock_response)
+
+        with pytest.raises(RuntimeError, match="empty content"):
+            await provider.chat_completion(
+                messages=[{"role": "user", "content": "Hello"}],
+                model="gpt-5-nano",
+                temperature=0.7,
+                max_tokens=500,
+            )
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_openai_provider_logs_response_metadata(mock_logger):
+    """Test OpenAI provider logs finish_reason and token usage."""
+    with patch("src.ai_providers.AsyncOpenAI"):
+        provider = OpenAIProvider(api_key="sk-test", logger=mock_logger)
+
+        mock_choice = MagicMock()
+        mock_choice.message.content = "Valid response"
+        mock_choice.message.refusal = None
+        mock_choice.finish_reason = "stop"
+
+        mock_response = MagicMock()
+        mock_response.choices = [mock_choice]
+        mock_response.usage.prompt_tokens = 500
+        mock_response.usage.completion_tokens = 100
+        mock_response.usage.total_tokens = 600
         provider.client.chat.completions.create = AsyncMock(return_value=mock_response)
 
         result = await provider.chat_completion(
@@ -129,7 +221,14 @@ async def test_openai_provider_empty_content(mock_logger):
             max_tokens=500,
         )
 
-        assert result == ""
+        assert result == "Valid response"
+
+        # Verify debug logging was called with response metadata
+        debug_messages = [str(call) for call in mock_logger.debug.call_args_list]
+        debug_text = " ".join(debug_messages)
+        assert "finish_reason" in debug_text
+        assert "stop" in debug_text
+        assert "prompt_tokens" in debug_text
 
 
 # --- Ollama provider tests ---
@@ -286,7 +385,7 @@ async def test_ollama_provider_debug_logging(mock_logger):
         )
 
     debug_calls = [call for call in mock_logger.debug.call_args_list]
-    assert len(debug_calls) == 2
+    assert len(debug_calls) == 3
 
     # First call: request log
     assert "Ollama request" in debug_calls[0][0][0]
@@ -297,6 +396,9 @@ async def test_ollama_provider_debug_logging(mock_logger):
     assert "Ollama response" in debug_calls[1][0][0]
     assert debug_calls[1][0][1] == 200
     assert debug_calls[1][0][2] == 42
+
+    # Third call: metadata log
+    assert "Ollama metadata" in debug_calls[2][0][0]
 
 
 @pytest.mark.unit
@@ -323,6 +425,71 @@ def test_ollama_provider_respects_higher_timeout(mock_logger):
     )
     assert isinstance(provider, OllamaProvider)
     assert provider.timeout.total == 300
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_ollama_provider_empty_content_raises(mock_logger):
+    """Test Ollama provider raises RuntimeError when content is empty."""
+    provider = OllamaProvider(base_url="http://localhost:11434", logger=mock_logger)
+
+    mock_response = MagicMock()
+    mock_response.status = 200
+    mock_response.content_length = 42
+    mock_response.json = AsyncMock(
+        return_value={
+            "message": {"content": ""},
+            "model": "llama3",
+            "eval_count": 0,
+            "prompt_eval_count": 100,
+        }
+    )
+
+    mock_session = MagicMock()
+    mock_session.post = MagicMock(return_value=AsyncContextManager(mock_response))
+    mock_session.close = AsyncMock()
+
+    with patch("src.ai_providers.aiohttp.ClientSession") as mock_cs:
+        mock_cs.return_value = AsyncContextManager(mock_session)
+        with pytest.raises(RuntimeError, match="empty content"):
+            await provider.chat_completion(
+                messages=[{"role": "user", "content": "Hello"}],
+                model="llama3",
+                temperature=0.7,
+                max_tokens=500,
+            )
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_ollama_provider_missing_message_key_raises(mock_logger):
+    """Test Ollama provider raises RuntimeError when message key is missing."""
+    provider = OllamaProvider(base_url="http://localhost:11434", logger=mock_logger)
+
+    mock_response = MagicMock()
+    mock_response.status = 200
+    mock_response.content_length = 10
+    mock_response.json = AsyncMock(
+        return_value={
+            "model": "llama3",
+            "eval_count": 0,
+            "prompt_eval_count": 50,
+        }
+    )
+
+    mock_session = MagicMock()
+    mock_session.post = MagicMock(return_value=AsyncContextManager(mock_response))
+    mock_session.close = AsyncMock()
+
+    with patch("src.ai_providers.aiohttp.ClientSession") as mock_cs:
+        mock_cs.return_value = AsyncContextManager(mock_session)
+        with pytest.raises(RuntimeError, match="empty content"):
+            await provider.chat_completion(
+                messages=[{"role": "user", "content": "Hello"}],
+                model="llama3",
+                temperature=0.7,
+                max_tokens=500,
+            )
 
 
 # --- Anthropic provider tests ---
@@ -412,6 +579,106 @@ async def test_anthropic_provider_error(mock_logger):
                 temperature=0.7,
                 max_tokens=500,
             )
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_anthropic_provider_empty_content_array_raises(mock_logger):
+    """Test Anthropic provider raises RuntimeError when content array is empty."""
+    provider = AnthropicProvider(api_key="sk-ant-test", logger=mock_logger)
+
+    mock_response = MagicMock()
+    mock_response.status = 200
+    mock_response.json = AsyncMock(
+        return_value={
+            "content": [],
+            "stop_reason": "end_turn",
+            "usage": {"input_tokens": 500, "output_tokens": 0},
+        }
+    )
+
+    mock_session = MagicMock()
+    mock_session.post = MagicMock(return_value=AsyncContextManager(mock_response))
+    mock_session.close = AsyncMock()
+
+    with patch("src.ai_providers.aiohttp.ClientSession") as mock_cs:
+        mock_cs.return_value = AsyncContextManager(mock_session)
+        with pytest.raises(RuntimeError, match="empty content"):
+            await provider.chat_completion(
+                messages=[{"role": "user", "content": "Hello"}],
+                model="claude-sonnet-4-5-20250929",
+                temperature=0.7,
+                max_tokens=500,
+            )
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_anthropic_provider_no_text_blocks_raises(mock_logger):
+    """Test Anthropic provider raises RuntimeError when content has no text blocks."""
+    provider = AnthropicProvider(api_key="sk-ant-test", logger=mock_logger)
+
+    mock_response = MagicMock()
+    mock_response.status = 200
+    mock_response.json = AsyncMock(
+        return_value={
+            "content": [{"type": "tool_use", "id": "123", "name": "test"}],
+            "stop_reason": "tool_use",
+            "usage": {"input_tokens": 200, "output_tokens": 50},
+        }
+    )
+
+    mock_session = MagicMock()
+    mock_session.post = MagicMock(return_value=AsyncContextManager(mock_response))
+    mock_session.close = AsyncMock()
+
+    with patch("src.ai_providers.aiohttp.ClientSession") as mock_cs:
+        mock_cs.return_value = AsyncContextManager(mock_session)
+        with pytest.raises(RuntimeError, match="empty content"):
+            await provider.chat_completion(
+                messages=[{"role": "user", "content": "Hello"}],
+                model="claude-sonnet-4-5-20250929",
+                temperature=0.7,
+                max_tokens=500,
+            )
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_anthropic_provider_logs_response_metadata(mock_logger):
+    """Test Anthropic provider logs stop_reason and usage."""
+    provider = AnthropicProvider(api_key="sk-ant-test", logger=mock_logger)
+
+    mock_response = MagicMock()
+    mock_response.status = 200
+    mock_response.json = AsyncMock(
+        return_value={
+            "content": [{"type": "text", "text": "Valid response"}],
+            "stop_reason": "end_turn",
+            "usage": {"input_tokens": 300, "output_tokens": 75},
+        }
+    )
+
+    mock_session = MagicMock()
+    mock_session.post = MagicMock(return_value=AsyncContextManager(mock_response))
+    mock_session.close = AsyncMock()
+
+    with patch("src.ai_providers.aiohttp.ClientSession") as mock_cs:
+        mock_cs.return_value = AsyncContextManager(mock_session)
+        result = await provider.chat_completion(
+            messages=[{"role": "user", "content": "Hello"}],
+            model="claude-sonnet-4-5-20250929",
+            temperature=0.7,
+            max_tokens=500,
+        )
+
+    assert result == "Valid response"
+
+    debug_messages = [str(call) for call in mock_logger.debug.call_args_list]
+    debug_text = " ".join(debug_messages)
+    assert "stop_reason" in debug_text
+    assert "end_turn" in debug_text
+    assert "input_tokens" in debug_text
 
 
 # --- URL redaction tests ---

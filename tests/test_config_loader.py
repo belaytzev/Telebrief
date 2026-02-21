@@ -266,3 +266,22 @@ settings:
 
     assert config.settings.api_timeout == 60
     assert isinstance(config.settings.api_timeout, int)
+
+
+@pytest.mark.unit
+def test_load_config_default_max_tokens_per_summary(tmp_path, mock_env_vars):
+    """Test that max_tokens_per_summary defaults to 1500 when not specified."""
+    config_content = """
+channels:
+  - id: "@test"
+    name: "Test"
+
+settings:
+  target_user_id: 123456789
+"""
+    config_file = tmp_path / "config.yaml"
+    config_file.write_text(config_content)
+
+    config = load_config(str(config_file))
+
+    assert config.settings.max_tokens_per_summary == 1500

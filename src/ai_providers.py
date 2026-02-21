@@ -75,8 +75,34 @@ class OpenAIProvider(AIProvider):
         )
         if not response.choices:
             raise RuntimeError("OpenAI returned no choices in response")
-        content = response.choices[0].message.content
-        return content.strip() if content else ""
+
+        choice = response.choices[0]
+        finish_reason = choice.finish_reason
+        refusal = getattr(choice.message, "refusal", None)
+        usage = response.usage
+
+        self.logger.debug(
+            "OpenAI response: finish_reason=%s prompt_tokens=%s "
+            "completion_tokens=%s total_tokens=%s",
+            finish_reason,
+            usage.prompt_tokens if usage else None,
+            usage.completion_tokens if usage else None,
+            usage.total_tokens if usage else None,
+        )
+
+        if refusal:
+            self.logger.warning("OpenAI model refusal: %s", refusal)
+
+        content = choice.message.content
+        text = content.strip() if content else ""
+        if not text:
+            raise RuntimeError(
+                f"OpenAI returned empty content "
+                f"(finish_reason={finish_reason}, "
+                f"prompt_tokens={usage.prompt_tokens if usage else 'N/A'}, "
+                f"completion_tokens={usage.completion_tokens if usage else 'N/A'})"
+            )
+        return text
 
 
 class OllamaProvider(AIProvider):
@@ -124,8 +150,25 @@ class OllamaProvider(AIProvider):
                     resp.content_length,
                 )
 
+        resp_model = data.get("model", "unknown")
+        eval_count = data.get("eval_count")
+        prompt_eval_count = data.get("prompt_eval_count")
+        self.logger.debug(
+            "Ollama metadata: model=%s eval_count=%s prompt_eval_count=%s",
+            resp_model,
+            eval_count,
+            prompt_eval_count,
+        )
+
         content: str = data.get("message", {}).get("content", "")
-        return content.strip()
+        text = content.strip()
+        if not text:
+            raise RuntimeError(
+                f"Ollama returned empty content "
+                f"(model={resp_model}, eval_count={eval_count}, "
+                f"prompt_eval_count={prompt_eval_count})"
+            )
+        return text
 
 
 class AnthropicProvider(AIProvider):
@@ -174,9 +217,26 @@ class AnthropicProvider(AIProvider):
                     raise RuntimeError(f"Anthropic API error {resp.status}: {body[:200]}")
                 data = await resp.json(content_type=None)
 
+        stop_reason = data.get("stop_reason")
+        usage = data.get("usage") or {}
+        self.logger.debug(
+            "Anthropic response: stop_reason=%s input_tokens=%s output_tokens=%s",
+            stop_reason,
+            usage.get("input_tokens"),
+            usage.get("output_tokens"),
+        )
+
         content_blocks = data.get("content") or []
         texts = [block.get("text", "") for block in content_blocks if block.get("type") == "text"]
-        return "\n".join(texts).strip()
+        text = "\n".join(texts).strip()
+        if not text:
+            raise RuntimeError(
+                f"Anthropic returned empty content "
+                f"(stop_reason={stop_reason}, "
+                f"input_tokens={usage.get('input_tokens', 'N/A')}, "
+                f"output_tokens={usage.get('output_tokens', 'N/A')})"
+            )
+        return text
 
 
 def create_provider(

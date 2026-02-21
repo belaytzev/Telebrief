@@ -33,7 +33,7 @@ def sample_config():
         openai_model="gpt-5-nano",
         openai_temperature=0.7,
         temperature=0.7,
-        max_tokens_per_summary=500,
+        max_tokens_per_summary=1500,
         use_emojis=True,
         include_statistics=True,
         target_user_id=123456789,
@@ -118,7 +118,7 @@ settings:
   lookback_hours: 24
   openai_model: "gpt-5-nano"
   openai_temperature: 0.7
-  max_tokens_per_summary: 500
+  max_tokens_per_summary: 1500
   use_emojis: true
   include_statistics: true
   target_user_id: 123456789
