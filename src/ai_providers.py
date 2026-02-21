@@ -59,7 +59,7 @@ class OpenAIProvider(AIProvider):
             model=model,
             messages=messages,  # type: ignore[arg-type]
             temperature=temperature,
-            max_tokens=max_tokens,
+            max_completion_tokens=max_tokens,
         )
         content = response.choices[0].message.content
         return content.strip() if content else ""

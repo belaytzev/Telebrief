@@ -103,6 +103,11 @@ async def test_openai_provider_chat_completion(mock_logger):
         )
 
         assert result == "Test response"
+        # Verify max_completion_tokens is used instead of max_tokens
+        call_kwargs = provider.client.chat.completions.create.call_args[1]
+        assert "max_completion_tokens" in call_kwargs
+        assert "max_tokens" not in call_kwargs
+        assert call_kwargs["max_completion_tokens"] == 500
 
 
 @pytest.mark.unit
