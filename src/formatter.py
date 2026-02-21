@@ -258,6 +258,13 @@ class DigestFormatter:
         """
         Build an inline keyboard TOC for the digest summary message.
 
+        For private chats (chat_id > 0), buttons use callback_data in the format
+        ``toc:{chat_id}:{message_id}`` so they work on all platforms including
+        Telegram Desktop (``tg://openmessage`` URLs only work on mobile).
+
+        For group/supergroup/channel chats (chat_id < 0), buttons use
+        ``https://t.me/c/{channel_id}/{message_id}`` URLs which work everywhere.
+
         Args:
             channel_id_map: List of (channel_name, message_id) pairs
             chat_id: The chat/user ID the digest was sent to
@@ -272,12 +279,13 @@ class DigestFormatter:
         for channel_name, message_id in channel_id_map:
             label = f"{self._pick_emoji(channel_name)} {channel_name}"
             if chat_id > 0:
-                url = f"tg://openmessage?user_id={chat_id}&message_id={message_id}"
+                callback_data = f"toc:{chat_id}:{message_id}"
+                buttons.append(InlineKeyboardButton(text=label, callback_data=callback_data))
             else:
                 abs_str = str(abs(chat_id))
                 channel_part = abs_str[3:] if abs_str.startswith("100") else abs_str
                 url = f"https://t.me/c/{channel_part}/{message_id}"
-            buttons.append(InlineKeyboardButton(text=label, url=url))
+                buttons.append(InlineKeyboardButton(text=label, url=url))
 
         keyboard = [[btn] for btn in buttons]
         return InlineKeyboardMarkup(keyboard)

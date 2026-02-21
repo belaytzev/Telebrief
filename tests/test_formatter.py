@@ -135,7 +135,7 @@ def test_formatter_without_stats(sample_config, mock_logger, sample_messages):
 
 @pytest.mark.unit
 def test_build_toc_keyboard_private_chat(sample_config, mock_logger):
-    """Test TOC keyboard uses tg://openmessage URLs for positive (private) chat_id."""
+    """Test TOC keyboard uses callback_data buttons for positive (private) chat_id."""
     formatter = DigestFormatter(sample_config, mock_logger)
     channel_id_map = [("Tech News", 101), ("Crypto News", 202)]
     chat_id = 123456
@@ -148,8 +148,10 @@ def test_build_toc_keyboard_private_chat(sample_config, mock_logger):
     assert len(rows) == 2
     btn0 = rows[0][0]
     btn1 = rows[1][0]
-    assert btn0.url == "tg://openmessage?user_id=123456&message_id=101"
-    assert btn1.url == "tg://openmessage?user_id=123456&message_id=202"
+    assert btn0.callback_data == "toc:123456:101"
+    assert btn1.callback_data == "toc:123456:202"
+    assert btn0.url is None
+    assert btn1.url is None
 
 
 @pytest.mark.unit
