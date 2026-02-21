@@ -422,6 +422,79 @@ async def test_summary_message_sent_with_toc_keyboard(
 
 @pytest.mark.unit
 @pytest.mark.asyncio
+async def test_toc_keyboard_uses_bot_id_not_user_id_for_private_chat(
+    mock_logger, tmp_path, monkeypatch
+):
+    """Test that TOC deep links use the bot's ID (not the user's ID) for private chats.
+
+    Uses a config where bot_id != target_user_id to verify the substitution.
+    """
+    from src.config_loader import ChannelConfig, Config, Settings
+
+    storage_file = tmp_path / "digest_messages.json"
+    monkeypatch.setattr("src.utils.MESSAGE_STORAGE_FILE", str(storage_file))
+
+    # bot_id (555000) is distinct from target_user_id (123456789)
+    settings = Settings(
+        schedule_time="08:00",
+        timezone="UTC",
+        lookback_hours=24,
+        openai_model="gpt-5-nano",
+        openai_temperature=0.7,
+        temperature=0.7,
+        max_tokens_per_summary=1500,
+        use_emojis=True,
+        include_statistics=True,
+        target_user_id=123456789,
+        auto_cleanup_old_digests=True,
+        max_messages_per_channel=500,
+        max_prompt_chars=8000,
+        api_timeout=30,
+        ai_provider="openai",
+        ai_model="gpt-5-nano",
+        ollama_base_url="http://localhost:11434",
+        output_language="Russian",
+    )
+    config = Config(
+        channels=[ChannelConfig(id="@test_channel", name="Test Channel")],
+        settings=settings,
+        telegram_api_id=12345678,
+        telegram_api_hash="test_hash",
+        telegram_bot_token="555000:BOT-TOKEN",
+        openai_api_key="sk-test-key",
+        log_level="INFO",
+        anthropic_api_key="",
+    )
+
+    channel_messages = [("Channel 1", "Message 1")]
+
+    with patch("src.sender.Bot") as mock_bot_class:
+        mock_bot = MagicMock()
+        mock_msg1 = MagicMock()
+        mock_msg1.message_id = 101
+        mock_summary_msg = MagicMock()
+        mock_summary_msg.message_id = 102
+        mock_bot.send_message = AsyncMock(side_effect=[mock_msg1, mock_summary_msg])
+        mock_bot_class.return_value = mock_bot
+
+        sender = DigestSender(config, mock_logger)
+        # user_id=123456789 is positive (private chat), so bot_id=555000 should be used
+        await sender.send_channel_messages_with_tracking(
+            channel_messages, summary_message="Summary", user_id=123456789
+        )
+
+    summary_call_kwargs = mock_bot.send_message.call_args_list[1][1]
+    markup = summary_call_kwargs.get("reply_markup")
+    assert isinstance(markup, InlineKeyboardMarkup)
+    btn_url = markup.inline_keyboard[0][0].url
+    # Must use bot_id (555000), NOT the recipient user_id (123456789)
+    assert "user_id=555000" in btn_url
+    assert "user_id=123456789" not in btn_url
+    assert "message_id=101" in btn_url
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
 async def test_summary_message_sent_without_toc_keyboard_when_all_fail(
     sample_config, mock_logger, tmp_path, monkeypatch
 ):
