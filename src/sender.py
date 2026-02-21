@@ -2,6 +2,7 @@
 Telegram bot sender for delivering digests.
 """
 
+import asyncio
 import logging
 from typing import Optional
 
@@ -162,8 +163,6 @@ class DigestSender:
 
                 # Small delay between messages to avoid rate limiting
                 if i < len(channel_messages):
-                    import asyncio
-
                     await asyncio.sleep(0.5)
 
             except TelegramError as e:
@@ -322,6 +321,16 @@ class DigestSender:
             self.logger.info("✅ Summary message sent")
             return message.message_id
         except TelegramError as e:
+            if "Can't parse entities" in str(e):
+                self.logger.warning("Markdown parse error in summary, falling back to plain text")
+                message = await self.bot.send_message(
+                    chat_id=user_id,
+                    text=summary_message,
+                    parse_mode=None,
+                    reply_markup=reply_markup,
+                )
+                self.logger.info("✅ Summary message sent (plain text fallback)")
+                return message.message_id
             self.logger.warning(f"⚠️ Failed to send summary message: {e}")
             return None
 
@@ -380,8 +389,6 @@ class DigestSender:
                     self.logger.info(f"✅ Successfully sent message for {channel_name}")
 
                 if i < len(channel_messages):
-                    import asyncio
-
                     await asyncio.sleep(0.5)
 
             except TelegramError as e:
