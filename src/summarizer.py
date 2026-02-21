@@ -213,6 +213,7 @@ Respond ONLY in {self.output_language}. Remember: maximum 3500 characters!
                     model=self.model,
                     temperature=self.temperature,
                     max_tokens=retry_max_tokens,
+                    reasoning_effort="low",
                 )
             except Exception as retry_exc:
                 self.logger.error(

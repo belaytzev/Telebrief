@@ -34,7 +34,7 @@ class AIProvider(ABC):
     """Abstract base class for AI providers."""
 
     @abstractmethod
-    async def chat_completion(
+    async def chat_completion(  # pylint: disable=too-many-positional-arguments
         self,
         messages: List[Dict[str, str]],
         model: str,
@@ -68,7 +68,7 @@ class OpenAIProvider(AIProvider):
         )
         self.logger = logger
 
-    async def chat_completion(
+    async def chat_completion(  # pylint: disable=too-many-positional-arguments
         self,
         messages: List[Dict[str, str]],
         model: str,
@@ -76,12 +76,12 @@ class OpenAIProvider(AIProvider):
         max_tokens: int,
         reasoning_effort: str | None = None,
     ) -> str:
-        create_kwargs: Dict[str, Any] = dict(
-            model=model,
-            messages=messages,
-            temperature=temperature,
-            max_completion_tokens=max_tokens,
-        )
+        create_kwargs: Dict[str, Any] = {
+            "model": model,
+            "messages": messages,
+            "temperature": temperature,
+            "max_completion_tokens": max_tokens,
+        }
         if reasoning_effort is not None:
             create_kwargs["reasoning_effort"] = reasoning_effort
 
@@ -152,7 +152,7 @@ class OllamaProvider(AIProvider):
         self.logger = logger
         self.timeout = aiohttp.ClientTimeout(total=timeout)
 
-    async def chat_completion(
+    async def chat_completion(  # pylint: disable=too-many-positional-arguments
         self,
         messages: List[Dict[str, str]],
         model: str,
@@ -234,7 +234,7 @@ class AnthropicProvider(AIProvider):
         self.logger = logger
         self.timeout = aiohttp.ClientTimeout(total=timeout)
 
-    async def chat_completion(
+    async def chat_completion(  # pylint: disable=too-many-positional-arguments
         self,
         messages: List[Dict[str, str]],
         model: str,
