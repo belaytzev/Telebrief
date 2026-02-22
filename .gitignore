@@ -11,6 +11,7 @@ __pycache__/
 build/
 develop-eggs/
 dist/
+node_modules/
 downloads/
 eggs/
 .eggs/
@@ -225,3 +226,6 @@ PROJECT_INDEX.json
 
 # Claude Code
 CLAUDE.md
+
+# Ralphex
+.ralphex/

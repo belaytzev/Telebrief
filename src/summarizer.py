@@ -1,70 +1,71 @@
 """
-AI-powered summarizer using OpenAI API with Russian output.
+AI-powered summarizer using pluggable providers with configurable output language.
 """
 
 import asyncio
 import logging
 from typing import Any, Dict, List
 
-from openai import AsyncOpenAI
-
+from src.ai_providers import AIProvider, TokenBudgetExhaustedError, create_provider
 from src.collector import Message
 from src.config_loader import Config
 
-# Russian system prompt
-SYSTEM_PROMPT = """
-Ты — профессиональный ассистент по созданию новостных дайджестов для Telegram.
+ERROR_SUMMARY_PREFIX = "Error processing channel"
 
-КРИТИЧЕСКИ ВАЖНО:
-- Всегда отвечай ТОЛЬКО на русском языке, независимо от языка входных сообщений.
-- Форматируй вывод под Telegram-сообщение: кратко, структурировано, с эмодзи и визуальными разделителями.
-- Указывай источники только для действительно важных сообщений из Telegram-чатов; отдельный раздел «Источники» не нужен — интегрируй ссылку/упоминание прямо в соответствующий пункт.
+# System prompt template with configurable output language
+SYSTEM_PROMPT_TEMPLATE = """
+You are a professional assistant for creating news digests for Telegram.
 
-Твоя задача:
-- Анализировать входные материалы на любых языках (английский, русский, украинский, китайский и др.).
-- Предоставлять сжатое, чётко структурированное резюме на русском языке для Telegram.
-- Сохранять контекст, нюансы и важные детали; объединять дубли, убирать повторы.
-- Отмечать расхождения между источниками и помечать неподтверждённые данные.
+CRITICAL RULES:
+- Always respond ONLY in {language}, regardless of the input message language.
+- Format the output for Telegram messages: concise, structured, with emojis and visual separators.
+- Include sources only for truly important messages from Telegram chats; do not create a separate "Sources" section - embed the link/mention directly in the relevant item.
 
-Формат и оформление (для Telegram):
-- Используй эмодзи для акцентов и семантики (например: 📚 тема, 🆕 новое, 📊 цифры, ⚠️ риск, ✅ подтверждено, 📌важно, 🖇️ ссылка).
-- Разделяй блоки визуально пустыми строками.
-- Максимальная читаемость с мобильного: короткие абзацы, 1–2 предложения на пункт.
-- Встраивай источник только там, где это критично (важные сообщения из Telegram-чата): укажи @канал или ссылку 🖇️ в конце соответствующего пункта.
+Your task:
+- Analyze input materials in any language (English, Russian, Ukrainian, Chinese, etc.).
+- Provide a concise, clearly structured summary in {language} for Telegram.
+- Preserve context, nuances, and important details; merge duplicates, remove repetitions.
+- Note discrepancies between sources and flag unconfirmed data.
 
-Структура ответа:
-- Заголовок (1–2 строки) с эмодзи, отражающий суть дайджеста.
-- Что важно — 3–7 пунктов с ключевыми фактами, датами, именами, цифрами. Для каждого пункта:
-    - Кратко по делу.
-    - Эмодзи в начале.
-    - Если критично — встроенная ссылка/упоминание источника 🖇️@канал.
+Formatting (for Telegram):
+- Use emojis for emphasis and semantics (e.g.: 📚 topic, 🆕 new, 📊 numbers, ⚠️ risk, ✅ confirmed, 📌 important, 🖇️ link).
+- Separate blocks visually with blank lines.
+- Maximize mobile readability: short paragraphs, 1-2 sentences per item.
+- Embed source only where critical (important Telegram chat messages): add @channel or link 🖇️ at the end of the relevant item.
 
-Правила стилевого оформления:
-- Ясно, нейтрально, без жаргона и лишней эмоциональности.
-- Сохраняй числовые данные и собственные имена точно; при неоднозначности — помечай «неподтверждено».
-- При переводе сохраняй терминологию и интенцию автора.
-- Избегай перегруза ссылками: только для важных сообщений из Telegram.
+Response structure:
+- Header (1-2 lines) with emoji reflecting the digest essence.
+- Key points - 3-7 items with key facts, dates, names, numbers. For each item:
+    - Brief and to the point.
+    - Emoji at the beginning.
+    - If critical - embedded source link/mention 🖇️@channel.
 
-Технические ограничения:
-- Объём основного резюме: 120–250 слов (кратко) или 250–500 слов (расширенно), ориентируясь на читаемость в одном-двух экранах.
-- Используй визуальные разделители между секциями.
-- Не добавляй отдельный список источников; ссылки/упоминания — только внутри соответствующих пунктов.
+Style rules:
+- Clear, neutral, no jargon or excessive emotion.
+- Preserve numerical data and proper names exactly; if ambiguous - mark as "unconfirmed".
+- When translating, preserve terminology and the author's intent.
+- Avoid link overload: only for important Telegram messages.
 
-Шаблон вывода (Telegram-ready):
-🚀[кратко]
+Technical constraints:
+- Summary volume: 120-250 words (brief) or 250-500 words (extended), aiming for readability on one or two screens.
+- Use visual separators between sections.
+- Do not add a separate list of sources; links/mentions only within the corresponding items.
 
-📌Главное:
-    1️⃣ [эмодзи] [краткий факт, цифры, имена] [при необходимости: 🔗@канал/ссылка]
-    2️⃣ [эмодзи] [краткий факт] [при необходимости: 🔗@канал/ссылка]
-    3️⃣ [эмодзи] [краткий факт] [при необходимости: 🔗@канал/ссылка]
+Output template (Telegram-ready):
+🚀 [brief summary]
+
+📌 Key points:
+    1️⃣ [emoji] [brief fact, numbers, names] [if needed: 🔗@channel/link]
+    2️⃣ [emoji] [brief fact] [if needed: 🔗@channel/link]
+    3️⃣ [emoji] [brief fact] [if needed: 🔗@channel/link]
 
 
-Если вход включает несколько материалов, сгруппируй по темам с подзаголовками и разделителями; связывай события, указывая причинно-следственные связи.
+If the input includes multiple materials, group by topics with subheadings and separators; connect events by indicating cause-and-effect relationships.
 """
 
 
 class Summarizer:
-    """Generates AI-powered summaries in Russian using OpenAI."""
+    """Generates AI-powered summaries using a pluggable AI provider."""
 
     def __init__(self, config: Config, logger: logging.Logger):
         """
@@ -76,10 +77,18 @@ class Summarizer:
         """
         self.config = config
         self.logger = logger
-        self.client = AsyncOpenAI(api_key=config.openai_api_key)
-        self.model = config.settings.openai_model
-        self.temperature = config.settings.openai_temperature
+        self.provider: AIProvider = create_provider(
+            provider_name=config.settings.ai_provider,
+            logger=logger,
+            openai_api_key=config.openai_api_key,
+            anthropic_api_key=config.anthropic_api_key,
+            ollama_base_url=config.settings.ollama_base_url,
+            api_timeout=config.settings.api_timeout,
+        )
+        self.model = config.settings.ai_model
+        self.temperature = config.settings.temperature
         self.max_tokens = config.settings.max_tokens_per_summary
+        self.output_language = config.settings.output_language
 
     async def summarize_all(self, messages_by_channel: Dict[str, List[Message]]) -> Dict[str, Any]:
         """
@@ -124,10 +133,10 @@ class Summarizer:
             try:
                 summary = await self._summarize_channel(channel_name, messages)
                 summaries[channel_name] = summary
-                self.logger.info(f"✓ Summarized {channel_name}")
+                self.logger.info(f"Summarized {channel_name}")
             except Exception as e:
-                self.logger.error(f"✗ Failed to summarize {channel_name}: {e}")
-                summaries[channel_name] = f"Ошибка при обработке канала: {str(e)}"
+                self.logger.error(f"Failed to summarize {channel_name}: {e}")
+                summaries[channel_name] = f"{ERROR_SUMMARY_PREFIX}: {str(e)}"
 
         return summaries
 
@@ -140,83 +149,126 @@ class Summarizer:
             messages: List of messages
 
         Returns:
-            Summary in Russian
+            Summary in the configured output language
         """
         # Format messages for prompt
-        messages_text = self._format_messages_for_prompt(messages)
+        messages_text = self._format_messages_for_prompt(
+            messages, max_chars=self.config.settings.max_prompt_chars
+        )
 
         prompt = f"""
-Проанализируй следующие сообщения из Telegram-канала "{channel_name}" и создай краткое резюме на русском языке.
+Analyze the following messages from Telegram channel "{channel_name}" \
+and create a concise summary in {self.output_language}.
 
-КРИТИЧЕСКИ ВАЖНО - ОГРАНИЧЕНИЕ ДЛИНЫ:
-- Telegram имеет лимит 4096 символов на сообщение
-- Твоё резюме должно быть НЕ БОЛЕЕ 3500 символов (включая эмодзи и форматирование)
-- Это жёсткое ограничение - если превысишь, сообщение не будет доставлено
-- Сокращай резюме до 3-5 самых важных пунктов, чтобы уложиться в лимит
+CRITICAL - LENGTH CONSTRAINT:
+- Telegram has a 4096 character limit per message
+- Your summary MUST be NO MORE than 3500 characters (including emojis and formatting)
+- This is a hard limit - if exceeded, the message will not be delivered
+- Reduce the summary to 3-5 most important points to fit within the limit
 
-Сфокусируйся на:
-- 📰 Важных новостях и анонсах
-- 💬 Ключевых обсуждениях и дебатах
-- ✅ Принятых решениях или выводах
-- 🖇️ Полезных ресурсах и ссылках
+Focus on:
+- Important news and announcements
+- Key discussions and debates
+- Decisions made or conclusions reached
+- Useful resources and links
 
-Формат ответа:
-- 3-5 информативных пунктов (bullet points)
-- Каждый пункт: 1-2 предложения (максимум 150-200 символов)
-- Используй эмодзи для категоризации
-- Будь лаконичен но информативен
-- ОБЯЗАТЕЛЬНО проверь, что итоговая длина НЕ превышает 3500 символов
+Response format:
+- 3-5 informative bullet points
+- Each point: 1-2 sentences (maximum 150-200 characters)
+- Use emojis for categorization
+- Be concise but informative
+- VERIFY that the final length does NOT exceed 3500 characters
 
-Сообщения (всего: {len(messages)}):
+Messages (total: {len(messages)}):
 ---
 {messages_text}
 ---
 
-Ответь ТОЛЬКО на русском языке. Помни: максимум 3500 символов!
+Respond ONLY in {self.output_language}. Remember: maximum 3500 characters!
 """
 
+        system_prompt = SYSTEM_PROMPT_TEMPLATE.replace("{language}", self.output_language)
+        chat_messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": prompt},
+        ]
+
         try:
-            response = await self.client.chat.completions.create(
+            summary = await self.provider.chat_completion(
+                messages=chat_messages,
                 model=self.model,
-                messages=[
-                    {"role": "system", "content": SYSTEM_PROMPT},
-                    {"role": "user", "content": prompt},
-                ],
+                temperature=self.temperature,
+                max_tokens=self.max_tokens,
             )
-
-            self.logger.debug(f"API response for {channel_name}: {response}")
-            self.logger.debug(f"Response choices: {response.choices}")
-
-            content = response.choices[0].message.content
-            self.logger.debug(f"Raw content for {channel_name}: {repr(content)}")
-            self.logger.debug(f"Content type: {type(content)}, is None: {content is None}")
-
-            summary = content.strip() if content else ""
-            self.logger.debug(f"Final summary for {channel_name}: {len(summary)} chars")
-            return summary
-
+        except TokenBudgetExhaustedError:
+            retry_max_tokens = self.max_tokens * 3
+            self.logger.warning(
+                "Token budget exhausted for %s; retrying with max_tokens=%d",
+                channel_name,
+                retry_max_tokens,
+            )
+            try:
+                summary = await self.provider.chat_completion(
+                    messages=chat_messages,
+                    model=self.model,
+                    temperature=self.temperature,
+                    max_tokens=retry_max_tokens,
+                    reasoning_effort="low",
+                )
+            except Exception as retry_exc:
+                self.logger.error(
+                    "Retry also failed for %s (max_tokens=%d): %s",
+                    channel_name,
+                    retry_max_tokens,
+                    retry_exc,
+                )
+                raise
         except Exception as e:
-            self.logger.error(f"OpenAI API error for {channel_name}: {e}")
+            self.logger.error(f"AI provider error for {channel_name}: {e}")
             raise
 
-    def _format_messages_for_prompt(self, messages: List[Message]) -> str:
+        self.logger.debug(f"Summary for {channel_name}: {len(summary)} chars")
+        return summary
+
+    def _format_messages_for_prompt(self, messages: List[Message], max_chars: int = 8000) -> str:
         """
-        Format messages for inclusion in prompt.
+        Format messages for inclusion in prompt, keeping the most recent ones within budget.
 
         Args:
-            messages: List of messages
+            messages: List of messages (oldest-first)
+            max_chars: Maximum total characters of the returned string
 
         Returns:
-            Formatted string
+            Formatted string with the most recent messages that fit within max_chars
         """
         formatted = []
-
         for i, msg in enumerate(messages, 1):
             timestamp = msg.timestamp.strftime("%H:%M")
-            text = msg.text[:500] if len(msg.text) > 500 else msg.text  # Truncate long messages
+            text = msg.text[:500] if len(msg.text) > 500 else msg.text
             formatted.append(f"{i}. [{timestamp}] {msg.sender}: {text}")
 
-        return "\n".join(formatted)
+        # Select most recent messages that fit within the character budget.
+        # Always include at least one message (the most recent).
+        selected: List[str] = []
+        total = 0
+        for line in reversed(formatted):
+            added_len = len(line) + (1 if selected else 0)  # +1 for the \n separator
+            if total + added_len > max_chars and selected:
+                break
+            selected.append(line)
+            total += added_len
+
+        if len(selected) < len(formatted):
+            self.logger.warning(
+                "Prompt input truncated: kept %d/%d messages (%d chars) "
+                "to fit max_prompt_chars=%d. Oldest messages were dropped.",
+                len(selected),
+                len(formatted),
+                total,
+                max_chars,
+            )
+
+        return "\n".join(reversed(selected))
 
 
 async def main():

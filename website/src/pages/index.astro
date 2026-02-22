@@ -16,7 +16,7 @@ import logoImage from '../../public/logo.webp';
         <div class="nav-links">
           <a href="#features" class="nav-link">Features</a>
           <a href="#how-it-works" class="nav-link">How It Works</a>
-          <a href="https://github.com/belaytzev/Telebrief" class="btn btn-primary" target="_blank" rel="noopener noreferrer" rel="noopener noreferrer">
+          <a href="https://github.com/belaytzev/Telebrief" class="btn btn-primary" target="_blank" rel="noopener noreferrer">
             <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
             </svg>
@@ -40,8 +40,8 @@ import logoImage from '../../public/logo.webp';
           </h1>
           <p class="hero-description">
             Telebrief automatically collects messages from your Telegram channels,
-            generates AI-powered summaries, and delivers beautiful daily digests
-            directly to your Telegram account.
+            generates AI-powered summaries using OpenAI, Anthropic, or local Ollama,
+            and delivers beautiful daily digests directly to your Telegram account.
           </p>
           <div class="hero-buttons">
             <a href="https://github.com/belaytzev/Telebrief#quick-start" class="btn btn-primary" target="_blank" rel="noopener noreferrer">
@@ -53,7 +53,7 @@ import logoImage from '../../public/logo.webp';
           </div>
           <div class="hero-stats">
             <div class="stat">
-              <div class="stat-value">~$0.30</div>
+              <div class="stat-value">Free - $0.30</div>
               <div class="stat-label">Per Month</div>
             </div>
             <div class="stat">
@@ -61,8 +61,8 @@ import logoImage from '../../public/logo.webp';
               <div class="stat-label">Support</div>
             </div>
             <div class="stat">
-              <div class="stat-value">GPT-5-nano</div>
-              <div class="stat-label">Powered</div>
+              <div class="stat-value">3 AI Providers</div>
+              <div class="stat-label">Supported</div>
             </div>
           </div>
         </div>
@@ -87,12 +87,12 @@ import logoImage from '../../public/logo.webp';
         <div class="card feature-card">
           <div class="icon">🤖</div>
           <h3>AI-Powered Summaries</h3>
-          <p>Advanced GPT-5-nano technology generates concise, intelligent summaries of your Telegram channels in Russian.</p>
+          <p>Choose from multiple AI providers — OpenAI, Anthropic, or local Ollama — to generate concise, intelligent summaries of your Telegram channels.</p>
         </div>
         <div class="card feature-card">
           <div class="icon">🌍</div>
           <h3>Multi-Language Support</h3>
-          <p>Collect messages in any language - English, Russian, Ukrainian, Chinese, and more. Summaries are always in Russian.</p>
+          <p>Collect messages in any language - English, Russian, Ukrainian, Chinese, and more. Output language is fully configurable.</p>
         </div>
         <div class="card feature-card">
           <div class="icon">⏰</div>
@@ -107,12 +107,17 @@ import logoImage from '../../public/logo.webp';
         <div class="card feature-card">
           <div class="icon">💰</div>
           <h3>Ultra Affordable</h3>
-          <p>Runs on GPT-5-nano for just ~$0.30 per month. Self-hosted solution with no subscription fees.</p>
+          <p>Run for free with local Ollama, or use cloud AI from ~$0.30 per month. Self-hosted solution with no subscription fees.</p>
         </div>
         <div class="card feature-card">
           <div class="icon">🐳</div>
           <h3>Docker Ready</h3>
           <p>Complete Docker containerization with docker-compose support for easy deployment and management.</p>
+        </div>
+        <div class="card feature-card">
+          <div class="icon">🗂️</div>
+          <h3>Table of Contents Navigation</h3>
+          <p>Each digest includes an interactive summary with inline navigation buttons, letting you jump directly to any channel's summary with a single tap.</p>
         </div>
       </div>
     </div>
@@ -138,7 +143,7 @@ import logoImage from '../../public/logo.webp';
           <div class="step-number">2</div>
           <div class="step-content">
             <h3>AI Summarization</h3>
-            <p>GPT-5-nano analyzes and generates intelligent summaries for each channel, plus an overall digest summary.</p>
+            <p>Your chosen AI provider analyzes and generates intelligent summaries for each channel, plus an overall digest summary.</p>
           </div>
         </div>
         <div class="step-arrow">→</div>
@@ -170,6 +175,10 @@ import logoImage from '../../public/logo.webp';
           <div class="command-card">
             <code>/cleanup</code>
             <p>Delete old digest messages</p>
+          </div>
+          <div class="command-card">
+            <code>/help</code>
+            <p>Show all available commands and usage guide</p>
           </div>
         </div>
       </div>
@@ -246,14 +255,14 @@ import logoImage from '../../public/logo.webp';
 <style>
   /* Navigation */
   .nav {
-    background: var(--color-white);
     box-shadow: var(--shadow-soft);
     padding: var(--spacing-md) 0;
     position: sticky;
     top: 0;
     z-index: 1000;
     backdrop-filter: blur(10px);
-    background: rgba(255, 255, 255, 0.95);
+    background: rgba(22, 22, 22, 0.95);
+    border-bottom: 1px solid var(--color-border);
   }
 
   .nav-content {
@@ -278,7 +287,7 @@ import logoImage from '../../public/logo.webp';
   .nav-title {
     font-size: 1.5rem;
     font-weight: 700;
-    color: var(--color-secondary);
+    color: var(--color-text-primary);
   }
 
   .nav-links {
@@ -288,20 +297,20 @@ import logoImage from '../../public/logo.webp';
   }
 
   .nav-link {
-    color: var(--color-gray-dark);
+    color: var(--color-text-secondary);
     text-decoration: none;
     font-weight: 500;
     transition: color 0.3s ease;
   }
 
   .nav-link:hover {
-    color: var(--color-primary);
+    color: var(--color-primary-light);
   }
 
   /* Hero Section */
   .hero {
     padding: var(--spacing-3xl) 0;
-    background: linear-gradient(180deg, var(--color-gray-light) 0%, var(--color-white) 100%);
+    background: linear-gradient(180deg, var(--color-bg-raised) 0%, var(--color-bg-base) 100%);
   }
 
   .hero-content {
@@ -351,7 +360,7 @@ import logoImage from '../../public/logo.webp';
 
   .stat-label {
     font-size: 0.875rem;
-    color: var(--color-gray-dark);
+    color: var(--color-text-secondary);
   }
 
   .phone-mockup {
@@ -365,7 +374,7 @@ import logoImage from '../../public/logo.webp';
     width: 100%;
     border-radius: var(--radius-xl);
     box-shadow: var(--shadow-raised);
-    background: var(--color-white);
+    background: var(--color-bg-surface);
     padding: var(--spacing-xl);
   }
 
@@ -384,7 +393,7 @@ import logoImage from '../../public/logo.webp';
 
   /* Features Section */
   .features {
-    background: var(--color-white);
+    background: var(--color-bg-surface);
   }
 
   .section-header {
@@ -402,7 +411,7 @@ import logoImage from '../../public/logo.webp';
 
   .features-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
     gap: var(--spacing-xl);
   }
 
@@ -412,7 +421,7 @@ import logoImage from '../../public/logo.webp';
 
   /* How It Works */
   .how-it-works {
-    background: var(--color-gray-light);
+    background: var(--color-bg-raised);
   }
 
   .steps {
@@ -468,10 +477,11 @@ import logoImage from '../../public/logo.webp';
   }
 
   .bot-commands {
-    background: var(--color-white);
+    background: var(--color-bg-surface);
     padding: var(--spacing-xl);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-medium);
+    border: 1px solid var(--color-border);
   }
 
   .bot-commands h3 {
@@ -486,18 +496,19 @@ import logoImage from '../../public/logo.webp';
   }
 
   .command-card {
-    background: var(--color-gray-light);
+    background: var(--color-bg-raised);
     padding: var(--spacing-md);
     border-radius: var(--radius-md);
     text-align: center;
     box-shadow: var(--shadow-inner);
+    border: 1px solid var(--color-border);
   }
 
   .command-card code {
     display: block;
     font-size: 1.25rem;
     font-weight: 600;
-    color: var(--color-primary);
+    color: var(--color-accent);
     margin-bottom: var(--spacing-xs);
     font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
   }
@@ -508,13 +519,15 @@ import logoImage from '../../public/logo.webp';
 
   /* CTA Section */
   .cta {
-    background: var(--gradient-primary);
-    color: var(--color-white);
+    background: linear-gradient(135deg, var(--color-bg-surface) 0%, #0d1f2d 100%);
+    color: var(--color-text-primary);
     text-align: center;
+    border-top: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border);
   }
 
   .cta h2, .cta p {
-    color: var(--color-white);
+    color: var(--color-text-primary);
   }
 
   .cta h2 {
@@ -534,9 +547,10 @@ import logoImage from '../../public/logo.webp';
 
   /* Footer */
   .footer {
-    background: var(--color-secondary);
-    color: var(--color-white);
+    background: var(--color-bg-base);
+    color: var(--color-text-primary);
     padding: var(--spacing-3xl) 0 var(--spacing-lg);
+    border-top: 1px solid var(--color-border);
   }
 
   .footer-content {
@@ -565,12 +579,12 @@ import logoImage from '../../public/logo.webp';
   }
 
   .footer-description {
-    color: var(--color-accent);
+    color: var(--color-text-secondary);
     font-size: 0.875rem;
   }
 
   .footer-section h4 {
-    color: var(--color-white);
+    color: var(--color-text-primary);
     margin-bottom: var(--spacing-md);
   }
 
@@ -583,24 +597,24 @@ import logoImage from '../../public/logo.webp';
   }
 
   .footer-links a {
-    color: var(--color-accent);
+    color: var(--color-text-secondary);
     text-decoration: none;
     font-size: 0.875rem;
     transition: color 0.3s ease;
   }
 
   .footer-links a:hover {
-    color: var(--color-white);
+    color: var(--color-accent);
   }
 
   .footer-bottom {
-    border-top: 1px solid rgba(184, 229, 240, 0.2);
+    border-top: 1px solid var(--color-border);
     padding-top: var(--spacing-md);
     text-align: center;
   }
 
   .footer-bottom p {
-    color: var(--color-accent);
+    color: var(--color-text-secondary);
     font-size: 0.875rem;
   }
 

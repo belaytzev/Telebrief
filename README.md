@@ -3,9 +3,9 @@
 
   # Telebrief
 
-  **Automated Telegram Digest Generator powered by GPT-5-nano**
+  **Automated Telegram Digest Generator powered by AI**
 
-  Telebrief collects messages from your Telegram channels (in any language), generates AI-powered summaries, and delivers beautiful daily digests **in Russian** directly to your Telegram account.
+  Telebrief collects messages from your Telegram channels (in any language), generates AI-powered summaries, and delivers beautiful daily digests directly to your Telegram account. Supports multiple AI providers: **OpenAI**, **Ollama** (local), and **Anthropic**. Output language is configurable (default: Russian).
 </div>
 
 ---
@@ -13,12 +13,13 @@
 ## ✨ Features
 
 - 🌐 **Multi-language Support** - Reads channels in ANY language (English, Russian, Ukrainian, Chinese, etc.)
-- 🇷🇺 **Russian Output Only** - All summaries generated in Russian regardless of source language
-- 🤖 **GPT-5-nano Powered** - High-quality AI summarization with ultra-low cost (~$0.30/month)
+- 🌍 **Configurable Output Language** - All UI labels, summaries, and bot messages in any language (default: Russian)
+- 🤖 **Multi-Provider AI** - Supports OpenAI, Ollama (local), and Anthropic for summarization
 - ⏰ **Scheduled & On-Demand** - Daily automatic digests + instant generation via bot commands
 - 🔒 **Private Channel Support** - Access your private chats and channels
 - 🎨 **Smart Formatting** - Markdown with emojis, bullet points, and clickable message links
 - 🔐 **Secure** - Single-user only, credentials stored safely
+- 🗂️ **Table of Contents Navigation** - Summary message sent first with inline keyboard buttons linking directly to each channel's digest
 - 🧹 **Auto-cleanup** - Automatically removes old digest messages
 
 ---
@@ -36,8 +37,10 @@ Before you begin, you'll need:
    - Send `/newbot` to create a new bot
    - Save the bot token
 
-4. **OpenAI API Key** - [Get from platform.openai.com](https://platform.openai.com)
-   - Requires GPT-5-nano access
+4. **AI Provider API Key** (one of the following):
+   - **OpenAI**: [Get from platform.openai.com](https://platform.openai.com)
+   - **Anthropic**: [Get from console.anthropic.com](https://console.anthropic.com)
+   - **Ollama**: No API key needed - [install locally](https://ollama.ai)
 
 5. **Your Telegram User ID** - Get from [@userinfobot](https://t.me/userinfobot)
    - Send `/start` to get your ID
@@ -104,7 +107,11 @@ Open Telegram and message your bot:
 
 ---
 📈 **Статистика**: 20 каналов, 1,847 сообщений обработано
+
+[ 💻 TechCrunch ] [ 💰 Crypto News ] [ ... ]
 ```
+
+> The summary message is sent **first** with inline keyboard buttons (one per channel) for quick navigation. All labels (header, statistics, bot commands) use the configured `output_language` — the example above shows the default Russian output.
 
 ---
 
@@ -130,8 +137,8 @@ make format
 
 ## ❓ FAQ
 
-**Q: Can I use this for non-Russian output?**
-A: Yes! Edit the prompts in `src/summarizer.py` to change output language.
+**Q: Can I change the output language?**
+A: Yes! Set `output_language` in `config.yaml` to any language (e.g., "English", "Spanish", "Chinese").
 
 **Q: How many channels can I monitor?**
 A: Tested up to 50 channels. Performance depends on message volume.
@@ -146,7 +153,10 @@ A: Yes! Add group chat IDs to `config.yaml` the same way as channels.
 A: Yes! Edit `src/formatter.py` to change Markdown structure, emojis, and sections.
 
 **Q: How much does it cost to run?**
-A: Approximately **$0.30/month** with GPT-5-nano (ultra-affordable pricing). Based on ~20 channels with medium activity.
+A: With OpenAI GPT-5-nano: ~$0.30/month. With Ollama: free (runs locally). Anthropic pricing varies by model.
+
+**Q: Can I use a local AI model?**
+A: Yes! Set `ai_provider: "ollama"` in config.yaml and install [Ollama](https://ollama.ai) on your machine.
 
 ---
 
@@ -156,7 +166,9 @@ A: Approximately **$0.30/month** with GPT-5-nano (ultra-affordable pricing). Bas
 **Built with:**
 - [Telethon](https://github.com/LonamiWebs/Telethon) - Telegram User API
 - [python-telegram-bot](https://github.com/python-telegram-bot/python-telegram-bot) - Bot API
-- [OpenAI API](https://openai.com) - GPT-5-nano Summarization
+- [OpenAI API](https://openai.com) - AI Summarization (OpenAI provider)
+- [Ollama](https://ollama.ai) - Local AI Summarization
+- [Anthropic API](https://anthropic.com) - AI Summarization (Anthropic provider)
 - [APScheduler](https://github.com/agronholm/apscheduler) - Task Scheduling
 
 ---

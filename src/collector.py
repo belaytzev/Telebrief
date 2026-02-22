@@ -184,6 +184,7 @@ class MessageCollector:
             self.logger.error(f"Error fetching from {channel_config.name}: {e}")
             raise
 
+        messages.sort(key=lambda m: m.timestamp)
         return messages
 
     def _get_media_type(self, message: TelegramMessage) -> str:

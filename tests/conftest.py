@@ -32,13 +32,19 @@ def sample_config():
         lookback_hours=24,
         openai_model="gpt-5-nano",
         openai_temperature=0.7,
-        max_tokens_per_summary=500,
+        temperature=0.7,
+        max_tokens_per_summary=1500,
         use_emojis=True,
         include_statistics=True,
         target_user_id=123456789,
         auto_cleanup_old_digests=True,
         max_messages_per_channel=500,
+        max_prompt_chars=8000,
         api_timeout=30,
+        ai_provider="openai",
+        ai_model="gpt-5-nano",
+        ollama_base_url="http://localhost:11434",
+        output_language="Russian",
     )
 
     config = Config(
@@ -49,6 +55,7 @@ def sample_config():
         telegram_bot_token="123456789:ABC-DEF",
         openai_api_key="sk-test-key",
         log_level="INFO",
+        anthropic_api_key="",
     )
 
     return config
@@ -112,7 +119,7 @@ settings:
   lookback_hours: 24
   openai_model: "gpt-5-nano"
   openai_temperature: 0.7
-  max_tokens_per_summary: 500
+  max_tokens_per_summary: 1500
   use_emojis: true
   include_statistics: true
   target_user_id: 123456789

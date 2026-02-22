@@ -4,10 +4,14 @@ Markdown formatter for digest output.
 
 import logging
 from datetime import datetime, timedelta
-from typing import Dict, List
+from typing import Dict, List, Optional
+
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 from src.collector import Message
 from src.config_loader import Config
+from src.summarizer import ERROR_SUMMARY_PREFIX
+from src.ui_strings import get_month_names, get_ui_strings
 
 
 class DigestFormatter:
@@ -25,6 +29,18 @@ class DigestFormatter:
         self.logger = logger
         self.use_emojis = config.settings.use_emojis
         self.include_stats = config.settings.include_statistics
+        self._language = config.settings.output_language
+        self._ui = get_ui_strings(self._language)
+        self._month_names = get_month_names(self._language)
+
+    def _format_date(self, dt: datetime) -> str:
+        """Return date string with month name translated to output_language.
+
+        Uses the month index rather than strftime %B to avoid depending on the
+        host system's locale setting.
+        """
+        month_name = self._month_names[dt.month - 1]
+        return f"{dt.day:02d} {month_name} {dt.year}"
 
     def create_digest(
         self,
@@ -61,7 +77,7 @@ class DigestFormatter:
         # Overview section
         if overview:
             self.logger.debug("Adding overview section")
-            parts.append("## 🎯 Краткий обзор\n")
+            parts.append(f"## 🎯 {self._ui['overview']}\n")
             parts.append(overview)
             parts.append("\n---\n")
         else:
@@ -72,7 +88,7 @@ class DigestFormatter:
             self.logger.debug(
                 f"Processing channel '{channel_name}': {len(summary) if summary else 0} chars"
             )
-            if not summary or "ошибка" in summary.lower():
+            if not summary or summary.lower().startswith(ERROR_SUMMARY_PREFIX.lower()):
                 self.logger.warning(f"Skipping channel '{channel_name}': empty or contains error")
                 continue
 
@@ -102,28 +118,9 @@ class DigestFormatter:
         Returns:
             Header string
         """
-        date_str = datetime.utcnow().strftime("%d %B %Y")
-        # Translate month to Russian
-        months_ru = {
-            "January": "января",
-            "February": "февраля",
-            "March": "марта",
-            "April": "апреля",
-            "May": "мая",
-            "June": "июня",
-            "July": "июля",
-            "August": "августа",
-            "September": "сентября",
-            "October": "октября",
-            "November": "ноября",
-            "December": "декабря",
-        }
-        for eng, rus in months_ru.items():
-            date_str = date_str.replace(eng, rus)
-
+        date_str = self._format_date(datetime.utcnow())
         emoji = "📊" if self.use_emojis else ""
-
-        return f"# {emoji} Ежедневный дайджест - {date_str}\n"
+        return f"# {emoji} {self._ui['daily_digest']} - {date_str}\n"
 
     def _create_channel_section(
         self, channel_name: str, summary: str, messages: List[Message]
@@ -209,24 +206,7 @@ class DigestFormatter:
         parts = []
 
         # Channel header with date
-        date_str = datetime.utcnow().strftime("%d %B %Y")
-        months_ru = {
-            "January": "января",
-            "February": "февраля",
-            "March": "марта",
-            "April": "апреля",
-            "May": "мая",
-            "June": "июня",
-            "July": "июля",
-            "August": "августа",
-            "September": "сентября",
-            "October": "октября",
-            "November": "ноября",
-            "December": "декабря",
-        }
-        for eng, rus in months_ru.items():
-            date_str = date_str.replace(eng, rus)
-
+        date_str = self._format_date(datetime.utcnow())
         emoji = self._pick_emoji(channel_name)
         header = f"# {emoji} {channel_name}\n*{date_str}*\n"
         parts.append(header)
@@ -237,9 +217,9 @@ class DigestFormatter:
         # Statistics for this channel
         if self.include_stats:
             message_count = len(messages)
-            parts.append(f"\n---\n📊 Обработано сообщений: {message_count}")
+            parts.append(f"\n---\n📊 {self._ui['messages_count']}: {message_count}")
             if hours == 24:
-                parts.append(f"⏱️ За последние {hours} часов")
+                parts.append(f"⏱️ {self._ui['last_hours'].format(hours=hours)}")
 
         message = "\n".join(parts)
 
@@ -249,7 +229,7 @@ class DigestFormatter:
                 f"Channel message for '{channel_name}' exceeds 4096 chars ({len(message)}), truncating..."
             )
             # Truncate to 4000 to leave room for ellipsis
-            message = message[:4000] + "\n\n...(усечено из-за лимита длины)"
+            message = message[:4000] + f"\n\n{self._ui['truncated']}"
 
         self.logger.info(f"Formatted message for {channel_name}: {len(message)} characters")
         return message
@@ -258,7 +238,7 @@ class DigestFormatter:
         self, total_channels: int, total_messages: int, hours: int = 24
     ) -> str:
         """
-        Format a summary message to send after all channel messages.
+        Format a summary message sent first as a TOC placeholder, with the TOC keyboard added later.
 
         Args:
             total_channels: Number of channels processed
@@ -268,34 +248,61 @@ class DigestFormatter:
         Returns:
             Summary message
         """
-        date_str = datetime.utcnow().strftime("%d %B %Y")
-        months_ru = {
-            "January": "января",
-            "February": "февраля",
-            "March": "марта",
-            "April": "апреля",
-            "May": "мая",
-            "June": "июня",
-            "July": "июля",
-            "August": "августа",
-            "September": "сентября",
-            "October": "октября",
-            "November": "ноября",
-            "December": "декабря",
-        }
-        for eng, rus in months_ru.items():
-            date_str = date_str.replace(eng, rus)
-
+        date_str = self._format_date(datetime.utcnow())
         end_time = datetime.utcnow()
         start_time = end_time - timedelta(hours=hours)
 
-        message = f"""📊 **Дайджест завершён** - {date_str}
-
-✅ Обработано каналов: {total_channels}
-📨 Всего сообщений: {total_messages}
-⏱️ Период: {start_time.strftime('%d.%m %H:%M')} - {end_time.strftime('%d.%m %H:%M')} UTC
-"""
+        message = (
+            f"📊 **{self._ui['digest_completed']}** - {date_str}\n\n"
+            f"✅ {self._ui['channels_processed']}: {total_channels}\n"
+            f"📨 {self._ui['total_messages']}: {total_messages}\n"
+            f"⏱️ {self._ui['period']}: "
+            f"{start_time.strftime('%d.%m %H:%M')} - {end_time.strftime('%d.%m %H:%M')} UTC\n"
+        )
         return message
+
+    def build_toc_keyboard(
+        self,
+        channel_id_map: List[tuple],
+        chat_id: int,
+    ) -> Optional[InlineKeyboardMarkup]:
+        """
+        Build an inline keyboard TOC for the digest summary message.
+
+        For private chats (chat_id > 0), buttons use callback_data in the format
+        ``toc:{chat_id}:{message_id}`` so they work on all platforms including
+        Telegram Desktop (``tg://openmessage`` URLs only work on mobile).
+
+        For group/supergroup/channel chats (chat_id < 0), buttons use
+        ``https://t.me/c/{channel_id}/{message_id}`` URLs which work everywhere.
+
+        Args:
+            channel_id_map: List of (channel_name, message_id) pairs
+            chat_id: The chat/user ID the digest was sent to
+
+        Returns:
+            InlineKeyboardMarkup with one button per channel, or None if list is empty
+        """
+        if not channel_id_map:
+            return None
+
+        buttons = []
+        for channel_name, message_id in channel_id_map:
+            label = f"{self._pick_emoji(channel_name)} {channel_name}"
+            abs_str = str(abs(chat_id))
+            if chat_id > 0 or not abs_str.startswith("100"):
+                # Private chats and basic groups: use callback buttons (t.me/c URLs
+                # only work for supergroups/channels with -100… IDs)
+                callback_data = f"toc:{chat_id}:{message_id}"
+                buttons.append(InlineKeyboardButton(text=label, callback_data=callback_data))
+            else:
+                # Supergroup/channel (chat_id starts with -100): t.me/c URL works
+                channel_part = abs_str[3:]
+                url = f"https://t.me/c/{channel_part}/{message_id}"
+                buttons.append(InlineKeyboardButton(text=label, url=url))
+
+        keyboard = [[btn] for btn in buttons]
+        return InlineKeyboardMarkup(keyboard)
 
     def _create_statistics(self, messages_by_channel: Dict[str, List[Message]], hours: int) -> str:
         """
@@ -317,16 +324,17 @@ class DigestFormatter:
 
         stats_parts = [
             "---\n",
-            f"📈 **Статистика**: {active_channels} каналов, {total_messages} сообщений обработано",
+            f"📈 **{self._ui['stats_header']}**: {active_channels} {self._ui['channels']}, "
+            f"{total_messages} {self._ui['messages_processed']}",
         ]
 
         if hours == 24:
             stats_parts.append(
-                f"⏱️ Дайджест за: {start_time.strftime('%d.%m %H:%M')} - "
+                f"⏱️ {self._ui['digest_for']}: {start_time.strftime('%d.%m %H:%M')} - "
                 f"{end_time.strftime('%d.%m %H:%M')} UTC"
             )
         else:
-            stats_parts.append(f"⏱️ Период: последние {hours} часов")
+            stats_parts.append(f"⏱️ {self._ui['period_last_hours'].format(hours=hours)}")
 
         return "\n".join(stats_parts)
 
