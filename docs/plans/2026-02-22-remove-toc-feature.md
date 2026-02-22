@@ -121,7 +121,7 @@ Remove the Table of Contents (TOC) inline keyboard navigation feature entirely f
 **Files:**
 - Modify: `/Users/belaytzev/.claude-personal/projects/-Users-belaytzev-Documents-Sync-Personal-Telebrief/memory/MEMORY.md`
 
-- [ ] Remove the TOC-related entries from the "Key Patterns" section in MEMORY.md (the 4 bullet points about TOC summary, keyboard buttons, private/supergroup/basic group behavior, and `handle_toc_callback` auth behavior)
+- [x] Remove the TOC-related entries from the "Key Patterns" section in MEMORY.md (the 4 bullet points about TOC summary, keyboard buttons, private/supergroup/basic group behavior, and `handle_toc_callback` auth behavior)
 
 ### Task 9: Verify acceptance criteria
 
