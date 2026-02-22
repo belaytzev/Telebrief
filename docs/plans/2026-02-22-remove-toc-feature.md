@@ -42,11 +42,11 @@ Remove the Table of Contents (TOC) inline keyboard navigation feature entirely f
 **Files:**
 - Modify: `src/sender.py`
 
-- [ ] Remove `InlineKeyboardMarkup` from import (line 9)
-- [ ] Delete `_edit_summary_keyboard()` method (lines 401–423)
-- [ ] In `_send_channel_messages_loop()`: remove `channel_id_map` list and `channel_id_map.append(...)` line; return only `(sent_message_ids, success_count, failed_channels)`
-- [ ] In `send_channel_messages_with_tracking()`: remove `channel_id_map` from the unpacking of `_send_channel_messages_loop`; remove the `if summary_message and summary_id is not None and success_count > 0:` TOC keyboard block; keep the orphaned-summary cleanup branch (the `elif summary_id is not None and success_count == 0:` block stays)
-- [ ] Run `uv run pytest tests/test_sender.py -v` — expect TOC-related tests to fail (they will be removed in task 3)
+- [x] Remove `InlineKeyboardMarkup` from import (line 9)
+- [x] Delete `_edit_summary_keyboard()` method (lines 401–423)
+- [x] In `_send_channel_messages_loop()`: remove `channel_id_map` list and `channel_id_map.append(...)` line; return only `(sent_message_ids, success_count, failed_channels)`
+- [x] In `send_channel_messages_with_tracking()`: remove `channel_id_map` from the unpacking of `_send_channel_messages_loop`; remove the `if summary_message and summary_id is not None and success_count > 0:` TOC keyboard block; keep the orphaned-summary cleanup branch (the `elif summary_id is not None and success_count == 0:` block stays)
+- [x] Run `uv run pytest tests/test_sender.py -v` — expect TOC-related tests to fail (they will be removed in task 3)
 
 ### Task 3: Remove TOC from bot_commands
 
