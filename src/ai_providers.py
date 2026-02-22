@@ -150,8 +150,11 @@ class OpenAIProvider(AIProvider):
             create_kwargs.pop("reasoning_effort")
             try:
                 return await self.client.chat.completions.create(**create_kwargs)
-            except OpenAIBadRequestError:
-                pass  # fall through to max_tokens fallback
+            except OpenAIBadRequestError as exc2:
+                self.logger.debug(
+                    "retry without reasoning_effort also rejected: %s", exc2
+                )
+                # fall through to max_tokens fallback
         self.logger.debug(
             "max_completion_tokens rejected by model, retrying with max_tokens: %s",
             original_exc,
@@ -246,7 +249,7 @@ class AnthropicProvider(AIProvider):
     """Anthropic Claude API provider."""
 
     def __init__(self, api_key: str, logger: logging.Logger, timeout: int = 60):
-        self.api_key = api_key
+        self._api_key = api_key
         self.logger = logger
         self.timeout = aiohttp.ClientTimeout(total=timeout)
 
@@ -269,7 +272,7 @@ class AnthropicProvider(AIProvider):
 
         url = "https://api.anthropic.com/v1/messages"
         headers = {
-            "x-api-key": self.api_key,
+            "x-api-key": self._api_key,
             "anthropic-version": "2023-06-01",
             "content-type": "application/json",
         }
