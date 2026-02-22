@@ -7,8 +7,7 @@ import logging
 from typing import Optional
 
 from telegram import BotCommand, Update
-from telegram.error import TelegramError
-from telegram.ext import Application, CallbackQueryHandler, CommandHandler, ContextTypes
+from telegram.ext import Application, CommandHandler, ContextTypes
 
 from src.config_loader import Config
 from src.core import generate_and_send_channel_digests
@@ -53,7 +52,6 @@ class BotCommandHandler:
         self.app.add_handler(CommandHandler("status", self.handle_status))
         self.app.add_handler(CommandHandler("help", self.handle_help))
         self.app.add_handler(CommandHandler("start", self.handle_help))
-        self.app.add_handler(CallbackQueryHandler(self.handle_toc_callback, pattern=r"^toc:"))
 
         self.logger.info("Bot command handlers registered")
         return self.app
@@ -260,70 +258,6 @@ class BotCommandHandler:
         )
 
         await update.message.reply_text(help_text, parse_mode="Markdown")
-
-    async def handle_toc_callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-        """
-        Handle TOC inline button callbacks for basic groups only.
-
-        Callback data format: ``toc:<chat_id>:<message_id>``
-
-        Only reachable for basic groups (chat_id < 0, not a supergroup/channel).
-        Private chats use ``tg://openmessage`` URL buttons and never reach this handler.
-        Supergroups/channels use ``https://t.me/c/`` URL buttons and also never reach here.
-        """
-        if update.callback_query is None:
-            return
-
-        query = update.callback_query
-
-        try:
-            if query.data is None:
-                raise ValueError("callback_data is None")
-            parts = query.data.split(":")
-            target_chat_id = int(parts[1])
-            message_id = int(parts[2])
-        except (AttributeError, IndexError, ValueError) as exc:
-            self.logger.error(f"Malformed TOC callback data '{query.data}': {exc}")
-            await query.answer()
-            return
-
-        # Private chats (target_chat_id > 0) use callback buttons; require authorized user.
-        # Basic groups (target_chat_id < 0) allow any member (no auth needed for shared digests).
-        if target_chat_id > 0 and not self.is_authorized(update.effective_user.id):
-            self.logger.warning(
-                f"Unauthorized TOC callback in private chat from user {update.effective_user.id}"
-            )
-            await query.answer()
-            return
-
-        # Validate that the callback targets the chat it was received in.
-        # This prevents a group member from crafting a toc:<other_group>:<msg> payload
-        # to trigger the bot to copy a message into a different group.
-        if query.message is None:
-            self.logger.warning("TOC callback: query.message is None (message may have been deleted)")
-            await query.answer()
-            return
-        if query.message.chat.id != target_chat_id:
-            self.logger.warning(
-                f"TOC callback chat_id mismatch: message.chat.id={query.message.chat.id}, data={target_chat_id}"
-            )
-            await query.answer()
-            return
-
-        try:
-            await context.bot.copy_message(
-                chat_id=target_chat_id,
-                from_chat_id=target_chat_id,
-                message_id=message_id,
-            )
-            self.logger.debug(f"TOC callback: copied message {message_id} to chat {target_chat_id}")
-            await query.answer(text=self._ui["toc_sent_below"])
-        except TelegramError as exc:
-            self.logger.error(f"TOC callback copy_message failed: {exc}")
-            await query.answer(text=str(exc)[:200])
-        except Exception:
-            await query.answer()
-            raise
 
     async def run(self):
         """Run the bot (polling mode)."""

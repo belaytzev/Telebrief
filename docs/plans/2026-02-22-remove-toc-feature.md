@@ -53,10 +53,10 @@ Remove the Table of Contents (TOC) inline keyboard navigation feature entirely f
 **Files:**
 - Modify: `src/bot_commands.py`
 
-- [ ] Remove `CallbackQueryHandler` from the import (line 11)
-- [ ] Remove `self.app.add_handler(CallbackQueryHandler(self.handle_toc_callback, pattern=r"^toc:"))` from `setup_application()` (line 56)
-- [ ] Delete `handle_toc_callback()` method entirely (lines 264–325)
-- [ ] Run `uv run pytest tests/test_bot_commands.py -v` — expect TOC callback tests to fail
+- [x] Remove `CallbackQueryHandler` from the import (line 11)
+- [x] Remove `self.app.add_handler(CallbackQueryHandler(self.handle_toc_callback, pattern=r"^toc:"))` from `setup_application()` (line 56)
+- [x] Delete `handle_toc_callback()` method entirely (lines 264–325)
+- [x] Run `uv run pytest tests/test_bot_commands.py -v` — expect TOC callback tests to fail
 
 ### Task 4: Remove toc_sent_below from ui_strings
 
