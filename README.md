@@ -106,8 +106,6 @@ Open Telegram and message your bot:
 
 ---
 📈 **Статистика**: 20 каналов, 1,847 сообщений обработано
-
-[ 💻 TechCrunch ] [ 💰 Crypto News ] [ ... ]
 ```
 
 > The summary message is sent **first**, followed by each channel's digest. All labels (header, statistics, bot commands) use the configured `output_language` — the example above shows the default Russian output.

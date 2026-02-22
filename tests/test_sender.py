@@ -318,6 +318,37 @@ async def test_send_channel_messages_with_tracking_no_summary(
 
 @pytest.mark.unit
 @pytest.mark.asyncio
+async def test_orphaned_summary_deleted_when_all_channels_fail(
+    sample_config, mock_logger, tmp_path, monkeypatch
+):
+    """Test that orphaned summary placeholder is deleted when all channel sends fail."""
+    from telegram.error import TelegramError
+
+    storage_file = tmp_path / "digest_messages.json"
+    monkeypatch.setattr("src.utils.MESSAGE_STORAGE_FILE", str(storage_file))
+
+    channel_messages = [("Channel 1", "Message 1")]
+
+    with patch("src.sender.Bot") as mock_bot_class:
+        mock_bot = MagicMock()
+        mock_summary = MagicMock()
+        mock_summary.message_id = 100
+        # Summary placeholder succeeds; channel fails
+        mock_bot.send_message = AsyncMock(side_effect=[mock_summary, TelegramError("API Error")])
+        mock_bot.delete_message = AsyncMock()
+        mock_bot_class.return_value = mock_bot
+
+        sender = DigestSender(sample_config, mock_logger)
+        await sender.send_channel_messages_with_tracking(
+            channel_messages, summary_message="Summary", user_id=123456789
+        )
+
+    # Orphaned summary placeholder must be deleted
+    mock_bot.delete_message.assert_called_once_with(chat_id=123456789, message_id=100)
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
 async def test_send_channel_messages_long_message(sample_config, mock_logger):
     """Test sending channel message that exceeds length limit."""
     # Create a message longer than 4096 characters
@@ -359,7 +390,6 @@ async def test_summary_sent_before_channel_messages(
         mock_ch2.message_id = 102
 
         mock_bot.send_message = AsyncMock(side_effect=[mock_summary, mock_ch1, mock_ch2])
-        mock_bot.edit_message_reply_markup = AsyncMock()
         mock_bot_class.return_value = mock_bot
 
         sender = DigestSender(sample_config, mock_logger)
