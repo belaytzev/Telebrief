@@ -98,6 +98,7 @@ Remove the Table of Contents (TOC) inline keyboard navigation feature entirely f
 - Modify: `website/src/pages/index.astro`
 
 - [x] Remove the "Table of Contents Navigation" feature card div (lines 117–122 approx):
+
   ```html
   <div class="card feature-card">
     <div class="icon">🗂️</div>
@@ -105,6 +106,7 @@ Remove the Table of Contents (TOC) inline keyboard navigation feature entirely f
     <p>Each digest includes an interactive summary with inline navigation buttons, letting you jump directly to any channel's summary with a single tap.</p>
   </div>
   ```
+
 - [x] No test needed for website change
 
 ### Task 7: Remove TOC from README

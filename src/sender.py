@@ -427,8 +427,8 @@ class DigestSender:
             summary_id = await self._send_summary_message(user_id, summary_message)
 
         # Send all channel messages and collect their IDs
-        sent_message_ids, success_count, failed_channels = (
-            await self._send_channel_messages_loop(user_id, channel_messages)
+        sent_message_ids, success_count, failed_channels = await self._send_channel_messages_loop(
+            user_id, channel_messages
         )
 
         if summary_id is not None and success_count == 0:

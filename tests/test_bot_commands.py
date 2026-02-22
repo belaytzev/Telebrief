@@ -178,5 +178,3 @@ async def test_handle_help_uses_output_language(english_config, mock_logger):
     assert "Команды:" not in help_text
     assert "Автоматический режим:" not in help_text
     assert "Возможности:" not in help_text
-
-

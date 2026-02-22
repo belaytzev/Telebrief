@@ -408,5 +408,3 @@ async def test_summary_sent_before_channel_messages(
 
     third_call_kwargs = mock_bot.send_message.call_args_list[2][1]
     assert third_call_kwargs.get("text") == "Message 2"
-
-
