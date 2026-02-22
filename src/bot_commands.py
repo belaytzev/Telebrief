@@ -271,7 +271,7 @@ class BotCommandHandler:
         Private chats use ``tg://openmessage`` URL buttons and never reach this handler.
         Supergroups/channels use ``https://t.me/c/`` URL buttons and also never reach here.
         """
-        if update.callback_query is None or update.effective_user is None:
+        if update.callback_query is None:
             return
 
         query = update.callback_query
@@ -284,6 +284,13 @@ class BotCommandHandler:
             message_id = int(parts[2])
         except (AttributeError, IndexError, ValueError) as exc:
             self.logger.error(f"Malformed TOC callback data '{query.data}': {exc}")
+            await query.answer()
+            return
+
+        # Only basic groups (chat_id < 0) should reach this handler.
+        # Private chats use URL buttons and never emit toc: callbacks.
+        if target_chat_id >= 0:
+            self.logger.warning(f"Unexpected TOC callback with non-group chat_id {target_chat_id}")
             await query.answer()
             return
 

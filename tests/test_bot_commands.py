@@ -243,7 +243,8 @@ async def test_handle_toc_callback_telegram_error(sample_config, mock_logger):
     from telegram.error import TelegramError
 
     handler = BotCommandHandler(sample_config, mock_logger)
-    update = _make_callback_update(user_id=123456789, callback_data="toc:123456789:42")
+    group_chat_id = -987654321
+    update = _make_callback_update(user_id=123456789, callback_data=f"toc:{group_chat_id}:42")
     context = MagicMock()
     context.bot.copy_message = AsyncMock(side_effect=TelegramError("message not found"))
 
@@ -253,3 +254,34 @@ async def test_handle_toc_callback_telegram_error(sample_config, mock_logger):
     call_kwargs = update.callback_query.answer.call_args[1]
     assert "text" in call_kwargs
     assert "message not found" in call_kwargs["text"]
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_handle_toc_callback_none_data(sample_config, mock_logger):
+    """query.data=None is treated as malformed; copy_message is not called."""
+    handler = BotCommandHandler(sample_config, mock_logger)
+    update = _make_callback_update(user_id=123456789, callback_data="toc:-987654321:42")
+    update.callback_query.data = None
+    context = MagicMock()
+    context.bot.copy_message = AsyncMock()
+
+    await handler.handle_toc_callback(update, context)
+
+    context.bot.copy_message.assert_not_called()
+    update.callback_query.answer.assert_called_once()
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_handle_toc_callback_rejects_positive_chat_id(sample_config, mock_logger):
+    """Callbacks embedding a positive (private) chat_id are rejected without calling copy_message."""
+    handler = BotCommandHandler(sample_config, mock_logger)
+    update = _make_callback_update(user_id=123456789, callback_data="toc:123456789:42")
+    context = MagicMock()
+    context.bot.copy_message = AsyncMock()
+
+    await handler.handle_toc_callback(update, context)
+
+    context.bot.copy_message.assert_not_called()
+    update.callback_query.answer.assert_called_once()

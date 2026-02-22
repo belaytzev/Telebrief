@@ -290,9 +290,9 @@ class DigestFormatter:
             return None
 
         buttons = []
+        abs_str = str(abs(chat_id))
         for channel_name, message_id in channel_id_map:
             label = f"{self._pick_emoji(channel_name)} {channel_name}"
-            abs_str = str(abs(chat_id))
             if chat_id > 0:
                 # Private chat: navigate to original message via deep link
                 url = f"tg://openmessage?user_id={chat_id}&message_id={message_id}"
