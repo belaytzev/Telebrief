@@ -7,12 +7,19 @@ import pytest
 from src.bot_commands import BotCommandHandler
 
 
-def _make_callback_update(user_id: int, callback_data: str):
-    """Return a minimal mock Update with a callback query."""
+def _make_callback_update(user_id: int, callback_data: str, chat_id: int | None = None):
+    """Return a minimal mock Update with a callback query.
+
+    ``chat_id`` sets ``query.message.chat.id``, needed for the cross-group
+    injection guard.  Tests that exercise the copy_message path must supply the
+    same value embedded in ``callback_data``.
+    """
     update = MagicMock()
     update.effective_user.id = user_id
     update.callback_query.data = callback_data
     update.callback_query.answer = AsyncMock()
+    if chat_id is not None:
+        update.callback_query.message.chat.id = chat_id
     return update
 
 
@@ -207,7 +214,7 @@ async def test_handle_toc_callback_basic_group(sample_config, mock_logger):
     handler = BotCommandHandler(sample_config, mock_logger)
     group_chat_id = -987654321
     # Use a caller that is NOT the authorized user to prove auth is not required
-    update = _make_callback_update(user_id=777, callback_data=f"toc:{group_chat_id}:500")
+    update = _make_callback_update(user_id=777, callback_data=f"toc:{group_chat_id}:500", chat_id=group_chat_id)
     context = MagicMock()
     context.bot.copy_message = AsyncMock()
 
@@ -244,7 +251,7 @@ async def test_handle_toc_callback_telegram_error(sample_config, mock_logger):
 
     handler = BotCommandHandler(sample_config, mock_logger)
     group_chat_id = -987654321
-    update = _make_callback_update(user_id=123456789, callback_data=f"toc:{group_chat_id}:42")
+    update = _make_callback_update(user_id=123456789, callback_data=f"toc:{group_chat_id}:42", chat_id=group_chat_id)
     context = MagicMock()
     context.bot.copy_message = AsyncMock(side_effect=TelegramError("message not found"))
 
@@ -278,6 +285,33 @@ async def test_handle_toc_callback_rejects_positive_chat_id(sample_config, mock_
     """Callbacks embedding a positive (private) chat_id are rejected without calling copy_message."""
     handler = BotCommandHandler(sample_config, mock_logger)
     update = _make_callback_update(user_id=123456789, callback_data="toc:123456789:42")
+    context = MagicMock()
+    context.bot.copy_message = AsyncMock()
+
+    await handler.handle_toc_callback(update, context)
+
+    context.bot.copy_message.assert_not_called()
+    update.callback_query.answer.assert_called_once()
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_handle_toc_callback_rejects_cross_group_injection(sample_config, mock_logger):
+    """Callback embedding a different group chat_id than the receiving chat is rejected.
+
+    A group member could craft ``toc:-OTHER_GROUP:42`` while the bot is in both
+    groups.  The handler must reject it to prevent copy_message targeting a group
+    other than the one the callback arrived from.
+    """
+    handler = BotCommandHandler(sample_config, mock_logger)
+    receiving_chat_id = -111111111
+    other_group_id = -987654321
+    # callback_data targets other_group_id, but message.chat.id is receiving_chat_id
+    update = _make_callback_update(
+        user_id=777,
+        callback_data=f"toc:{other_group_id}:42",
+        chat_id=receiving_chat_id,
+    )
     context = MagicMock()
     context.bot.copy_message = AsyncMock()
 

@@ -270,7 +270,8 @@ class DigestFormatter:
         Build an inline keyboard TOC for the digest summary message.
 
         For private chats (chat_id > 0), buttons use ``tg://openmessage`` URL buttons
-        that navigate to the original message without creating copies.
+        that navigate to the original message without creating copies.  Note: this URL
+        scheme works on Telegram mobile; Telegram Desktop may silently ignore it.
 
         For supergroup/channel chats (chat_id < 0, starting with -100), buttons use
         ``https://t.me/c/{channel_id}/{message_id}`` URLs.

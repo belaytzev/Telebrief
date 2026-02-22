@@ -294,6 +294,17 @@ class BotCommandHandler:
             await query.answer()
             return
 
+        # Validate that the callback targets the chat it was received in.
+        # This prevents a group member from crafting a toc:<other_group>:<msg> payload
+        # to trigger the bot to copy a message into a different group.
+        actual_chat_id = query.message.chat.id if query.message is not None else None
+        if actual_chat_id != target_chat_id:
+            self.logger.warning(
+                f"TOC callback chat_id mismatch: message.chat.id={actual_chat_id}, data={target_chat_id}"
+            )
+            await query.answer()
+            return
+
         try:
             await context.bot.copy_message(
                 chat_id=target_chat_id,
