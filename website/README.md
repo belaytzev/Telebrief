@@ -6,9 +6,9 @@ Modern landing page for Telebrief with Skeuomorphic 2.0 design, built with Astro
 
 - **Skeuomorphic 2.0 Style**: Realistic depth, shadows, and textures with a modern twist
 - **Color Palette**: Based on Telebrief logo colors
-  - Primary: Teal/Cyan Blue (#127A9C)
-  - Secondary: Dark Navy Blue (#2D3748)
-  - Accent: Light Blue (#B8E5F0)
+  - Background: Deep Navy (#07101a / #0b1825)
+  - Accent: Cerulean Blue (#1b8ec9) — badges, links, interactive elements
+  - Warm: Amber (#f5a623) — hero Claude badge
 - **Fully Responsive**: Mobile-first design that works on all devices
 - **Static Generation**: Blazing fast load times with pre-rendered HTML
 
@@ -133,9 +133,11 @@ Edit color variables in `src/styles/global.css`:
 
 ```css
 :root {
-  --color-primary: #127A9C;
-  --color-secondary: #2D3748;
-  --color-accent: #B8E5F0;
+  --accent: #1b8ec9;         /* cerulean blue — badges, links, interactive elements */
+  --accent-light: #7bbde0;   /* hover state */
+  --accent-dim: rgba(27, 142, 201, 0.09);    /* subtle background fill */
+  --accent-border: rgba(27, 142, 201, 0.28); /* bordered components */
+  --warm: #f5a623;           /* amber — hero Claude badge */
   /* ... */
 }
 ```
