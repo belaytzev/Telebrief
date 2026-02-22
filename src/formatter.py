@@ -269,12 +269,15 @@ class DigestFormatter:
         """
         Build an inline keyboard TOC for the digest summary message.
 
-        For private chats (chat_id > 0), buttons use callback_data in the format
-        ``toc:{chat_id}:{message_id}`` so they work on all platforms including
-        Telegram Desktop (``tg://openmessage`` URLs only work on mobile).
+        For private chats (chat_id > 0), buttons use ``tg://openmessage`` URL buttons
+        that navigate to the original message without creating copies.
 
-        For group/supergroup/channel chats (chat_id < 0), buttons use
-        ``https://t.me/c/{channel_id}/{message_id}`` URLs which work everywhere.
+        For supergroup/channel chats (chat_id < 0, starting with -100), buttons use
+        ``https://t.me/c/{channel_id}/{message_id}`` URLs.
+
+        For basic groups (chat_id < 0, NOT starting with -100), buttons use
+        ``callback_data="toc:{chat_id}:{message_id}"`` since no universal deep link
+        exists for basic group messages.
 
         Args:
             channel_id_map: List of (channel_name, message_id) pairs
@@ -290,16 +293,19 @@ class DigestFormatter:
         for channel_name, message_id in channel_id_map:
             label = f"{self._pick_emoji(channel_name)} {channel_name}"
             abs_str = str(abs(chat_id))
-            if chat_id > 0 or not abs_str.startswith("100"):
-                # Private chats and basic groups: use callback buttons (t.me/c URLs
-                # only work for supergroups/channels with -100… IDs)
-                callback_data = f"toc:{chat_id}:{message_id}"
-                buttons.append(InlineKeyboardButton(text=label, callback_data=callback_data))
-            else:
+            if chat_id > 0:
+                # Private chat: navigate to original message via deep link
+                url = f"tg://openmessage?user_id={chat_id}&message_id={message_id}"
+                buttons.append(InlineKeyboardButton(text=label, url=url))
+            elif abs_str.startswith("100"):
                 # Supergroup/channel (chat_id starts with -100): t.me/c URL works
                 channel_part = abs_str[3:]
                 url = f"https://t.me/c/{channel_part}/{message_id}"
                 buttons.append(InlineKeyboardButton(text=label, url=url))
+            else:
+                # Basic group: no universal deep link, fall back to callback
+                callback_data = f"toc:{chat_id}:{message_id}"
+                buttons.append(InlineKeyboardButton(text=label, callback_data=callback_data))
 
         keyboard = [[btn] for btn in buttons]
         return InlineKeyboardMarkup(keyboard)
