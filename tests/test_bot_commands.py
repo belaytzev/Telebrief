@@ -196,26 +196,6 @@ async def test_handle_help_uses_output_language(english_config, mock_logger):
 
 @pytest.mark.unit
 @pytest.mark.asyncio
-async def test_handle_toc_callback_success(sample_config, mock_logger):
-    """Authorized user triggers copy_message and query.answer is called."""
-    handler = BotCommandHandler(sample_config, mock_logger)
-    update = _make_callback_update(user_id=123456789, callback_data="toc:123456789:42")
-    context = MagicMock()
-    context.bot.copy_message = AsyncMock()
-
-    await handler.handle_toc_callback(update, context)
-
-    context.bot.copy_message.assert_called_once_with(
-        chat_id=123456789,
-        from_chat_id=123456789,
-        message_id=42,
-    )
-    update.callback_query.answer.assert_called_once_with(text="↓ Отправлено ниже")
-
-
-
-@pytest.mark.unit
-@pytest.mark.asyncio
 async def test_handle_toc_callback_basic_group(sample_config, mock_logger):
     """Any group member may trigger copy_message for a basic-group TOC callback.
 

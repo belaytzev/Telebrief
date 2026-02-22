@@ -74,15 +74,15 @@ buttons that navigate to the original message without creating copies.
 **Files:**
 - Modify: `tests/test_bot_commands.py`
 
-- [ ] Remove or repurpose `test_handle_toc_callback_success` — private chats no longer hit this
+- [x] Remove or repurpose `test_handle_toc_callback_success` — private chats no longer hit this
   handler; replace with a test that verifies the basic-group callback still works
-- [ ] Remove `test_handle_toc_callback_unauthorized` — private chat security no longer applied
+- [x] Remove `test_handle_toc_callback_unauthorized` — private chat security no longer applied
   here (URL buttons don't go through the callback at all)
-- [ ] Remove `test_handle_toc_callback_user_id_mismatch` — same reason as above
-- [ ] Keep `test_handle_toc_callback_basic_group` and verify it still passes
-- [ ] Keep `test_handle_toc_callback_malformed_data` — still relevant for basic groups
-- [ ] Keep `test_handle_toc_callback_telegram_error` — still relevant
-- [ ] Run `uv run pytest tests/test_bot_commands.py -v` — must pass before task 5
+- [x] Remove `test_handle_toc_callback_user_id_mismatch` — same reason as above
+- [x] Keep `test_handle_toc_callback_basic_group` and verify it still passes
+- [x] Keep `test_handle_toc_callback_malformed_data` — still relevant for basic groups
+- [x] Keep `test_handle_toc_callback_telegram_error` — still relevant
+- [x] Run `uv run pytest tests/test_bot_commands.py -v` — must pass before task 5
 
 ### Task 5: Verify acceptance criteria
 
