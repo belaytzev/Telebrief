@@ -28,9 +28,9 @@ Two fixes to the Telebrief website:
 **Files:**
 - Modify: `website/src/pages/index.astro`
 
-- [ ] In `.hero-title` CSS rule, change `margin-bottom: 1.5rem` to `margin: 0 auto 1.5rem` to add horizontal centering
-- [ ] In `.hero-desc` CSS rule, change `margin-bottom: 2.5rem` to `margin: 0 auto 2.5rem` to add horizontal centering
-- [ ] Verify hero section has symmetric vertical padding — currently `padding: 5.5rem 0 5rem`. Equalize to `5.5rem 0` for visual balance
+- [x] In `.hero-title` CSS rule, change `margin-bottom: 1.5rem` to `margin: 0 auto 1.5rem` to add horizontal centering
+- [x] In `.hero-desc` CSS rule, change `margin-bottom: 2.5rem` to `margin: 0 auto 2.5rem` to add horizontal centering
+- [x] Verify hero section has symmetric vertical padding — currently `padding: 5.5rem 0 5rem`. Equalize to `5.5rem 0` for visual balance
 
 ### Task 2: Redesign "Powered by Claude Code" button
 
