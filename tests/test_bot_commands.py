@@ -206,7 +206,7 @@ async def test_handle_toc_callback_success(sample_config, mock_logger):
         from_chat_id=123456789,
         message_id=42,
     )
-    update.callback_query.answer.assert_called_once_with(text="↓ Sent below")
+    update.callback_query.answer.assert_called_once_with(text="↓ Отправлено ниже")
 
 
 @pytest.mark.unit
@@ -266,7 +266,7 @@ async def test_handle_toc_callback_basic_group(sample_config, mock_logger):
         from_chat_id=group_chat_id,
         message_id=500,
     )
-    update.callback_query.answer.assert_called_once_with(text="↓ Sent below")
+    update.callback_query.answer.assert_called_once_with(text="↓ Отправлено ниже")
 
 
 @pytest.mark.unit

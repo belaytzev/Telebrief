@@ -302,7 +302,7 @@ class BotCommandHandler:
                 message_id=message_id,
             )
             self.logger.debug(f"TOC callback: copied message {message_id} to chat {target_chat_id}")
-            await query.answer(text="↓ Sent below")
+            await query.answer(text=self._ui["toc_sent_below"])
         except TelegramError as exc:
             self.logger.error(f"TOC callback copy_message failed: {exc}")
             await query.answer(text=str(exc)[:200])

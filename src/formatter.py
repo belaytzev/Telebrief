@@ -238,7 +238,7 @@ class DigestFormatter:
         self, total_channels: int, total_messages: int, hours: int = 24
     ) -> str:
         """
-        Format a summary message to send after all channel messages.
+        Format a summary message sent first as a TOC placeholder, with the TOC keyboard added later.
 
         Args:
             total_channels: Number of channels processed

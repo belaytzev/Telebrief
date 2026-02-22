@@ -316,11 +316,11 @@ def test_format_date_russian_month_names(sample_config, mock_logger):
     from datetime import datetime
 
     formatter = DigestFormatter(sample_config, mock_logger)  # output_language=Russian
-    # February in Russian is "Февраль"
+    # February in Russian genitive (used in dates) is "февраля"
     dt = datetime(2026, 2, 22)
     result = formatter._format_date(dt)
 
-    assert "Февраль" in result
+    assert "февраля" in result
     assert "February" not in result
 
 
