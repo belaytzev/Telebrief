@@ -135,7 +135,6 @@ _STRINGS: dict[str, dict[str, str]] = {
             "• Links to original messages\n"
             "• Auto-cleanup of old digests (configurable)"
         ),
-        "toc_sent_below": "↓ Sent below",
     },
     "Russian": {
         # formatter.py
@@ -190,7 +189,6 @@ _STRINGS: dict[str, dict[str, str]] = {
             "• Ссылки на оригинальные сообщения\n"
             "• Автоматическая очистка старых дайджестов (настраивается)"
         ),
-        "toc_sent_below": "↓ Отправлено ниже",
     },
     "Spanish": {
         # formatter.py
@@ -245,7 +243,6 @@ _STRINGS: dict[str, dict[str, str]] = {
             "• Enlaces a los mensajes originales\n"
             "• Limpieza automática de resúmenes antiguos (configurable)"
         ),
-        "toc_sent_below": "↓ Enviado abajo",
     },
     "German": {
         # formatter.py
@@ -300,7 +297,6 @@ _STRINGS: dict[str, dict[str, str]] = {
             "• Links zu Originalnachrichten\n"
             "• Automatische Bereinigung alter Zusammenfassungen (konfigurierbar)"
         ),
-        "toc_sent_below": "↓ Unten gesendet",
     },
     "French": {
         # formatter.py
@@ -355,7 +351,6 @@ _STRINGS: dict[str, dict[str, str]] = {
             "• Liens vers les messages originaux\n"
             "• Nettoyage automatique des anciens résumés (configurable)"
         ),
-        "toc_sent_below": "↓ Envoyé ci-dessous",
     },
 }
 

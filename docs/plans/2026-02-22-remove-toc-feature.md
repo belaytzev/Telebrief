@@ -63,8 +63,8 @@ Remove the Table of Contents (TOC) inline keyboard navigation feature entirely f
 **Files:**
 - Modify: `src/ui_strings.py`
 
-- [ ] Remove the `"toc_sent_below"` key-value pair from all 5 language dicts (English, Russian, Spanish, German, French)
-- [ ] Run `uv run pytest tests/ -v` — may see remaining import-level failures until test cleanup
+- [x] Remove the `"toc_sent_below"` key-value pair from all 5 language dicts (English, Russian, Spanish, German, French)
+- [x] Run `uv run pytest tests/ -v` — may see remaining import-level failures until test cleanup
 
 ### Task 5: Remove TOC tests
 
