@@ -4,9 +4,7 @@ Markdown formatter for digest output.
 
 import logging
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional
-
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from typing import Dict, List
 
 from src.collector import Message
 from src.config_loader import Config
@@ -238,7 +236,7 @@ class DigestFormatter:
         self, total_channels: int, total_messages: int, hours: int = 24
     ) -> str:
         """
-        Format a summary message sent first as a TOC placeholder, with the TOC keyboard added later.
+        Format a summary message for the digest header.
 
         Args:
             total_channels: Number of channels processed
@@ -260,58 +258,6 @@ class DigestFormatter:
             f"{start_time.strftime('%d.%m %H:%M')} - {end_time.strftime('%d.%m %H:%M')} UTC\n"
         )
         return message
-
-    def build_toc_keyboard(
-        self,
-        channel_id_map: List[tuple],
-        chat_id: int,
-    ) -> Optional[InlineKeyboardMarkup]:
-        """
-        Build an inline keyboard TOC for the digest summary message.
-
-        For private chats (chat_id > 0), buttons use ``tg://openmessage`` URL buttons
-        that navigate to the original message without creating copies.  Note: this URL
-        scheme works on Telegram mobile; Telegram Desktop may silently ignore it.
-
-        For supergroup/channel chats (chat_id < 0, starting with -100), buttons use
-        ``https://t.me/c/{channel_id}/{message_id}`` URLs.
-
-        For basic groups (chat_id < 0, NOT starting with -100), buttons use
-        ``callback_data="toc:{chat_id}:{message_id}"`` since no universal deep link
-        exists for basic group messages.
-
-        Args:
-            channel_id_map: List of (channel_name, message_id) pairs
-            chat_id: The chat/user ID the digest was sent to
-
-        Returns:
-            InlineKeyboardMarkup with one button per channel, or None if list is empty
-        """
-        if not channel_id_map:
-            return None
-
-        buttons = []
-        chat_id_str = str(chat_id)
-        for channel_name, message_id in channel_id_map:
-            label = f"{self._pick_emoji(channel_name)} {channel_name}"
-            if chat_id > 0:
-                # Private chat: use callback_data so buttons work on all platforms
-                # (tg://openmessage URLs are not reliably supported by Telegram clients).
-                callback_data = f"toc:{chat_id}:{message_id}"
-                buttons.append(InlineKeyboardButton(text=label, callback_data=callback_data))
-            elif chat_id_str.startswith("-100"):
-                # Supergroup/channel (chat_id string starts with "-100"): t.me/c URL works.
-                # Strip leading "-100" to get the internal channel ID.
-                channel_part = chat_id_str[4:]
-                url = f"https://t.me/c/{channel_part}/{message_id}"
-                buttons.append(InlineKeyboardButton(text=label, url=url))
-            else:
-                # Basic group: no universal deep link, fall back to callback
-                callback_data = f"toc:{chat_id}:{message_id}"
-                buttons.append(InlineKeyboardButton(text=label, callback_data=callback_data))
-
-        keyboard = [[btn] for btn in buttons]
-        return InlineKeyboardMarkup(keyboard)
 
     def _create_statistics(self, messages_by_channel: Dict[str, List[Message]], hours: int) -> str:
         """
