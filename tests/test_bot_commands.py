@@ -213,36 +213,6 @@ async def test_handle_toc_callback_success(sample_config, mock_logger):
     update.callback_query.answer.assert_called_once_with(text="↓ Отправлено ниже")
 
 
-@pytest.mark.unit
-@pytest.mark.asyncio
-async def test_handle_toc_callback_unauthorized(sample_config, mock_logger):
-    """Unauthorized user does not trigger copy_message."""
-    handler = BotCommandHandler(sample_config, mock_logger)
-    update = _make_callback_update(user_id=999999, callback_data="toc:999999:42")
-    context = MagicMock()
-    context.bot.copy_message = AsyncMock()
-
-    await handler.handle_toc_callback(update, context)
-
-    context.bot.copy_message.assert_not_called()
-    update.callback_query.answer.assert_called_once()
-
-
-@pytest.mark.unit
-@pytest.mark.asyncio
-async def test_handle_toc_callback_user_id_mismatch(sample_config, mock_logger):
-    """Authorized caller with mismatched user_id in callback data does not trigger copy_message."""
-    handler = BotCommandHandler(sample_config, mock_logger)
-    # caller is the authorized user (123456789) but callback embeds a different user_id
-    update = _make_callback_update(user_id=123456789, callback_data="toc:999999:42")
-    context = MagicMock()
-    context.bot.copy_message = AsyncMock()
-
-    await handler.handle_toc_callback(update, context)
-
-    context.bot.copy_message.assert_not_called()
-    update.callback_query.answer.assert_called_once()
-
 
 @pytest.mark.unit
 @pytest.mark.asyncio

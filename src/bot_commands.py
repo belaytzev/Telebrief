@@ -263,19 +263,18 @@ class BotCommandHandler:
 
     async def handle_toc_callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """
-        Handle TOC inline button callbacks for private chats and basic groups.
+        Handle TOC inline button callbacks for basic groups only.
 
         Callback data format: ``toc:<chat_id>:<message_id>``
 
-        For private chats (chat_id > 0), copies the original channel message back to
-        the private chat so the user can jump to it on any platform (including Telegram
-        Desktop).  For basic groups (chat_id < 0), copies the message back to the group.
+        Only reachable for basic groups (chat_id < 0, not a supergroup/channel).
+        Private chats use ``tg://openmessage`` URL buttons and never reach this handler.
+        Supergroups/channels use ``https://t.me/c/`` URL buttons and also never reach here.
         """
         if update.callback_query is None or update.effective_user is None:
             return
 
         query = update.callback_query
-        caller_id = update.effective_user.id
 
         try:
             parts = query.data.split(":")
@@ -285,21 +284,6 @@ class BotCommandHandler:
             self.logger.error(f"Malformed TOC callback data '{query.data}': {exc}")
             await query.answer()
             return
-
-        # Security checks for private chats only.
-        # For group chats (target_chat_id < 0) any group member may use the TOC —
-        # restricting by user ID is not meaningful (multiple members share the group).
-        if target_chat_id > 0:
-            if not self.is_authorized(caller_id):
-                self.logger.warning(f"Unauthorized TOC callback from user {caller_id}")
-                await query.answer()
-                return
-            if target_chat_id != caller_id:
-                self.logger.warning(
-                    f"TOC callback chat_id mismatch: {target_chat_id} vs {caller_id}"
-                )
-                await query.answer()
-                return
 
         try:
             await context.bot.copy_message(

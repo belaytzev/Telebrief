@@ -49,12 +49,12 @@ buttons that navigate to the original message without creating copies.
 **Files:**
 - Modify: `src/bot_commands.py`
 
-- [ ] `handle_toc_callback` is now only reachable for basic group callbacks (private chats no
+- [x] `handle_toc_callback` is now only reachable for basic group callbacks (private chats no
   longer emit callback_data buttons)
-- [ ] Remove the `target_chat_id > 0` private-chat security check (private chats never hit this
+- [x] Remove the `target_chat_id > 0` private-chat security check (private chats never hit this
   handler anymore)
-- [ ] Keep the basic group handling (negative chat_id) logic that calls `copy_message`
-- [ ] Update the docstring to reflect the reduced scope of this handler
+- [x] Keep the basic group handling (negative chat_id) logic that calls `copy_message`
+- [x] Update the docstring to reflect the reduced scope of this handler
 
 ### Task 3: Update tests for `build_toc_keyboard`
 
