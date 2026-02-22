@@ -282,9 +282,7 @@ def test_format_channel_message_stats_uses_output_language(
 
 
 @pytest.mark.unit
-def test_overview_section_label_uses_output_language(
-    english_config, mock_logger, sample_messages
-):
+def test_overview_section_label_uses_output_language(english_config, mock_logger, sample_messages):
     """create_digest overview section label respects output_language."""
     formatter = DigestFormatter(english_config, mock_logger)
     digest = formatter.create_digest(

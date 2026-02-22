@@ -66,14 +66,14 @@ async def test_setup_bot_menu_uses_output_language(english_config, mock_logger):
 
 @pytest.mark.unit
 @pytest.mark.asyncio
-async def test_handle_digest_processing_message_uses_output_language(
-    english_config, mock_logger
-):
+async def test_handle_digest_processing_message_uses_output_language(english_config, mock_logger):
     """handle_digest sends an English processing message when output_language=English."""
     handler = BotCommandHandler(english_config, mock_logger)
     update = _make_update(123456789)
 
-    with patch("src.bot_commands.generate_and_send_channel_digests", new=AsyncMock(return_value=True)):
+    with patch(
+        "src.bot_commands.generate_and_send_channel_digests", new=AsyncMock(return_value=True)
+    ):
         await handler.handle_digest(update, MagicMock())
 
     processing_text = update.message.reply_text.call_args_list[0][0][0]
@@ -88,7 +88,9 @@ async def test_handle_digest_success_message_uses_output_language(english_config
     handler = BotCommandHandler(english_config, mock_logger)
     update = _make_update(123456789)
 
-    with patch("src.bot_commands.generate_and_send_channel_digests", new=AsyncMock(return_value=True)):
+    with patch(
+        "src.bot_commands.generate_and_send_channel_digests", new=AsyncMock(return_value=True)
+    ):
         await handler.handle_digest(update, MagicMock())
 
     success_text = update.message.reply_text.call_args_list[1][0][0]
@@ -103,7 +105,9 @@ async def test_handle_digest_error_message_uses_output_language(english_config, 
     handler = BotCommandHandler(english_config, mock_logger)
     update = _make_update(123456789)
 
-    with patch("src.bot_commands.generate_and_send_channel_digests", new=AsyncMock(return_value=False)):
+    with patch(
+        "src.bot_commands.generate_and_send_channel_digests", new=AsyncMock(return_value=False)
+    ):
         await handler.handle_digest(update, MagicMock())
 
     error_text = update.message.reply_text.call_args_list[1][0][0]
@@ -253,9 +257,7 @@ async def test_handle_toc_callback_basic_group(sample_config, mock_logger):
     handler = BotCommandHandler(sample_config, mock_logger)
     group_chat_id = -987654321
     # Use a caller that is NOT the authorized user to prove auth is not required
-    update = _make_callback_update(
-        user_id=777, callback_data=f"toc:{group_chat_id}:500"
-    )
+    update = _make_callback_update(user_id=777, callback_data=f"toc:{group_chat_id}:500")
     context = MagicMock()
     context.bot.copy_message = AsyncMock()
 

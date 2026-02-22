@@ -433,9 +433,7 @@ async def test_summary_message_sent_with_toc_keyboard(
 
 @pytest.mark.unit
 @pytest.mark.asyncio
-async def test_toc_keyboard_uses_user_id_for_private_chat(
-    mock_logger, tmp_path, monkeypatch
-):
+async def test_toc_keyboard_uses_user_id_for_private_chat(mock_logger, tmp_path, monkeypatch):
     """Test that TOC buttons for private chats embed user_id in callback_data (not bot_id) for cross-platform compatibility."""
     from src.config_loader import ChannelConfig, Config, Settings
 

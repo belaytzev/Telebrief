@@ -190,7 +190,11 @@ class BotCommandHandler:
 
         # Gather status information
         ai_model = self.config.settings.ai_model
-        auto_cleanup_value = self._ui["enabled"] if self.config.settings.auto_cleanup_old_digests else self._ui["disabled"]
+        auto_cleanup_value = (
+            self._ui["enabled"]
+            if self.config.settings.auto_cleanup_old_digests
+            else self._ui["disabled"]
+        )
         status_lines = [
             self._ui["status_header"],
             f"{self._ui['provider_label']}: {self.config.settings.ai_provider}",
@@ -274,7 +278,7 @@ class BotCommandHandler:
         caller_id = update.effective_user.id
 
         try:
-            parts = query.data.split(":")  # type: ignore[union-attr]
+            parts = query.data.split(":")
             target_chat_id = int(parts[1])
             message_id = int(parts[2])
         except (AttributeError, IndexError, ValueError) as exc:
@@ -291,7 +295,9 @@ class BotCommandHandler:
                 await query.answer()
                 return
             if target_chat_id != caller_id:
-                self.logger.warning(f"TOC callback chat_id mismatch: {target_chat_id} vs {caller_id}")
+                self.logger.warning(
+                    f"TOC callback chat_id mismatch: {target_chat_id} vs {caller_id}"
+                )
                 await query.answer()
                 return
 

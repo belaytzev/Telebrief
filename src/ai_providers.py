@@ -151,9 +151,7 @@ class OpenAIProvider(AIProvider):
             try:
                 return await self.client.chat.completions.create(**create_kwargs)
             except OpenAIBadRequestError as exc2:
-                self.logger.debug(
-                    "retry without reasoning_effort also rejected: %s", exc2
-                )
+                self.logger.debug("retry without reasoning_effort also rejected: %s", exc2)
                 # fall through to max_tokens fallback
         self.logger.debug(
             "max_completion_tokens rejected by model, retrying with max_tokens: %s",
