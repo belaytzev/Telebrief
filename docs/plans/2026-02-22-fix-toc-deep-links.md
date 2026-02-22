@@ -86,14 +86,14 @@ buttons that navigate to the original message without creating copies.
 
 ### Task 5: Verify acceptance criteria
 
-- [ ] Manual reasoning check: TOC button for private chat generates a `tg://openmessage` URL
+- [x] Manual reasoning check: TOC button for private chat generates a `tg://openmessage` URL
   button, not a `callback_data` button
-- [ ] Manual reasoning check: clicking such a URL in Telegram opens the original message, no copy
+- [x] Manual reasoning check: clicking such a URL in Telegram opens the original message, no copy
   is created
-- [ ] Run full test suite: `uv run pytest tests/ -v`
-- [ ] Run type checker: `uv run mypy src/`
-- [ ] Run linter: `uv tool run ruff check src/ tests/`
-- [ ] Verify coverage still meets threshold: `uv run pytest tests/ --cov=src --cov-report=term`
+- [x] Run full test suite: `uv run pytest tests/ -v`
+- [x] Run type checker: `uv run mypy src/`
+- [x] Run linter: `uv tool run ruff check src/ tests/`
+- [x] Verify coverage still meets threshold: `uv run pytest tests/ --cov=src --cov-report=term`
 
 ### Task 6: Update memory
 

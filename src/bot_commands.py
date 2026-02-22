@@ -277,6 +277,8 @@ class BotCommandHandler:
         query = update.callback_query
 
         try:
+            if query.data is None:
+                raise ValueError("callback_data is None")
             parts = query.data.split(":")
             target_chat_id = int(parts[1])
             message_id = int(parts[2])
