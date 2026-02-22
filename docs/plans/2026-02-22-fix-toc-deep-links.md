@@ -61,13 +61,13 @@ buttons that navigate to the original message without creating copies.
 **Files:**
 - Modify: `tests/test_formatter.py`
 
-- [ ] Update `test_build_toc_keyboard_private_chat` to assert that buttons have a `url` property
+- [x] Update `test_build_toc_keyboard_private_chat` to assert that buttons have a `url` property
   (not `callback_data`) and that the URL matches
   `tg://openmessage?user_id=123456&message_id=101` / `...message_id=202`
-- [ ] Verify `test_build_toc_keyboard_supergroup_chat` still passes (no change needed)
-- [ ] Verify `test_build_toc_keyboard_negative_non_supergroup_chat` still passes (callback_data
+- [x] Verify `test_build_toc_keyboard_supergroup_chat` still passes (no change needed)
+- [x] Verify `test_build_toc_keyboard_negative_non_supergroup_chat` still passes (callback_data
   for basic groups, no change needed)
-- [ ] Run `uv run pytest tests/test_formatter.py -v` — must pass before task 4
+- [x] Run `uv run pytest tests/test_formatter.py -v` — must pass before task 4
 
 ### Task 4: Update tests for `handle_toc_callback`
 
