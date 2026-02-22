@@ -287,10 +287,12 @@ class BotCommandHandler:
             await query.answer()
             return
 
-        # Only basic groups (chat_id < 0) should reach this handler.
-        # Private chats use URL buttons and never emit toc: callbacks.
-        if target_chat_id >= 0:
-            self.logger.warning(f"Unexpected TOC callback with non-group chat_id {target_chat_id}")
+        # Private chats (target_chat_id > 0) use callback buttons; require authorized user.
+        # Basic groups (target_chat_id < 0) allow any member (no auth needed for shared digests).
+        if target_chat_id > 0 and not self.is_authorized(update.effective_user.id):
+            self.logger.warning(
+                f"Unauthorized TOC callback in private chat from user {update.effective_user.id}"
+            )
             await query.answer()
             return
 

@@ -281,10 +281,35 @@ async def test_handle_toc_callback_none_data(sample_config, mock_logger):
 
 @pytest.mark.unit
 @pytest.mark.asyncio
-async def test_handle_toc_callback_rejects_positive_chat_id(sample_config, mock_logger):
-    """Callbacks embedding a positive (private) chat_id are rejected without calling copy_message."""
+async def test_handle_toc_callback_private_chat_authorized(sample_config, mock_logger):
+    """Authorized user clicking a private-chat TOC button triggers copy_message."""
     handler = BotCommandHandler(sample_config, mock_logger)
-    update = _make_callback_update(user_id=123456789, callback_data="toc:123456789:42")
+    user_id = 123456789  # matches sample_config.settings.target_user_id
+    update = _make_callback_update(user_id=user_id, callback_data=f"toc:{user_id}:42", chat_id=user_id)
+    context = MagicMock()
+    context.bot.copy_message = AsyncMock()
+
+    await handler.handle_toc_callback(update, context)
+
+    context.bot.copy_message.assert_called_once_with(
+        chat_id=user_id,
+        from_chat_id=user_id,
+        message_id=42,
+    )
+    update.callback_query.answer.assert_called_once()
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_handle_toc_callback_private_chat_unauthorized(sample_config, mock_logger):
+    """Unauthorized user in a private-chat TOC callback is rejected without copy_message."""
+    handler = BotCommandHandler(sample_config, mock_logger)
+    unauthorized_id = 999999
+    update = _make_callback_update(
+        user_id=unauthorized_id,
+        callback_data=f"toc:{unauthorized_id}:42",
+        chat_id=unauthorized_id,
+    )
     context = MagicMock()
     context.bot.copy_message = AsyncMock()
 

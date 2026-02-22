@@ -32,16 +32,6 @@ class DigestFormatter:
         self._language = config.settings.output_language
         self._ui = get_ui_strings(self._language)
         self._month_names = get_month_names(self._language)
-        # Bot ID extracted from token (format: "{bot_id}:{token}").
-        # Used in tg://openmessage URLs: user_id must be the peer's ID from the human
-        # user's perspective — i.e., the bot's ID — not the recipient's own ID.
-        token_parts = config.telegram_bot_token.split(":", 1)
-        if len(token_parts) != 2 or not token_parts[0].isdigit():
-            raise ValueError(
-                f"Invalid telegram_bot_token format (expected '{{bot_id}}:{{token}}'): "
-                f"'{config.telegram_bot_token[:20]}...'"
-            )
-        self._bot_id = int(token_parts[0])
 
     def _format_date(self, dt: datetime) -> str:
         """Return date string with month name translated to output_language.
@@ -305,11 +295,10 @@ class DigestFormatter:
         for channel_name, message_id in channel_id_map:
             label = f"{self._pick_emoji(channel_name)} {channel_name}"
             if chat_id > 0:
-                # Private chat: tg://openmessage user_id must be the peer's ID
-                # from the human client's perspective — i.e., the bot's ID.
-                # Using the recipient's own ID (chat_id) would navigate to Saved Messages.
-                url = f"tg://openmessage?user_id={self._bot_id}&message_id={message_id}"
-                buttons.append(InlineKeyboardButton(text=label, url=url))
+                # Private chat: use callback_data so buttons work on all platforms
+                # (tg://openmessage URLs are not reliably supported by Telegram clients).
+                callback_data = f"toc:{chat_id}:{message_id}"
+                buttons.append(InlineKeyboardButton(text=label, callback_data=callback_data))
             elif chat_id_str.startswith("-100"):
                 # Supergroup/channel (chat_id string starts with "-100"): t.me/c URL works.
                 # Strip leading "-100" to get the internal channel ID.
