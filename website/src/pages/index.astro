@@ -760,11 +760,17 @@ import logoImage from '../../public/logo.webp';
     gap: 0.4rem;
     font-family: var(--font-mono);
     font-size: 0.72rem;
-    color: var(--warm);
-    opacity: 0.75;
-    transition: opacity 0.2s;
+    color: var(--accent);
+    border: 1px solid var(--accent-border);
+    background: var(--accent-dim);
+    padding: 0.28rem 0.7rem;
+    border-radius: 4px;
+    transition: border-color 0.2s, color 0.2s;
   }
-  .claude-credit:hover { opacity: 1; }
+  .claude-credit:hover {
+    border-color: var(--accent);
+    color: var(--accent-light);
+  }
 
   /* ── Responsive ── */
   @media (max-width: 1024px) {

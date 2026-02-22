@@ -39,12 +39,12 @@ Two fixes to the Telebrief website:
 
 The `.claude-credit` element at footer bottom-right needs to become a proper button-style badge in accent blue:
 
-- [ ] Change `.claude-credit` color from `var(--warm)` to `var(--accent)`
-- [ ] Add `border: 1px solid var(--accent-border)` to give it a bordered pill appearance
-- [ ] Add `background: var(--accent-dim)` for a subtle fill matching the `tag-a` style
-- [ ] Add `padding: 0.28rem 0.7rem` and `border-radius: 4px` to make it pill-shaped
-- [ ] Remove `opacity: 0.75` and the hover opacity trick — replace hover with `border-color: var(--accent)` and `color: var(--accent-light)` for a clean accent-on-hover
-- [ ] Keep the SVG code icon but match its color to the new accent scheme
+- [x] Change `.claude-credit` color from `var(--warm)` to `var(--accent)`
+- [x] Add `border: 1px solid var(--accent-border)` to give it a bordered pill appearance
+- [x] Add `background: var(--accent-dim)` for a subtle fill matching the `tag-a` style
+- [x] Add `padding: 0.28rem 0.7rem` and `border-radius: 4px` to make it pill-shaped
+- [x] Remove `opacity: 0.75` and the hover opacity trick — replace hover with `border-color: var(--accent)` and `color: var(--accent-light)` for a clean accent-on-hover
+- [x] Keep the SVG code icon but match its color to the new accent scheme
 
 ### Task 3: Verify and build
 
