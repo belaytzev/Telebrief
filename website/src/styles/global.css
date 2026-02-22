@@ -1,20 +1,31 @@
-/* Telebrief — Terminal-editorial dark theme */
+/* Telebrief — Navy-cerulean dark theme derived from logo palette */
 
 :root {
-  --bg:           #07080a;
-  --bg-surface:   #0c0e12;
-  --bg-raised:    #131620;
-  --accent:       #00d4aa;
-  --accent-dim:   rgba(0, 212, 170, 0.08);
-  --accent-border:rgba(0, 212, 170, 0.22);
-  --warm:         #f5a623;
-  --text:         #dde2ec;
-  --text-muted:   #5c6070;
-  --text-faint:   #282c38;
-  --border:       rgba(255, 255, 255, 0.055);
-  --border-hover: rgba(255, 255, 255, 0.12);
+  /* Backgrounds — deepened logo navy */
+  --bg:           #07101a;
+  --bg-surface:   #0b1825;
+  --bg-raised:    #101f30;
 
-  --font-display: 'Syne', sans-serif;
+  /* Accent — cerulean from logo background + ice-blue from icon */
+  --accent:       #1b8ec9;
+  --accent-light: #7bbde0;
+  --accent-dim:   rgba(27, 142, 201, 0.09);
+  --accent-border:rgba(27, 142, 201, 0.28);
+
+  /* Utility */
+  --warm:         #f5a623;
+
+  /* Text — cool off-white with blue tint */
+  --text:         #daeef8;
+  --text-muted:   #4b6b82;
+  --text-faint:   #101e2e;
+
+  /* Borders — slightly tinted */
+  --border:       rgba(27, 142, 201, 0.1);
+  --border-hover: rgba(27, 142, 201, 0.24);
+
+  /* Fonts */
+  --font-display: 'Bricolage Grotesque', sans-serif;
   --font-body:    'DM Sans', sans-serif;
   --font-mono:    'JetBrains Mono', monospace;
 }
@@ -32,7 +43,10 @@ html {
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 body {
@@ -47,14 +61,14 @@ body {
 h1, h2, h3, h4 {
   font-family: var(--font-display);
   font-weight: 800;
-  line-height: 1.1;
-  letter-spacing: -0.03em;
+  line-height: 1.08;
+  letter-spacing: -0.02em;
   color: var(--text);
 }
 
-h1 { font-size: clamp(2.4rem, 6vw, 4.2rem); }
-h2 { font-size: clamp(1.8rem, 4vw, 2.75rem); }
-h3 { font-size: 1.15rem; font-weight: 700; letter-spacing: -0.01em; }
+h1 { font-size: clamp(2.8rem, 7vw, 5rem); }
+h2 { font-size: clamp(2rem, 4.5vw, 3.2rem); }
+h3 { font-size: 1.1rem; font-weight: 700; letter-spacing: -0.01em; }
 
 p {
   color: var(--text-muted);
