@@ -32,6 +32,10 @@ class DigestFormatter:
         self._language = config.settings.output_language
         self._ui = get_ui_strings(self._language)
         self._month_names = get_month_names(self._language)
+        # Bot ID extracted from token (format: "{bot_id}:{token}").
+        # Used in tg://openmessage URLs: user_id must be the peer's ID from the human
+        # user's perspective — i.e., the bot's ID — not the recipient's own ID.
+        self._bot_id = int(config.telegram_bot_token.split(":")[0])
 
     def _format_date(self, dt: datetime) -> str:
         """Return date string with month name translated to output_language.
@@ -295,8 +299,10 @@ class DigestFormatter:
         for channel_name, message_id in channel_id_map:
             label = f"{self._pick_emoji(channel_name)} {channel_name}"
             if chat_id > 0:
-                # Private chat: navigate to original message via deep link
-                url = f"tg://openmessage?user_id={chat_id}&message_id={message_id}"
+                # Private chat: tg://openmessage user_id must be the peer's ID
+                # from the human client's perspective — i.e., the bot's ID.
+                # Using the recipient's own ID (chat_id) would navigate to Saved Messages.
+                url = f"tg://openmessage?user_id={self._bot_id}&message_id={message_id}"
                 buttons.append(InlineKeyboardButton(text=label, url=url))
             elif abs_str.startswith("100"):
                 # Supergroup/channel (chat_id starts with -100): t.me/c URL works

@@ -148,8 +148,9 @@ def test_build_toc_keyboard_private_chat(sample_config, mock_logger):
     assert len(rows) == 2
     btn0 = rows[0][0]
     btn1 = rows[1][0]
-    assert btn0.url == "tg://openmessage?user_id=123456&message_id=101"
-    assert btn1.url == "tg://openmessage?user_id=123456&message_id=202"
+    # user_id in the URL is the bot's ID (from the token "123456789:ABC-DEF"), not the recipient's
+    assert btn0.url == "tg://openmessage?user_id=123456789&message_id=101"
+    assert btn1.url == "tg://openmessage?user_id=123456789&message_id=202"
     assert btn0.callback_data is None
     assert btn1.callback_data is None
 
