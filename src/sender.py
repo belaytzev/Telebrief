@@ -6,7 +6,7 @@ import asyncio
 import logging
 from typing import Optional
 
-from telegram import Bot, InlineKeyboardMarkup
+from telegram import Bot
 from telegram.constants import ParseMode
 from telegram.error import TelegramError
 
@@ -298,7 +298,6 @@ class DigestSender:
         self,
         user_id: int,
         summary_message: str,
-        reply_markup: Optional[InlineKeyboardMarkup] = None,
     ) -> Optional[int]:
         """
         Send summary message and return message ID.
@@ -306,7 +305,6 @@ class DigestSender:
         Args:
             user_id: Target user ID
             summary_message: Summary message text
-            reply_markup: Optional inline keyboard to attach
 
         Returns:
             Message ID if successful, None otherwise
@@ -316,7 +314,6 @@ class DigestSender:
                 chat_id=user_id,
                 text=summary_message,
                 parse_mode=ParseMode.MARKDOWN,
-                reply_markup=reply_markup,
             )
             self.logger.info("✅ Summary message sent")
             return message.message_id
@@ -327,7 +324,6 @@ class DigestSender:
                     chat_id=user_id,
                     text=summary_message,
                     parse_mode=None,
-                    reply_markup=reply_markup,
                 )
                 self.logger.info("✅ Summary message sent (plain text fallback)")
                 return message.message_id
@@ -359,7 +355,7 @@ class DigestSender:
 
     async def _send_channel_messages_loop(
         self, user_id: int, channel_messages: list[tuple[str, str]]
-    ) -> tuple[list[int], list[tuple[str, int]], int, list[str]]:
+    ) -> tuple[list[int], int, list[str]]:
         """
         Send messages for all channels.
 
@@ -368,10 +364,9 @@ class DigestSender:
             channel_messages: List of (channel_name, message_text) tuples
 
         Returns:
-            Tuple of (sent_message_ids, channel_id_map, success_count, failed_channels)
+            Tuple of (sent_message_ids, success_count, failed_channels)
         """
         sent_message_ids = []
-        channel_id_map: list[tuple[str, int]] = []
         success_count = 0
         failed_channels = []
 
@@ -384,7 +379,6 @@ class DigestSender:
                 )
                 if message_id is not None:
                     sent_message_ids.append(message_id)
-                    channel_id_map.append((channel_name, message_id))
                     success_count += 1
                     self.logger.info(f"✅ Successfully sent message for {channel_name}")
 
@@ -396,31 +390,7 @@ class DigestSender:
                 failed_channels.append(channel_name)
                 continue
 
-        return sent_message_ids, channel_id_map, success_count, failed_channels
-
-    async def _edit_summary_keyboard(
-        self,
-        user_id: int,
-        summary_id: int,
-        keyboard: Optional[InlineKeyboardMarkup],
-    ) -> None:
-        """
-        Edit the summary message to attach the TOC inline keyboard.
-
-        Args:
-            user_id: Chat ID the summary was sent to
-            summary_id: Message ID of the summary placeholder
-            keyboard: Inline keyboard to attach
-        """
-        try:
-            await self.bot.edit_message_reply_markup(
-                chat_id=user_id,
-                message_id=summary_id,
-                reply_markup=keyboard,
-            )
-            self.logger.info("✅ Summary TOC keyboard updated")
-        except TelegramError as e:
-            self.logger.warning(f"⚠️ Failed to update summary keyboard: {e}")
+        return sent_message_ids, success_count, failed_channels
 
     async def send_channel_messages_with_tracking(
         self,
@@ -432,11 +402,11 @@ class DigestSender:
         Send separate messages for each channel and track message IDs for cleanup.
 
         Sends the summary placeholder first so it appears at the top, then sends
-        each channel message, then edits the placeholder to add the TOC keyboard.
+        each channel message.
 
         Args:
             channel_messages: List of (channel_name, message_text) tuples
-            summary_message: Optional summary message to send first as TOC header
+            summary_message: Optional summary message to send first as digest header
             user_id: Target user ID (defaults to configured user)
 
         Returns:
@@ -457,17 +427,11 @@ class DigestSender:
             summary_id = await self._send_summary_message(user_id, summary_message)
 
         # Send all channel messages and collect their IDs
-        sent_message_ids, channel_id_map, success_count, failed_channels = (
-            await self._send_channel_messages_loop(user_id, channel_messages)
+        sent_message_ids, success_count, failed_channels = await self._send_channel_messages_loop(
+            user_id, channel_messages
         )
 
-        # Edit the placeholder to add the TOC keyboard now that channel IDs are known
-        if summary_message and summary_id is not None and success_count > 0:
-            # Pass user_id directly; formatter uses sign to distinguish private vs group
-            toc_peer_id = user_id
-            keyboard = self.formatter.build_toc_keyboard(channel_id_map, toc_peer_id)
-            await self._edit_summary_keyboard(user_id, summary_id, keyboard)
-        elif summary_id is not None and success_count == 0:
+        if summary_id is not None and success_count == 0:
             # All channel sends failed; remove the orphaned placeholder
             try:
                 await self.bot.delete_message(chat_id=user_id, message_id=summary_id)
