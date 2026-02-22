@@ -97,6 +97,6 @@ buttons that navigate to the original message without creating copies.
 
 ### Task 6: Update memory
 
-- [ ] Update `MEMORY.md` to note that private chat TOC buttons now use `tg://openmessage` URL
+- [x] Update `MEMORY.md` to note that private chat TOC buttons now use `tg://openmessage` URL
   buttons (not callback_data)
-- [ ] Move this plan to `docs/plans/completed/`
+- [x] Move this plan to `docs/plans/completed/`
