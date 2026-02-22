@@ -73,8 +73,8 @@ Remove the Table of Contents (TOC) inline keyboard navigation feature entirely f
 - Modify: `tests/test_sender.py`
 - Modify: `tests/test_bot_commands.py`
 
-- [ ] In `tests/test_formatter.py`: delete all 5 `build_toc_keyboard` tests (lines 137–220 approx) and the `from telegram import InlineKeyboardMarkup` import if it becomes unused
-- [ ] In `tests/test_sender.py`: delete tests that reference TOC keyboard, channel_id_map, or toc callback:
+- [x] In `tests/test_formatter.py`: delete all 5 `build_toc_keyboard` tests (lines 137–220 approx) and the `from telegram import InlineKeyboardMarkup` import if it becomes unused
+- [x] In `tests/test_sender.py`: delete tests that reference TOC keyboard, channel_id_map, or toc callback:
   - `test_send_channel_messages_with_tracking` (asserts `edit_message_reply_markup` called)
   - `test_send_channel_messages_loop_channel_id_map`
   - `test_send_channel_messages_loop_channel_id_map_with_failure`
@@ -84,13 +84,13 @@ Remove the Table of Contents (TOC) inline keyboard navigation feature entirely f
   - `test_summary_toc_keyboard_contains_only_successful_channels`
   - `test_summary_keyboard_edited_with_toc_after_channels`
   - Update `test_send_channel_messages_with_tracking` to not assert `edit_message_reply_markup` if the test is kept for tracking-only behavior
-- [ ] In `tests/test_bot_commands.py`: delete 3 TOC callback tests:
+- [x] In `tests/test_bot_commands.py`: delete 3 TOC callback tests:
   - `test_handle_toc_callback_basic_group`
   - `test_handle_toc_callback_malformed_data`
   - `test_handle_toc_callback_telegram_error`
   - Remove `_make_callback_update` helper (only used by TOC tests) if unused
-- [ ] Remove `from telegram import InlineKeyboardMarkup` import in `tests/test_sender.py` if unused
-- [ ] Run `uv run pytest tests/ -v` — must be fully green
+- [x] Remove `from telegram import InlineKeyboardMarkup` import in `tests/test_sender.py` if unused
+- [x] Run `uv run pytest tests/ -v` — must be fully green
 
 ### Task 6: Remove TOC from website
 
