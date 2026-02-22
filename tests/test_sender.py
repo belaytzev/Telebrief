@@ -342,7 +342,7 @@ async def test_send_channel_messages_long_message(sample_config, mock_logger):
 async def test_summary_sent_before_channel_messages(
     sample_config, mock_logger, tmp_path, monkeypatch
 ):
-    """Test that the summary/TOC placeholder is sent FIRST, before any channel messages."""
+    """Test that the summary message is sent FIRST, before any channel messages."""
     storage_file = tmp_path / "digest_messages.json"
     monkeypatch.setattr("src.utils.MESSAGE_STORAGE_FILE", str(storage_file))
 
