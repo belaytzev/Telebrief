@@ -149,7 +149,7 @@ Edit sections in `src/pages/index.astro`:
 - Features
 - How It Works
 - CTA
-- Footer
+- Footer (includes `.claude-credit` badge — pill-shaped, accent blue, uses `--accent`/`--accent-border`/`--accent-dim` variables)
 
 ### Logo
 
