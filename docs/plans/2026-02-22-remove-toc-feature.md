@@ -112,9 +112,9 @@ Remove the Table of Contents (TOC) inline keyboard navigation feature entirely f
 **Files:**
 - Modify: `README.md`
 
-- [ ] Remove the `- 🗂️ **Table of Contents Navigation** - ...` bullet point from the features list
-- [ ] Remove the inline-keyboard mention in the digest description paragraph (line 114: "with inline keyboard buttons")
-- [ ] No test needed for README change
+- [x] Remove the `- 🗂️ **Table of Contents Navigation** - ...` bullet point from the features list
+- [x] Remove the inline-keyboard mention in the digest description paragraph (line 114: "with inline keyboard buttons")
+- [x] No test needed for README change
 
 ### Task 8: Update MEMORY.md
 
