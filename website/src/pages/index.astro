@@ -5,262 +5,302 @@ import logoImage from '../../public/logo.webp';
 ---
 
 <Layout title="Telebrief - AI-Powered Telegram Digest Generator">
+
   <!-- Navigation -->
   <nav class="nav" aria-label="Main navigation">
     <div class="container">
-      <div class="nav-content">
-        <div class="nav-brand">
-          <Image src={logoImage} alt="Telebrief Logo" class="nav-logo" width={40} height={40} loading="eager" />
-          <span class="nav-title">Telebrief</span>
-        </div>
+      <div class="nav-inner">
+        <a href="/" class="nav-brand">
+          <Image src={logoImage} alt="Telebrief" class="nav-logo" width={28} height={28} loading="eager" />
+          <span>telebrief</span>
+        </a>
         <div class="nav-links">
-          <a href="#features" class="nav-link">Features</a>
           <a href="#how-it-works" class="nav-link">How It Works</a>
-          <a href="https://github.com/belaytzev/Telebrief" class="btn btn-primary" target="_blank" rel="noopener noreferrer">
-            <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <a href="#features" class="nav-link">Features</a>
+          <a href="https://github.com/belaytzev/Telebrief" class="nav-cta" target="_blank" rel="noopener noreferrer">
+            <svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
             </svg>
-            View on GitHub
+            GitHub
           </a>
         </div>
       </div>
     </div>
   </nav>
 
-  <!-- Main Content -->
   <main>
-  <!-- Hero Section -->
-  <section class="hero" aria-labelledby="hero-title">
-    <div class="container">
-      <div class="hero-content">
-        <div class="hero-text">
-          <h1 class="hero-title" id="hero-title">
-            Never Miss Important<br/>
-            <span class="gradient-text">Telegram Updates</span>
-          </h1>
-          <p class="hero-description">
-            Telebrief automatically collects messages from your Telegram channels,
-            generates AI-powered summaries using OpenAI, Anthropic, or local Ollama,
-            and delivers beautiful daily digests directly to your Telegram account.
-          </p>
-          <div class="hero-buttons">
-            <a href="https://github.com/belaytzev/Telebrief#quick-start" class="btn btn-primary" target="_blank" rel="noopener noreferrer">
-              Get Started
-            </a>
-            <a href="#how-it-works" class="btn btn-secondary">
-              Learn More
-            </a>
-          </div>
-          <div class="hero-stats">
-            <div class="stat">
-              <div class="stat-value">Free - $0.30</div>
-              <div class="stat-label">Per Month</div>
-            </div>
-            <div class="stat">
-              <div class="stat-value">Any Language</div>
-              <div class="stat-label">Support</div>
-            </div>
-            <div class="stat">
-              <div class="stat-value">3 AI Providers</div>
-              <div class="stat-label">Supported</div>
-            </div>
-          </div>
+
+    <!-- Hero -->
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="container">
+        <div class="claude-badge">
+          <span class="badge-dot" aria-hidden="true"></span>
+          Built with Claude Code
         </div>
-        <div class="hero-visual">
-          <div class="phone-mockup">
-            <Image src={logoImage} alt="Telebrief Application Interface" class="phone-image" width={400} height={400} loading="eager" />
-            <div class="phone-glow"></div>
+        <h1 class="hero-title" id="hero-title">
+          AI digest bot<br/>
+          <span class="accent">for Telegram</span>
+        </h1>
+        <p class="hero-desc">
+          Telebrief automatically collects messages from your Telegram channels,
+          generates AI-powered summaries using OpenAI, Anthropic, or local Ollama,
+          and delivers polished daily digests directly to your account.
+        </p>
+        <div class="hero-actions">
+          <a href="https://github.com/belaytzev/Telebrief#quick-start" class="btn-primary" target="_blank" rel="noopener noreferrer">
+            Get started →
+          </a>
+          <a href="#how-it-works" class="btn-ghost">
+            How it works
+          </a>
+        </div>
+        <div class="hero-stats" aria-label="Key statistics">
+          <div class="stat-item">
+            <span class="stat-num">$0</span>
+            <span class="stat-label">free with Ollama</span>
+          </div>
+          <div class="stat-divider" aria-hidden="true"></div>
+          <div class="stat-item">
+            <span class="stat-num">~$0.30</span>
+            <span class="stat-label">per month cloud AI</span>
+          </div>
+          <div class="stat-divider" aria-hidden="true"></div>
+          <div class="stat-item">
+            <span class="stat-num">3</span>
+            <span class="stat-label">AI providers</span>
+          </div>
+          <div class="stat-divider" aria-hidden="true"></div>
+          <div class="stat-item">
+            <span class="stat-num">Any</span>
+            <span class="stat-label">output language</span>
           </div>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- Features Section -->
-  <section id="features" class="features" aria-labelledby="features-title">
-    <div class="container">
-      <div class="section-header">
+    <div class="rule" aria-hidden="true"></div>
+
+    <!-- How It Works -->
+    <section id="how-it-works" class="section" aria-labelledby="how-it-works-title">
+      <div class="container">
+        <p class="eyebrow">workflow</p>
+        <h2 id="how-it-works-title">How Telebrief Works</h2>
+        <p class="section-desc">Three automated phases take your channels from raw messages to a polished digest</p>
+
+        <div class="phases">
+          <div class="phase">
+            <div class="phase-num" aria-hidden="true">1</div>
+            <div class="phase-body">
+              <h3>Collect Messages</h3>
+              <p>Telebrief connects to your Telegram channels via Telethon and pulls all messages from the last 24 hours, including content from private channels you're a member of.</p>
+              <div class="tag-row">
+                <span class="tag">telethon</span>
+                <span class="tag">user API</span>
+                <span class="tag">private channels</span>
+                <span class="tag">24h window</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="phase">
+            <div class="phase-num" aria-hidden="true">2</div>
+            <div class="phase-body">
+              <h3>AI Summarization</h3>
+              <p>Your chosen AI provider analyzes each channel's content and produces concise, intelligent summaries — plus an overall digest summary in your configured output language.</p>
+              <div class="tag-row">
+                <span class="tag tag-a">OpenAI</span>
+                <span class="tag tag-a">Anthropic</span>
+                <span class="tag tag-a">Ollama</span>
+                <span class="tag">multi-language</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="phase">
+            <div class="phase-num" aria-hidden="true">3</div>
+            <div class="phase-body">
+              <h3>Format & Deliver</h3>
+              <p>A beautifully formatted Markdown digest with table of contents and inline navigation buttons is sent directly to your Telegram via bot, on your schedule or on demand.</p>
+              <div class="tag-row">
+                <span class="tag">markdown</span>
+                <span class="tag">TOC navigation</span>
+                <span class="tag">scheduled</span>
+                <span class="tag">on-demand</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="rule" aria-hidden="true"></div>
+
+    <!-- Bot Commands -->
+    <section class="section" aria-labelledby="commands-title">
+      <div class="container">
+        <p class="eyebrow">bot interface</p>
+        <h2 id="commands-title">Available Commands</h2>
+        <p class="section-desc">Control Telebrief directly from Telegram with built-in bot commands</p>
+
+        <div class="terminal" role="region" aria-label="Bot command reference">
+          <div class="terminal-header" aria-hidden="true">
+            <span class="tdot tdot-r"></span>
+            <span class="tdot tdot-y"></span>
+            <span class="tdot tdot-g"></span>
+            <span class="terminal-title">telebrief bot</span>
+          </div>
+          <div class="terminal-body">
+            <div class="cmd-line">
+              <span class="cmd-prompt" aria-hidden="true">$</span>
+              <span class="cmd-name">/start</span>
+              <span class="cmd-desc">— Show welcome message and available commands</span>
+            </div>
+            <div class="cmd-line">
+              <span class="cmd-prompt" aria-hidden="true">$</span>
+              <span class="cmd-name">/digest</span>
+              <span class="cmd-desc">— Generate and send digest instantly</span>
+            </div>
+            <div class="cmd-line">
+              <span class="cmd-prompt" aria-hidden="true">$</span>
+              <span class="cmd-name">/status</span>
+              <span class="cmd-desc">— View configuration and next scheduled run</span>
+            </div>
+            <div class="cmd-line">
+              <span class="cmd-prompt" aria-hidden="true">$</span>
+              <span class="cmd-name">/cleanup</span>
+              <span class="cmd-desc">— Delete old digest messages from chat</span>
+            </div>
+            <div class="cmd-line">
+              <span class="cmd-prompt" aria-hidden="true">$</span>
+              <span class="cmd-name">/help</span>
+              <span class="cmd-desc">— Show all commands and usage guide</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="rule" aria-hidden="true"></div>
+
+    <!-- Features -->
+    <section id="features" class="section" aria-labelledby="features-title">
+      <div class="container">
+        <p class="eyebrow">capabilities</p>
         <h2 id="features-title">Powerful Features</h2>
-        <p>Everything you need to stay informed without information overload</p>
-      </div>
-      <div class="features-grid">
-        <div class="card feature-card">
-          <div class="icon">🤖</div>
-          <h3>AI-Powered Summaries</h3>
-          <p>Choose from multiple AI providers — OpenAI, Anthropic, or local Ollama — to generate concise, intelligent summaries of your Telegram channels.</p>
-        </div>
-        <div class="card feature-card">
-          <div class="icon">🌍</div>
-          <h3>Multi-Language Support</h3>
-          <p>Collect messages in any language - English, Russian, Ukrainian, Chinese, and more. Output language is fully configurable.</p>
-        </div>
-        <div class="card feature-card">
-          <div class="icon">⏰</div>
-          <h3>Automated Scheduling</h3>
-          <p>Set your preferred time and receive daily digests automatically. On-demand generation available via bot commands.</p>
-        </div>
-        <div class="card feature-card">
-          <div class="icon">🔒</div>
-          <h3>Private Channel Access</h3>
-          <p>Full support for private Telegram channels using Telethon user API for comprehensive message collection.</p>
-        </div>
-        <div class="card feature-card">
-          <div class="icon">💰</div>
-          <h3>Ultra Affordable</h3>
-          <p>Run for free with local Ollama, or use cloud AI from ~$0.30 per month. Self-hosted solution with no subscription fees.</p>
-        </div>
-        <div class="card feature-card">
-          <div class="icon">🐳</div>
-          <h3>Docker Ready</h3>
-          <p>Complete Docker containerization with docker-compose support for easy deployment and management.</p>
-        </div>
-      </div>
-    </div>
-  </section>
+        <p class="section-desc">Everything you need to stay informed without information overload</p>
 
-  <!-- How It Works Section -->
-  <section id="how-it-works" class="how-it-works" aria-labelledby="how-it-works-title">
-    <div class="container">
-      <div class="section-header">
-        <h2 id="how-it-works-title">How It Works</h2>
-        <p>Simple, automated workflow from collection to delivery</p>
+        <div class="features-grid">
+          <div class="feature">
+            <div class="feat-label">multi-provider</div>
+            <h3>AI-Powered Summaries</h3>
+            <p>Choose from OpenAI, Anthropic, or local Ollama to generate concise intelligent summaries. Switch providers with a single config change.</p>
+          </div>
+          <div class="feature">
+            <div class="feat-label">i18n</div>
+            <h3>Multi-Language Support</h3>
+            <p>Collect messages in any language — English, Russian, Ukrainian, Chinese, and more. Output language is fully configurable.</p>
+          </div>
+          <div class="feature">
+            <div class="feat-label">automation</div>
+            <h3>Scheduled Delivery</h3>
+            <p>Set a preferred delivery time and receive daily digests automatically. On-demand generation available via bot commands.</p>
+          </div>
+          <div class="feature">
+            <div class="feat-label">access</div>
+            <h3>Private Channels</h3>
+            <p>Full support for private Telegram channels using Telethon user API. No restrictions on channel visibility or membership type.</p>
+          </div>
+          <div class="feature">
+            <div class="feat-label">cost</div>
+            <h3>Ultra Affordable</h3>
+            <p>Run completely free with local Ollama, or use cloud AI for ~$0.30 per month. Self-hosted, no subscription fees, no vendor lock-in.</p>
+          </div>
+          <div class="feature">
+            <div class="feat-label">devops</div>
+            <h3>Docker Ready</h3>
+            <p>Complete Docker containerization with docker-compose. Deploy in minutes with a single command on any server or VPS.</p>
+          </div>
+          <div class="feature">
+            <div class="feat-label">navigation</div>
+            <h3>Table of Contents</h3>
+            <p>Each digest includes an interactive TOC with inline navigation buttons for jumping directly to any channel's summary.</p>
+          </div>
+          <div class="feature">
+            <div class="feat-label">open source</div>
+            <h3>MIT Licensed</h3>
+            <p>Fully open source. Inspect the code, fork it, extend it. No black boxes. Your data stays on your own infrastructure.</p>
+          </div>
+        </div>
       </div>
-      <div class="steps">
-        <div class="step">
-          <div class="step-number">1</div>
-          <div class="step-content">
-            <h3>Collect Messages</h3>
-            <p>Telebrief connects to your Telegram channels using Telethon and collects all messages from the last 24 hours.</p>
-          </div>
-        </div>
-        <div class="step-arrow">→</div>
-        <div class="step">
-          <div class="step-number">2</div>
-          <div class="step-content">
-            <h3>AI Summarization</h3>
-            <p>Your chosen AI provider analyzes and generates intelligent summaries for each channel, plus an overall digest summary.</p>
-          </div>
-        </div>
-        <div class="step-arrow">→</div>
-        <div class="step">
-          <div class="step-number">3</div>
-          <div class="step-content">
-            <h3>Format & Deliver</h3>
-            <p>Beautiful Markdown digest with emojis and clickable links is sent directly to your Telegram via bot.</p>
-          </div>
-        </div>
-      </div>
+    </section>
 
-      <!-- Bot Commands -->
-      <div class="bot-commands">
-        <h3>Available Bot Commands</h3>
-        <div class="commands-grid">
-          <div class="command-card">
-            <code>/start</code>
-            <p>Show welcome message and available commands</p>
-          </div>
-          <div class="command-card">
-            <code>/digest</code>
-            <p>Generate and send digest instantly</p>
-          </div>
-          <div class="command-card">
-            <code>/status</code>
-            <p>View configuration and next scheduled run</p>
-          </div>
-          <div class="command-card">
-            <code>/cleanup</code>
-            <p>Delete old digest messages</p>
-          </div>
-          <div class="command-card">
-            <code>/help</code>
-            <p>Show all available commands and usage guide</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
+    <div class="rule" aria-hidden="true"></div>
 
-  <!-- CTA Section -->
-  <section class="cta" aria-labelledby="cta-title">
-    <div class="container">
-      <div class="cta-content">
-        <h2 id="cta-title">Ready to Get Started?</h2>
-        <p>Deploy Telebrief in minutes and start receiving intelligent daily digests</p>
-        <div class="cta-buttons">
-          <a href="https://github.com/belaytzev/Telebrief" class="btn btn-primary" target="_blank" rel="noopener noreferrer">
-            <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+    <!-- CTA -->
+    <section class="section cta-section" aria-labelledby="cta-title">
+      <div class="container">
+        <h2 id="cta-title">Ready to get started?</h2>
+        <p class="section-desc" style="margin-bottom: 2rem;">Deploy Telebrief in minutes and start receiving intelligent daily digests</p>
+        <div class="cta-actions">
+          <a href="https://github.com/belaytzev/Telebrief" class="btn-primary" target="_blank" rel="noopener noreferrer">
+            <svg width="17" height="17" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
             </svg>
-            View Documentation
+            View on GitHub
           </a>
-          <a href="https://github.com/belaytzev/Telebrief?tab=readme-ov-file#-docker-deployment" class="btn btn-secondary" target="_blank" rel="noopener noreferrer">
-            Quick Start Guide
+          <a href="https://github.com/belaytzev/Telebrief?tab=readme-ov-file#-docker-deployment" class="btn-ghost" target="_blank" rel="noopener noreferrer">
+            Quick start guide →
           </a>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
+
   </main>
 
   <!-- Footer -->
   <footer class="footer" role="contentinfo">
     <div class="container">
-      <div class="footer-content">
-        <div class="footer-section">
-          <div class="footer-brand">
-            <Image src={logoImage} alt="Telebrief Logo" class="footer-logo" width={48} height={48} loading="lazy" />
-            <span class="footer-title">Telebrief</span>
-          </div>
-          <p class="footer-description">
-            AI-Powered Telegram Digest Generator<br/>
-            Stay informed, stay efficient
-          </p>
+      <div class="footer-inner">
+        <div class="footer-brand">
+          <Image src={logoImage} alt="Telebrief" class="footer-logo" width={24} height={24} loading="lazy" />
+          <span>telebrief</span>
         </div>
-        <div class="footer-section">
-          <h4>Resources</h4>
-          <ul class="footer-links">
-            <li><a href="https://github.com/belaytzev/Telebrief" target="_blank" rel="noopener noreferrer">GitHub Repository</a></li>
-            <li><a href="https://github.com/belaytzev/Telebrief#readme" target="_blank" rel="noopener noreferrer">Documentation</a></li>
-            <li><a href="https://github.com/belaytzev/Telebrief/issues" target="_blank" rel="noopener noreferrer">Report Issues</a></li>
-          </ul>
-        </div>
-        <div class="footer-section">
-          <h4>Project</h4>
-          <ul class="footer-links">
-            <li><a href="https://github.com/belaytzev/Telebrief/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">License</a></li>
-            <li><a href="https://github.com/belaytzev/Telebrief/releases" target="_blank" rel="noopener noreferrer">Releases</a></li>
-            <li><a href="https://github.com/belaytzev/Telebrief/blob/main/PROJECT_INDEX.md" target="_blank" rel="noopener noreferrer">Project Index</a></li>
-          </ul>
-        </div>
-        <div class="footer-section">
-          <h4>Connect</h4>
-          <ul class="footer-links">
-            <li><a href="https://github.com/belaytzev" target="_blank" rel="noopener noreferrer">GitHub Profile</a></li>
-            <li><a href="https://t.me/telebrief" target="_blank" rel="noopener noreferrer">Telegram</a></li>
-          </ul>
-        </div>
+        <nav class="footer-links" aria-label="Footer navigation">
+          <a href="https://github.com/belaytzev/Telebrief" target="_blank" rel="noopener noreferrer">GitHub</a>
+          <a href="https://github.com/belaytzev/Telebrief#readme" target="_blank" rel="noopener noreferrer">Docs</a>
+          <a href="https://github.com/belaytzev/Telebrief/issues" target="_blank" rel="noopener noreferrer">Issues</a>
+          <a href="https://t.me/telebrief" target="_blank" rel="noopener noreferrer">Telegram</a>
+          <a href="https://github.com/belaytzev/Telebrief/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">License</a>
+        </nav>
       </div>
       <div class="footer-bottom">
-        <p>&copy; 2026 Telebrief. Open source project under MIT License.</p>
+        <span>&copy; 2026 Telebrief — Open source under MIT License</span>
+        <a href="https://claude.ai/claude-code" class="claude-credit" target="_blank" rel="noopener noreferrer" aria-label="Code written by Claude Code">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="16 18 22 12 16 6"></polyline>
+            <polyline points="8 6 2 12 8 18"></polyline>
+          </svg>
+          code written by Claude Code
+        </a>
       </div>
     </div>
   </footer>
+
 </Layout>
 
 <style>
-  /* Navigation */
+  /* ── Nav ── */
   .nav {
-    box-shadow: var(--shadow-soft);
-    padding: var(--spacing-md) 0;
     position: sticky;
     top: 0;
-    z-index: 1000;
-    backdrop-filter: blur(10px);
-    background: rgba(22, 22, 22, 0.95);
-    border-bottom: 1px solid var(--color-border);
+    z-index: 100;
+    background: rgba(7, 8, 10, 0.9);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--border);
+    padding: 0.875rem 0;
   }
 
-  .nav-content {
+  .nav-inner {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -269,387 +309,487 @@ import logoImage from '../../public/logo.webp';
   .nav-brand {
     display: flex;
     align-items: center;
-    gap: var(--spacing-sm);
+    gap: 0.65rem;
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 1.05rem;
+    letter-spacing: -0.025em;
+    color: var(--text);
+    transition: color 0.2s;
   }
+  .nav-brand:hover { color: var(--accent); }
 
   .nav-logo {
-    width: 40px;
-    height: 40px;
-    border-radius: var(--radius-sm);
-    box-shadow: var(--shadow-soft);
-  }
-
-  .nav-title {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--color-text-primary);
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
   }
 
   .nav-links {
     display: flex;
     align-items: center;
-    gap: var(--spacing-lg);
+    gap: 2rem;
   }
 
   .nav-link {
-    color: var(--color-text-secondary);
-    text-decoration: none;
+    font-size: 0.875rem;
     font-weight: 500;
-    transition: color 0.3s ease;
+    color: var(--text-muted);
+    transition: color 0.2s;
   }
+  .nav-link:hover { color: var(--text); }
 
-  .nav-link:hover {
-    color: var(--color-primary-light);
-  }
-
-  /* Hero Section */
-  .hero {
-    padding: var(--spacing-3xl) 0;
-    background: linear-gradient(180deg, var(--color-bg-raised) 0%, var(--color-bg-base) 100%);
-  }
-
-  .hero-content {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--spacing-3xl);
+  .nav-cta {
+    display: inline-flex;
     align-items: center;
+    gap: 0.4rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text);
+    border: 1px solid var(--border-hover);
+    padding: 0.38rem 0.85rem;
+    border-radius: 5px;
+    transition: all 0.2s;
+  }
+  .nav-cta:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* ── Shared section elements ── */
+  .rule {
+    border-top: 1px solid var(--border);
+  }
+
+  .section {
+    padding: 5.5rem 0;
+  }
+
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 1rem;
+  }
+
+  .section-desc {
+    font-size: 1.05rem;
+    max-width: 520px;
+    margin-top: 0.75rem;
+    margin-bottom: 3.5rem;
+  }
+
+  h2 { margin-bottom: 0; }
+
+  /* ── Buttons ── */
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    background: var(--accent);
+    color: #07080a;
+    font-family: var(--font-body);
+    font-weight: 700;
+    font-size: 0.9rem;
+    padding: 0.65rem 1.4rem;
+    border-radius: 6px;
+    transition: background 0.2s, transform 0.2s;
+  }
+  .btn-primary:hover {
+    background: #00efbf;
+    transform: translateY(-1px);
+  }
+
+  .btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    color: var(--text-muted);
+    font-family: var(--font-body);
+    font-weight: 500;
+    font-size: 0.9rem;
+    padding: 0.65rem 1.4rem;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .btn-ghost:hover {
+    color: var(--text);
+    border-color: var(--border-hover);
+  }
+
+  /* ── Hero ── */
+  .hero {
+    padding: 5rem 0 4.5rem;
+  }
+
+  .claude-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--warm);
+    border: 1px solid rgba(245, 166, 35, 0.28);
+    background: rgba(245, 166, 35, 0.06);
+    padding: 0.3rem 0.8rem;
+    border-radius: 4px;
+    margin-bottom: 2rem;
+  }
+
+  .badge-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--warm);
+    animation: blink 2.2s ease-in-out infinite;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.3; }
   }
 
   .hero-title {
-    margin-bottom: var(--spacing-md);
+    margin-bottom: 1.5rem;
+    max-width: 820px;
   }
 
-  .gradient-text {
-    background: var(--gradient-primary);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+  .accent { color: var(--accent); }
+
+  .hero-desc {
+    font-size: 1.1rem;
+    line-height: 1.76;
+    max-width: 600px;
+    margin-bottom: 2.5rem;
   }
 
-  .hero-description {
-    margin-bottom: var(--spacing-xl);
-    font-size: 1.25rem;
-  }
-
-  .hero-buttons {
+  .hero-actions {
     display: flex;
-    gap: var(--spacing-md);
-    margin-bottom: var(--spacing-2xl);
+    align-items: center;
+    gap: 0.875rem;
+    margin-bottom: 3.5rem;
+    flex-wrap: wrap;
   }
 
   .hero-stats {
     display: flex;
-    gap: var(--spacing-xl);
+    align-items: stretch;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    width: fit-content;
   }
 
-  .stat {
-    text-align: center;
+  .stat-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    padding: 0.9rem 1.6rem;
   }
 
-  .stat-value {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--color-primary);
-    margin-bottom: var(--spacing-xs);
+  .stat-num {
+    font-family: var(--font-mono);
+    font-size: 1.2rem;
+    font-weight: 500;
+    color: var(--accent);
+    line-height: 1;
   }
 
   .stat-label {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+
+  .stat-divider {
+    width: 1px;
+    background: var(--border);
+    flex-shrink: 0;
+  }
+
+  /* ── Phases ── */
+  .phases {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .phase {
+    display: grid;
+    grid-template-columns: 72px 1fr;
+    gap: 2rem;
+    padding: 2.5rem;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.2s;
+  }
+  .phase:last-child { border-bottom: none; }
+  .phase:hover { background: var(--bg-surface); }
+
+  .phase-num {
+    font-family: var(--font-display);
+    font-size: 3rem;
+    font-weight: 800;
+    color: var(--text-faint);
+    line-height: 1.1;
+    padding-top: 0.1rem;
+    letter-spacing: -0.04em;
+  }
+
+  .phase-body h3 {
+    margin-bottom: 0.6rem;
+  }
+
+  .phase-body p {
+    margin-bottom: 1.1rem;
+  }
+
+  .tag-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .tag {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    padding: 0.22rem 0.55rem;
+    border-radius: 3px;
+    background: var(--bg-raised);
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+  }
+
+  .tag-a {
+    color: var(--accent);
+    border-color: var(--accent-border);
+    background: var(--accent-dim);
+  }
+
+  /* ── Terminal ── */
+  .terminal {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    max-width: 680px;
+  }
+
+  .terminal-header {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.7rem 1rem;
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .tdot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+  .tdot-r { background: #ff5f57; }
+  .tdot-y { background: #febc2e; }
+  .tdot-g { background: #28c840; }
+
+  .terminal-title {
+    margin-left: auto;
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    color: var(--text-muted);
+  }
+
+  .terminal-body {
+    padding: 1.5rem 1.75rem;
+    background: #060709;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+
+  .cmd-line {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    font-family: var(--font-mono);
+  }
+
+  .cmd-prompt {
+    color: var(--text-faint);
+    font-size: 0.85rem;
+    width: 12px;
+    flex-shrink: 0;
+    user-select: none;
+  }
+
+  .cmd-name {
+    color: var(--accent);
     font-size: 0.875rem;
-    color: var(--color-text-secondary);
+    font-weight: 500;
+    white-space: nowrap;
+    min-width: 88px;
   }
 
-  .phone-mockup {
-    position: relative;
-    width: 100%;
-    max-width: 400px;
-    margin: 0 auto;
+  .cmd-desc {
+    color: var(--text-muted);
+    font-size: 0.78rem;
   }
 
-  .phone-image {
-    width: 100%;
-    border-radius: var(--radius-xl);
-    box-shadow: var(--shadow-raised);
-    background: var(--color-bg-surface);
-    padding: var(--spacing-xl);
-  }
-
-  .phone-glow {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 120%;
-    height: 120%;
-    background: radial-gradient(circle, var(--color-primary) 0%, transparent 70%);
-    opacity: 0.2;
-    z-index: -1;
-    filter: blur(60px);
-  }
-
-  /* Features Section */
-  .features {
-    background: var(--color-bg-surface);
-  }
-
-  .section-header {
-    text-align: center;
-    margin-bottom: var(--spacing-3xl);
-  }
-
-  .section-header h2 {
-    margin-bottom: var(--spacing-md);
-  }
-
-  .section-header p {
-    font-size: 1.25rem;
-  }
-
+  /* ── Features grid ── */
   .features-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: var(--spacing-xl);
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
   }
 
-  .feature-card h3 {
-    margin: var(--spacing-md) 0;
+  .feature {
+    padding: 1.75rem;
+    background: var(--bg);
+    transition: background 0.2s;
+  }
+  .feature:hover { background: var(--bg-surface); }
+
+  .feat-label {
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 0.65rem;
   }
 
-  /* How It Works */
-  .how-it-works {
-    background: var(--color-bg-raised);
+  .feature h3 {
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
   }
 
-  .steps {
+  .feature p {
+    font-size: 0.85rem;
+    line-height: 1.65;
+  }
+
+  /* ── CTA ── */
+  .cta-section {
+    background: var(--bg-surface);
+    border-top: 1px solid var(--border);
+  }
+
+  .cta-actions {
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: var(--spacing-lg);
-    margin-bottom: var(--spacing-3xl);
+    gap: 0.875rem;
+    flex-wrap: wrap;
   }
 
-  .step {
-    flex: 1;
-    max-width: 300px;
-  }
-
-  .step-number {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    background: var(--gradient-primary);
-    color: var(--color-white);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 2rem;
-    font-weight: 700;
-    margin: 0 auto var(--spacing-md);
-    box-shadow: var(--shadow-medium), inset 0 2px 0 rgba(255, 255, 255, 0.3);
-    position: relative;
-  }
-
-  .step-number::after {
-    content: '';
-    position: absolute;
-    bottom: -8px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 60%;
-    height: 10px;
-    background: rgba(18, 122, 156, 0.2);
-    filter: blur(10px);
-    border-radius: 50%;
-  }
-
-  .step-content {
-    text-align: center;
-  }
-
-  .step-arrow {
-    font-size: 2rem;
-    color: var(--color-primary);
-    font-weight: 700;
-  }
-
-  .bot-commands {
-    background: var(--color-bg-surface);
-    padding: var(--spacing-xl);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-medium);
-    border: 1px solid var(--color-border);
-  }
-
-  .bot-commands h3 {
-    text-align: center;
-    margin-bottom: var(--spacing-xl);
-  }
-
-  .commands-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: var(--spacing-md);
-  }
-
-  .command-card {
-    background: var(--color-bg-raised);
-    padding: var(--spacing-md);
-    border-radius: var(--radius-md);
-    text-align: center;
-    box-shadow: var(--shadow-inner);
-    border: 1px solid var(--color-border);
-  }
-
-  .command-card code {
-    display: block;
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: var(--color-accent);
-    margin-bottom: var(--spacing-xs);
-    font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
-  }
-
-  .command-card p {
-    font-size: 0.875rem;
-  }
-
-  /* CTA Section */
-  .cta {
-    background: linear-gradient(135deg, var(--color-bg-surface) 0%, #0d1f2d 100%);
-    color: var(--color-text-primary);
-    text-align: center;
-    border-top: 1px solid var(--color-border);
-    border-bottom: 1px solid var(--color-border);
-  }
-
-  .cta h2, .cta p {
-    color: var(--color-text-primary);
-  }
-
-  .cta h2 {
-    margin-bottom: var(--spacing-md);
-  }
-
-  .cta p {
-    font-size: 1.25rem;
-    margin-bottom: var(--spacing-xl);
-  }
-
-  .cta-buttons {
-    display: flex;
-    gap: var(--spacing-md);
-    justify-content: center;
-  }
-
-  /* Footer */
+  /* ── Footer ── */
   .footer {
-    background: var(--color-bg-base);
-    color: var(--color-text-primary);
-    padding: var(--spacing-3xl) 0 var(--spacing-lg);
-    border-top: 1px solid var(--color-border);
+    border-top: 1px solid var(--border);
+    padding: 2.5rem 0 2rem;
   }
 
-  .footer-content {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: var(--spacing-xl);
-    margin-bottom: var(--spacing-xl);
+  .footer-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.75rem;
+    flex-wrap: wrap;
+    gap: 1rem;
   }
 
   .footer-brand {
     display: flex;
     align-items: center;
-    gap: var(--spacing-sm);
-    margin-bottom: var(--spacing-md);
+    gap: 0.55rem;
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 0.95rem;
+    letter-spacing: -0.025em;
+    color: var(--text);
   }
 
   .footer-logo {
-    width: 48px;
-    height: 48px;
-    border-radius: var(--radius-sm);
-  }
-
-  .footer-title {
-    font-size: 1.5rem;
-    font-weight: 700;
-  }
-
-  .footer-description {
-    color: var(--color-text-secondary);
-    font-size: 0.875rem;
-  }
-
-  .footer-section h4 {
-    color: var(--color-text-primary);
-    margin-bottom: var(--spacing-md);
+    width: 22px;
+    height: 22px;
+    border-radius: 4px;
   }
 
   .footer-links {
-    list-style: none;
-  }
-
-  .footer-links li {
-    margin-bottom: var(--spacing-xs);
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
   }
 
   .footer-links a {
-    color: var(--color-text-secondary);
-    text-decoration: none;
-    font-size: 0.875rem;
-    transition: color 0.3s ease;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    transition: color 0.2s;
   }
-
-  .footer-links a:hover {
-    color: var(--color-accent);
-  }
+  .footer-links a:hover { color: var(--text); }
 
   .footer-bottom {
-    border-top: 1px solid var(--color-border);
-    padding-top: var(--spacing-md);
-    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-top: 1px solid var(--border);
+    padding-top: 1.25rem;
+    flex-wrap: wrap;
+    gap: 0.75rem;
   }
 
-  .footer-bottom p {
-    color: var(--color-text-secondary);
-    font-size: 0.875rem;
+  .footer-bottom > span {
+    font-size: 0.78rem;
+    color: var(--text-muted);
   }
 
-  /* Responsive */
+  .claude-credit {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--warm);
+    opacity: 0.75;
+    transition: opacity 0.2s;
+  }
+  .claude-credit:hover { opacity: 1; }
+
+  /* ── Responsive ── */
+  @media (max-width: 1024px) {
+    .features-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
   @media (max-width: 768px) {
-    .nav-links {
-      gap: var(--spacing-sm);
-    }
+    .nav-link { display: none; }
 
-    .nav-link {
-      display: none;
-    }
-
-    .hero-content {
-      grid-template-columns: 1fr;
-    }
-
-    .hero-visual {
-      order: -1;
-    }
-
-    .hero-buttons {
-      flex-direction: column;
-    }
+    .hero { padding: 3.5rem 0 3rem; }
 
     .hero-stats {
-      flex-wrap: wrap;
-    }
-
-    .steps {
       flex-direction: column;
+      width: 100%;
+      max-width: 360px;
     }
+    .stat-divider { width: 100%; height: 1px; }
+    .stat-item { padding: 0.75rem 1.25rem; }
 
-    .step-arrow {
-      transform: rotate(90deg);
-    }
+    .section { padding: 3.5rem 0; }
+    .section-desc { margin-bottom: 2.5rem; }
 
-    .cta-buttons {
-      flex-direction: column;
-      align-items: center;
+    .phase {
+      grid-template-columns: 48px 1fr;
+      gap: 1.25rem;
+      padding: 1.75rem;
     }
+    .phase-num { font-size: 2rem; }
+
+    .features-grid { grid-template-columns: 1fr; }
+
+    .footer-inner { flex-direction: column; align-items: flex-start; }
+    .footer-bottom { flex-direction: column; align-items: flex-start; }
   }
 </style>
