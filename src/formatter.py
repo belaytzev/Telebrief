@@ -35,7 +35,13 @@ class DigestFormatter:
         # Bot ID extracted from token (format: "{bot_id}:{token}").
         # Used in tg://openmessage URLs: user_id must be the peer's ID from the human
         # user's perspective — i.e., the bot's ID — not the recipient's own ID.
-        self._bot_id = int(config.telegram_bot_token.split(":")[0])
+        token_parts = config.telegram_bot_token.split(":", 1)
+        if len(token_parts) != 2 or not token_parts[0].isdigit():
+            raise ValueError(
+                f"Invalid telegram_bot_token format (expected '{{bot_id}}:{{token}}'): "
+                f"'{config.telegram_bot_token[:20]}...'"
+            )
+        self._bot_id = int(token_parts[0])
 
     def _format_date(self, dt: datetime) -> str:
         """Return date string with month name translated to output_language.
@@ -295,7 +301,7 @@ class DigestFormatter:
             return None
 
         buttons = []
-        abs_str = str(abs(chat_id))
+        chat_id_str = str(chat_id)
         for channel_name, message_id in channel_id_map:
             label = f"{self._pick_emoji(channel_name)} {channel_name}"
             if chat_id > 0:
@@ -304,9 +310,10 @@ class DigestFormatter:
                 # Using the recipient's own ID (chat_id) would navigate to Saved Messages.
                 url = f"tg://openmessage?user_id={self._bot_id}&message_id={message_id}"
                 buttons.append(InlineKeyboardButton(text=label, url=url))
-            elif abs_str.startswith("100"):
-                # Supergroup/channel (chat_id starts with -100): t.me/c URL works
-                channel_part = abs_str[3:]
+            elif chat_id_str.startswith("-100"):
+                # Supergroup/channel (chat_id string starts with "-100"): t.me/c URL works.
+                # Strip leading "-100" to get the internal channel ID.
+                channel_part = chat_id_str[4:]
                 url = f"https://t.me/c/{channel_part}/{message_id}"
                 buttons.append(InlineKeyboardButton(text=label, url=url))
             else:

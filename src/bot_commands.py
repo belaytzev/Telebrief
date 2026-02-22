@@ -297,10 +297,13 @@ class BotCommandHandler:
         # Validate that the callback targets the chat it was received in.
         # This prevents a group member from crafting a toc:<other_group>:<msg> payload
         # to trigger the bot to copy a message into a different group.
-        actual_chat_id = query.message.chat.id if query.message is not None else None
-        if actual_chat_id != target_chat_id:
+        if query.message is None:
+            self.logger.warning("TOC callback: query.message is None (message may have been deleted)")
+            await query.answer()
+            return
+        if query.message.chat.id != target_chat_id:
             self.logger.warning(
-                f"TOC callback chat_id mismatch: message.chat.id={actual_chat_id}, data={target_chat_id}"
+                f"TOC callback chat_id mismatch: message.chat.id={query.message.chat.id}, data={target_chat_id}"
             )
             await query.answer()
             return
