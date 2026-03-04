@@ -104,8 +104,9 @@ def test_format_messages_truncate_long(sample_config, mock_logger):
 
         formatted = summarizer._format_messages_for_prompt([long_message])
 
-        # Should be truncated to 500 chars
-        assert len(formatted.split(": ", 1)[1]) <= 505  # 500 + some slack
+        # Text portion is truncated to 500 chars; link is appended after
+        assert "A" * 500 in formatted
+        assert "A" * 501 not in formatted
 
 
 @pytest.mark.unit
@@ -130,13 +131,14 @@ def _make_messages(count: int, text_len: int = 20):
 @pytest.mark.unit
 def test_format_messages_prompt_truncation_keeps_recent(sample_config, mock_logger):
     """When total chars exceed max_chars, only the most recent messages that fit are kept."""
-    # Each formatted line: "N. [HH:MM] S: " (14 chars) + 20 X's = 34 chars
-    # 2 messages + 1 newline = 34 + 1 + 34 = 69 chars → max_chars=70 keeps exactly 2
+    # Each formatted line: "N. [HH:MM] S: " (14 chars) + 20 X's + " | https://t.me/test/N" = 56 chars
+    # 2 messages + 1 newline = 56 + 1 + 56 = 113 chars → max_chars=120 keeps exactly 2
+    # 3 messages = 56*3 + 2 = 170 chars → exceeds 120
     messages = _make_messages(5, text_len=20)
 
     with patch("src.ai_providers.AsyncOpenAI"):
         summarizer = Summarizer(sample_config, mock_logger)
-        result = summarizer._format_messages_for_prompt(messages, max_chars=70)
+        result = summarizer._format_messages_for_prompt(messages, max_chars=120)
 
     lines = result.split("\n")
     assert len(lines) == 2
@@ -151,12 +153,12 @@ def test_format_messages_prompt_truncation_keeps_recent(sample_config, mock_logg
 @pytest.mark.unit
 def test_format_messages_prompt_no_truncation_within_budget(sample_config, mock_logger):
     """When total chars are within budget, all messages are included unchanged."""
-    # 5 messages × 34 chars + 4 newlines = 174 chars → max_chars=200 fits all
+    # 5 messages × 56 chars + 4 newlines = 284 chars → max_chars=300 fits all
     messages = _make_messages(5, text_len=20)
 
     with patch("src.ai_providers.AsyncOpenAI"):
         summarizer = Summarizer(sample_config, mock_logger)
-        result = summarizer._format_messages_for_prompt(messages, max_chars=200)
+        result = summarizer._format_messages_for_prompt(messages, max_chars=300)
 
     lines = result.split("\n")
     assert len(lines) == 5
@@ -185,7 +187,7 @@ def test_format_messages_prompt_warns_on_truncation(sample_config, mock_logger):
 
     with patch("src.ai_providers.AsyncOpenAI"):
         summarizer = Summarizer(sample_config, mock_logger)
-        summarizer._format_messages_for_prompt(messages, max_chars=70)
+        summarizer._format_messages_for_prompt(messages, max_chars=120)
 
     mock_logger.warning.assert_called()
     warning_text = str(mock_logger.warning.call_args)
@@ -226,6 +228,42 @@ def test_system_prompt_template_language():
 
     prompt_ru = SYSTEM_PROMPT_TEMPLATE.replace("{language}", "Russian")
     assert "Russian" in prompt_ru
+
+
+@pytest.mark.unit
+def test_format_messages_includes_link(sample_config, mock_logger, sample_messages):
+    """Formatted messages include each message's link so AI can embed them in one-liners."""
+    with patch("src.ai_providers.AsyncOpenAI"):
+        summarizer = Summarizer(sample_config, mock_logger)
+        formatted = summarizer._format_messages_for_prompt(sample_messages)
+
+    assert "https://t.me/test/1" in formatted
+    assert "https://t.me/test/2" in formatted
+    assert "https://t.me/test/3" in formatted
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_summarize_channel_prompt_instructs_two_tier_format(
+    sample_config, mock_logger, sample_messages
+):
+    """Channel prompt instructs AI to produce full summaries for top posts and one-liners for the rest."""
+    with patch("src.ai_providers.AsyncOpenAI"):
+        summarizer = Summarizer(sample_config, mock_logger)
+        captured: list = []
+
+        async def capture(**kwargs):
+            captured.append(kwargs.get("messages", []))
+            return "summary"
+
+        summarizer.provider.chat_completion = capture
+        await summarizer._summarize_channel("Test", sample_messages)
+
+    user_prompt = captured[0][1]["content"]
+    # Must instruct two-tier format: full summaries in section 1, one-liners with links in section 2
+    prompt_lower = user_prompt.lower()
+    assert "section 2" in prompt_lower or "📎 also:" in user_prompt
+    assert any(word in prompt_lower for word in ["one-line", "one line", "one line per post"])
 
 
 @pytest.mark.unit

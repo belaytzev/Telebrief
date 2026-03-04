@@ -35,16 +35,19 @@ Formatting (for Telegram):
 
 Response structure:
 - Header (1-2 lines) with emoji reflecting the digest essence.
-- Key points - 3-7 items with key facts, dates, names, numbers. For each item:
+- Key points — full summaries for the most important posts (you decide how many). For each item:
     - Brief and to the point.
     - Emoji at the beginning.
     - If critical - embedded source link/mention 🖇️@channel.
+- 📎 Also: section — one-liner for every remaining post not covered above.
+    - Format: • Brief subject [→ link]
+    - Use the exact link from the input.
 
 Style rules:
 - Clear, neutral, no jargon or excessive emotion.
 - Preserve numerical data and proper names exactly; if ambiguous - mark as "unconfirmed".
 - When translating, preserve terminology and the author's intent.
-- Avoid link overload: only for important Telegram messages.
+- Avoid link overload in full summaries: only embed links for the most important Telegram messages. In the 📎 Also: section, every item must include its link.
 
 Technical constraints:
 - Summary volume: 120-250 words (brief) or 250-500 words (extended), aiming for readability on one or two screens.
@@ -57,7 +60,11 @@ Output template (Telegram-ready):
 📌 Key points:
     1️⃣ [emoji] [brief fact, numbers, names] [if needed: 🔗@channel/link]
     2️⃣ [emoji] [brief fact] [if needed: 🔗@channel/link]
-    3️⃣ [emoji] [brief fact] [if needed: 🔗@channel/link]
+    ... (as many bullets as needed)
+
+📎 Also:
+    • [Brief subject] [→ link]
+    • [Brief subject] [→ link]
 
 
 If the input includes multiple materials, group by topics with subheadings and separators; connect events by indicating cause-and-effect relationships.
@@ -152,9 +159,20 @@ class Summarizer:
             Summary in the configured output language
         """
         # Format messages for prompt
+        original_count = len(messages)
         messages_text = self._format_messages_for_prompt(
             messages, max_chars=self.config.settings.max_prompt_chars
         )
+        actual_count = len(messages_text.splitlines()) if messages_text else 0
+
+        truncation_note = ""
+        if actual_count < original_count:
+            dropped = original_count - actual_count
+            truncation_note = (
+                f"\nNOTE: Only the {actual_count} most recent messages are shown below; "
+                f"{dropped} older message(s) were excluded due to input size limits "
+                f"and are NOT part of this digest.\n"
+            )
 
         prompt = f"""
 Analyze the following messages from Telegram channel "{channel_name}" \
@@ -164,22 +182,25 @@ CRITICAL - LENGTH CONSTRAINT:
 - Telegram has a 4096 character limit per message
 - Your summary MUST be NO MORE than 3500 characters (including emojis and formatting)
 - This is a hard limit - if exceeded, the message will not be delivered
-- Reduce the summary to 3-5 most important points to fit within the limit
+- Move lower-priority posts to the 📎 Also: section rather than dropping them
+{truncation_note}
+Focus on covering ALL messages shown below — no message in this list should be silently dropped.
 
-Focus on:
-- Important news and announcements
-- Key discussions and debates
-- Decisions made or conclusions reached
-- Useful resources and links
+Response format (TWO sections):
 
-Response format:
-- 3-5 informative bullet points
-- Each point: 1-2 sentences (maximum 150-200 characters)
-- Use emojis for categorization
+SECTION 1 — Full summaries (most important posts, you decide how many):
+- 1-2 sentences per bullet, max 150-200 characters each
+- Emoji at the start of each bullet
 - Be concise but informative
-- VERIFY that the final length does NOT exceed 3500 characters
 
-Messages (total: {len(messages)}):
+SECTION 2 — 📎 Also: (all remaining posts not covered in Section 1)
+- One line per post: • Brief subject [→ link] (omit [→ link] if no link in input for that message)
+- Use the exact link provided in the input (after the last " | "); if no " | " present, omit the link bracket
+- If there are no remaining posts, omit this section entirely
+
+VERIFY that the final length does NOT exceed 3500 characters.
+
+Messages (total: {actual_count}):
 ---
 {messages_text}
 ---
@@ -244,8 +265,11 @@ Respond ONLY in {self.output_language}. Remember: maximum 3500 characters!
         formatted = []
         for i, msg in enumerate(messages, 1):
             timestamp = msg.timestamp.strftime("%H:%M")
-            text = msg.text[:500] if len(msg.text) > 500 else msg.text
-            formatted.append(f"{i}. [{timestamp}] {msg.sender}: {text}")
+            text = (msg.text[:500] if len(msg.text) > 500 else msg.text).replace("\r", " ").replace("\n", " ").replace(" | ", " - ")
+            sender = msg.sender.replace("\r", " ").replace("\n", " ").replace(" | ", " - ")
+            link = msg.link if msg.link and msg.link != "#" else ""
+            link_part = f" | {link}" if link else ""
+            formatted.append(f"{i}. [{timestamp}] {sender}: {text}{link_part}")
 
         # Select most recent messages that fit within the character budget.
         # Always include at least one message (the most recent).
@@ -268,7 +292,16 @@ Respond ONLY in {self.output_language}. Remember: maximum 3500 characters!
                 max_chars,
             )
 
-        return "\n".join(reversed(selected))
+        # Re-number from 1 so the AI sees a clean 1..N sequence regardless of truncation.
+        ordered = list(reversed(selected))
+        renumbered = []
+        for new_i, line in enumerate(ordered, 1):
+            dot_pos = line.find(". ")
+            if dot_pos == -1:
+                renumbered.append(f"{new_i}. {line}")
+            else:
+                renumbered.append(f"{new_i}{line[dot_pos:]}")
+        return "\n".join(renumbered)
 
 
 async def main():

@@ -97,7 +97,7 @@ def test_create_statistics(sample_config, mock_logger, sample_messages):
 
     assert "Статистика" in stats
     assert "2 каналов" in stats
-    assert "5 сообщений" in stats
+    assert "5 сообщений обработано" in stats
     assert "UTC" in stats
 
 
@@ -250,3 +250,104 @@ def test_create_header_russian_month_name(sample_config, mock_logger):
     assert "January" not in header
     assert "February" not in header
     assert "March" not in header
+
+
+# --- Channel URL extraction tests ---
+
+
+@pytest.mark.unit
+def test_extract_channel_url_public(sample_config, mock_logger):
+    """Extracts base channel URL from a public message link."""
+    from datetime import datetime
+
+    from src.collector import Message
+
+    messages = [
+        Message(
+            text="hi",
+            sender="u",
+            timestamp=datetime(2026, 1, 1),
+            link="https://t.me/mychannel/42",
+            channel_name="Test",
+            has_media=False,
+            media_type="",
+        )
+    ]
+    formatter = DigestFormatter(sample_config, mock_logger)
+    assert formatter._extract_channel_url(messages) == "https://t.me/mychannel"
+
+
+@pytest.mark.unit
+def test_extract_channel_url_private(sample_config, mock_logger):
+    """Extracts base channel URL from a private message link."""
+    from datetime import datetime
+
+    from src.collector import Message
+
+    messages = [
+        Message(
+            text="hi",
+            sender="u",
+            timestamp=datetime(2026, 1, 1),
+            link="https://t.me/c/1234567890/42",
+            channel_name="Test",
+            has_media=False,
+            media_type="",
+        )
+    ]
+    formatter = DigestFormatter(sample_config, mock_logger)
+    assert formatter._extract_channel_url(messages) == "https://t.me/c/1234567890"
+
+
+@pytest.mark.unit
+def test_extract_channel_url_no_messages(sample_config, mock_logger):
+    """Returns None when no messages are provided."""
+    formatter = DigestFormatter(sample_config, mock_logger)
+    assert formatter._extract_channel_url([]) is None
+
+
+@pytest.mark.unit
+def test_extract_channel_url_fallback_link(sample_config, mock_logger):
+    """Returns None when all message links are '#' fallback."""
+    from datetime import datetime
+
+    from src.collector import Message
+
+    messages = [
+        Message(
+            text="hi",
+            sender="u",
+            timestamp=datetime(2026, 1, 1),
+            link="#",
+            channel_name="Test",
+            has_media=False,
+            media_type="",
+        )
+    ]
+    formatter = DigestFormatter(sample_config, mock_logger)
+    assert formatter._extract_channel_url(messages) is None
+
+
+@pytest.mark.unit
+def test_channel_section_includes_channel_link(sample_config, mock_logger, sample_messages):
+    """Channel section header includes a clickable link to the channel."""
+    formatter = DigestFormatter(sample_config, mock_logger)
+    section = formatter._create_channel_section("Test Channel", "Summary", sample_messages)
+    # sample_messages links are https://t.me/test/1 etc → channel URL is https://t.me/test
+    assert "https://t.me/test" in section
+
+
+@pytest.mark.unit
+def test_format_channel_message_includes_channel_link(sample_config, mock_logger, sample_messages):
+    """format_channel_message header includes a clickable link to the channel."""
+    formatter = DigestFormatter(sample_config, mock_logger)
+    msg = formatter.format_channel_message("Test Channel", "Summary", sample_messages)
+    assert "https://t.me/test" in msg
+
+
+@pytest.mark.unit
+def test_channel_section_no_link_when_no_messages(sample_config, mock_logger):
+    """Channel section omits channel link gracefully when no messages provided."""
+    formatter = DigestFormatter(sample_config, mock_logger)
+    section = formatter._create_channel_section("Test Channel", "Summary", [])
+    assert "https://t.me" not in section
