@@ -265,7 +265,12 @@ Respond ONLY in {self.output_language}. Remember: maximum 3500 characters!
         formatted = []
         for i, msg in enumerate(messages, 1):
             timestamp = msg.timestamp.strftime("%H:%M")
-            text = (msg.text[:500] if len(msg.text) > 500 else msg.text).replace("\r", " ").replace("\n", " ").replace(" | ", " - ")
+            text = (
+                (msg.text[:500] if len(msg.text) > 500 else msg.text)
+                .replace("\r", " ")
+                .replace("\n", " ")
+                .replace(" | ", " - ")
+            )
             sender = msg.sender.replace("\r", " ").replace("\n", " ").replace(" | ", " - ")
             link = msg.link if msg.link and msg.link != "#" else ""
             link_part = f" | {link}" if link else ""

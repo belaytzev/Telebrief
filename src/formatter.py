@@ -3,15 +3,14 @@ Markdown formatter for digest output.
 """
 
 import logging
-from datetime import datetime, timedelta
 import re
+from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 
 from src.collector import Message
 from src.config_loader import Config
 from src.summarizer import ERROR_SUMMARY_PREFIX
 from src.ui_strings import get_month_names, get_ui_strings
-
 
 _CHANNEL_URL_RE = re.compile(r"^https://t\.me/(?:c/\d+|[^/]{2,})$")
 
