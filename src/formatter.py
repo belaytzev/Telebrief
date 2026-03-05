@@ -3,13 +3,16 @@ Markdown formatter for digest output.
 """
 
 import logging
+import re
 from datetime import datetime, timedelta
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from src.collector import Message
 from src.config_loader import Config
 from src.summarizer import ERROR_SUMMARY_PREFIX
 from src.ui_strings import get_month_names, get_ui_strings
+
+_CHANNEL_URL_RE = re.compile(r"^https://t\.me/(?:c/\d+|[^/]{2,})$")
 
 
 class DigestFormatter:
@@ -120,6 +123,23 @@ class DigestFormatter:
         emoji = "📊" if self.use_emojis else ""
         return f"# {emoji} {self._ui['daily_digest']} - {date_str}\n"
 
+    def _extract_channel_url(self, messages: List[Message]) -> Optional[str]:
+        """
+        Derive the channel base URL from the first message with a valid link.
+
+        Args:
+            messages: Messages from the channel
+
+        Returns:
+            Channel URL (e.g. https://t.me/username) or None if unavailable
+        """
+        for msg in messages:
+            if msg.link and msg.link != "#":
+                base = msg.link.rsplit("/", 1)[0]
+                if _CHANNEL_URL_RE.match(base):
+                    return base
+        return None
+
     def _create_channel_section(
         self, channel_name: str, summary: str, messages: List[Message]
     ) -> str:
@@ -134,10 +154,15 @@ class DigestFormatter:
         Returns:
             Formatted section
         """
-        # Pick emoji based on channel name keywords
         emoji = self._pick_emoji(channel_name)
+        channel_url = self._extract_channel_url(messages)
 
-        section_parts = [f"## {emoji} {channel_name}\n", summary, "\n"]
+        if channel_url:
+            header = f"## {emoji} {channel_name} · [{self._ui['open_channel']} →]({channel_url})\n"
+        else:
+            header = f"## {emoji} {channel_name}\n"
+
+        section_parts = [header, summary, "\n"]
 
         return "\n".join(section_parts)
 
@@ -206,7 +231,11 @@ class DigestFormatter:
         # Channel header with date
         date_str = self._format_date(datetime.utcnow())
         emoji = self._pick_emoji(channel_name)
-        header = f"# {emoji} {channel_name}\n*{date_str}*\n"
+        channel_url = self._extract_channel_url(messages)
+        if channel_url:
+            header = f"# {emoji} {channel_name} · [{self._ui['open_channel']} →]({channel_url})\n*{date_str}*\n"
+        else:
+            header = f"# {emoji} {channel_name}\n*{date_str}*\n"
         parts.append(header)
 
         # Summary

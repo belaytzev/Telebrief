@@ -86,6 +86,7 @@ _STRINGS: dict[str, dict[str, str]] = {
         # formatter.py
         "daily_digest": "Daily Digest",
         "overview": "Brief Overview",
+        "open_channel": "Open channel",
         "stats_header": "Statistics",
         "channels": "channels",
         "messages_processed": "messages processed",
@@ -140,6 +141,7 @@ _STRINGS: dict[str, dict[str, str]] = {
         # formatter.py
         "daily_digest": "Ежедневный дайджест",
         "overview": "Краткий обзор",
+        "open_channel": "Открыть канал",
         "stats_header": "Статистика",
         "channels": "каналов",
         "messages_processed": "сообщений обработано",
@@ -194,6 +196,7 @@ _STRINGS: dict[str, dict[str, str]] = {
         # formatter.py
         "daily_digest": "Resumen Diario",
         "overview": "Resumen Breve",
+        "open_channel": "Abrir canal",
         "stats_header": "Estadísticas",
         "channels": "canales",
         "messages_processed": "mensajes procesados",
@@ -248,6 +251,7 @@ _STRINGS: dict[str, dict[str, str]] = {
         # formatter.py
         "daily_digest": "Tägliche Zusammenfassung",
         "overview": "Kurzer Überblick",
+        "open_channel": "Kanal öffnen",
         "stats_header": "Statistiken",
         "channels": "Kanäle",
         "messages_processed": "verarbeitete Nachrichten",
@@ -302,6 +306,7 @@ _STRINGS: dict[str, dict[str, str]] = {
         # formatter.py
         "daily_digest": "Résumé Quotidien",
         "overview": "Bref Aperçu",
+        "open_channel": "Ouvrir la chaîne",
         "stats_header": "Statistiques",
         "channels": "chaînes",
         "messages_processed": "messages traités",
