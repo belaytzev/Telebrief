@@ -3,7 +3,7 @@ Core digest generation function.
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from src.collector import MessageCollector
@@ -29,7 +29,10 @@ async def generate_digest(config: Config, logger: logging.Logger, hours: int = 2
     Raises:
         Exception: If digest generation fails
     """
-    start_time = datetime.utcnow()
+    if hours <= 0:
+        raise ValueError(f"hours must be positive, got {hours}")
+
+    start_time = datetime.now(timezone.utc)
     logger.info(f"{'=' * 60}")
     logger.info(f"Starting digest generation for last {hours} hours")
     logger.info(f"{'=' * 60}")
@@ -78,7 +81,7 @@ async def generate_digest(config: Config, logger: logging.Logger, hours: int = 2
         )
 
         # Calculate execution time
-        execution_time = (datetime.utcnow() - start_time).total_seconds()
+        execution_time = (datetime.now(timezone.utc) - start_time).total_seconds()
 
         logger.info(f"{'=' * 60}")
         logger.info(f"✅ Digest generation completed in {execution_time:.1f}s")
@@ -137,7 +140,10 @@ async def generate_and_send_channel_digests(
     Returns:
         True if successful
     """
-    start_time = datetime.utcnow()
+    if hours <= 0:
+        raise ValueError(f"hours must be positive, got {hours}")
+
+    start_time = datetime.now(timezone.utc)
     logger.info(f"{'=' * 60}")
     logger.info(f"Starting per-channel digest generation for last {hours} hours")
     logger.info(f"{'=' * 60}")
@@ -210,7 +216,7 @@ async def generate_and_send_channel_digests(
         )
 
         # Calculate execution time
-        execution_time = (datetime.utcnow() - start_time).total_seconds()
+        execution_time = (datetime.now(timezone.utc) - start_time).total_seconds()
 
         logger.info(f"{'=' * 60}")
         logger.info(f"✅ Per-channel digest generation completed in {execution_time:.1f}s")

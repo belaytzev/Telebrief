@@ -4,7 +4,7 @@ Markdown formatter for digest output.
 
 import logging
 import re
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional
 
 from src.collector import Message
@@ -119,7 +119,7 @@ class DigestFormatter:
         Returns:
             Header string
         """
-        date_str = self._format_date(datetime.utcnow())
+        date_str = self._format_date(datetime.now(timezone.utc))
         emoji = "📊" if self.use_emojis else ""
         return f"# {emoji} {self._ui['daily_digest']} - {date_str}\n"
 
@@ -229,7 +229,7 @@ class DigestFormatter:
         parts = []
 
         # Channel header with date
-        date_str = self._format_date(datetime.utcnow())
+        date_str = self._format_date(datetime.now(timezone.utc))
         emoji = self._pick_emoji(channel_name)
         channel_url = self._extract_channel_url(messages)
         if channel_url:
@@ -275,8 +275,8 @@ class DigestFormatter:
         Returns:
             Summary message
         """
-        date_str = self._format_date(datetime.utcnow())
-        end_time = datetime.utcnow()
+        date_str = self._format_date(datetime.now(timezone.utc))
+        end_time = datetime.now(timezone.utc)
         start_time = end_time - timedelta(hours=hours)
 
         message = (
@@ -303,7 +303,7 @@ class DigestFormatter:
         active_channels = sum(1 for msgs in messages_by_channel.values() if msgs)
 
         # Time range
-        end_time = datetime.utcnow()
+        end_time = datetime.now(timezone.utc)
         start_time = end_time - timedelta(hours=hours)
 
         stats_parts = [
