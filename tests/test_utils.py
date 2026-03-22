@@ -1,7 +1,7 @@
 """Tests for utils module."""
 
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
@@ -18,7 +18,7 @@ from src.utils import (
 @pytest.mark.unit
 def test_get_lookback_time():
     """Test lookback time calculation."""
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     lookback = get_lookback_time(24)
 
     assert isinstance(lookback, datetime)

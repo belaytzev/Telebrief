@@ -99,9 +99,8 @@ class BotCommandHandler:
             update: Telegram update
             context: Bot context
         """
-        # Type checks for command handlers
-        assert update.effective_user is not None
-        assert update.message is not None
+        if update.effective_user is None or update.message is None:
+            return
 
         user_id = update.effective_user.id
 
@@ -138,9 +137,8 @@ class BotCommandHandler:
             update: Telegram update
             context: Bot context
         """
-        # Type checks for command handlers
-        assert update.effective_user is not None
-        assert update.message is not None
+        if update.effective_user is None or update.message is None:
+            return
 
         user_id = update.effective_user.id
 
@@ -175,9 +173,8 @@ class BotCommandHandler:
             update: Telegram update
             context: Bot context
         """
-        # Type checks for command handlers
-        assert update.effective_user is not None
-        assert update.message is not None
+        if update.effective_user is None or update.message is None:
+            return
 
         user_id = update.effective_user.id
 
@@ -228,9 +225,8 @@ class BotCommandHandler:
             update: Telegram update
             context: Bot context
         """
-        # Type checks for command handlers
-        assert update.effective_user is not None
-        assert update.message is not None
+        if update.effective_user is None or update.message is None:
+            return
 
         user_id = update.effective_user.id
 
@@ -264,8 +260,8 @@ class BotCommandHandler:
         if not self.app:
             self.setup_application()
 
-        assert self.app is not None
-        assert self.app.updater is not None
+        if self.app is None or self.app.updater is None:
+            raise RuntimeError("Application failed to initialize")
 
         self.logger.info("Starting bot polling...")
         await self.app.initialize()

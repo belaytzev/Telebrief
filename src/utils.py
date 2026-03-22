@@ -5,7 +5,7 @@ Utility functions and logging setup for Telebrief.
 import json
 import logging
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import List
 
@@ -62,7 +62,7 @@ def get_lookback_time(hours: int) -> datetime:
     Returns:
         Datetime object
     """
-    return datetime.utcnow() - timedelta(hours=hours)
+    return datetime.now(timezone.utc) - timedelta(hours=hours)
 
 
 def split_message(text: str, max_length: int = 4000) -> list[str]:
@@ -140,7 +140,7 @@ def save_digest_message_ids(message_ids: List[int], user_id: int) -> None:
     user_key = str(user_id)
     data[user_key] = {
         "message_ids": message_ids,
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
     }
 
     # Save to file

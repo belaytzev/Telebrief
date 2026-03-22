@@ -143,12 +143,9 @@ async def main():
         sys.exit(1)
 
     # Set up signal handlers for graceful shutdown
-    def signal_handler(sig, frame):
-        """Handle Ctrl+C and other signals."""
-        asyncio.create_task(app.shutdown())
-
-    signal.signal(signal.SIGINT, signal_handler)
-    signal.signal(signal.SIGTERM, signal_handler)
+    loop = asyncio.get_running_loop()
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        loop.add_signal_handler(sig, lambda: asyncio.create_task(app.shutdown()))
 
     try:
         # Run application

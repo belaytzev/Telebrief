@@ -83,6 +83,15 @@ _MONTH_NAMES: dict[str, list[str]] = {
 
 _STRINGS: dict[str, dict[str, str]] = {
     "English": {
+        # media types (collector.py)
+        "media_photo": "Photo",
+        "media_video": "Video",
+        "media_audio": "Audio",
+        "media_document": "Document",
+        "media_voice": "Voice message",
+        "media_poll": "Poll",
+        "media_geo": "Geolocation",
+        "media_other": "Media",
         # formatter.py
         "daily_digest": "Daily Digest",
         "overview": "Brief Overview",
@@ -138,6 +147,15 @@ _STRINGS: dict[str, dict[str, str]] = {
         ),
     },
     "Russian": {
+        # media types (collector.py)
+        "media_photo": "Фото",
+        "media_video": "Видео",
+        "media_audio": "Аудио",
+        "media_document": "Документ",
+        "media_voice": "Голосовое сообщение",
+        "media_poll": "Опрос",
+        "media_geo": "Геолокация",
+        "media_other": "Медиа",
         # formatter.py
         "daily_digest": "Ежедневный дайджест",
         "overview": "Краткий обзор",
@@ -193,6 +211,15 @@ _STRINGS: dict[str, dict[str, str]] = {
         ),
     },
     "Spanish": {
+        # media types (collector.py)
+        "media_photo": "Foto",
+        "media_video": "Video",
+        "media_audio": "Audio",
+        "media_document": "Documento",
+        "media_voice": "Mensaje de voz",
+        "media_poll": "Encuesta",
+        "media_geo": "Geolocalización",
+        "media_other": "Multimedia",
         # formatter.py
         "daily_digest": "Resumen Diario",
         "overview": "Resumen Breve",
@@ -248,6 +275,15 @@ _STRINGS: dict[str, dict[str, str]] = {
         ),
     },
     "German": {
+        # media types (collector.py)
+        "media_photo": "Foto",
+        "media_video": "Video",
+        "media_audio": "Audio",
+        "media_document": "Dokument",
+        "media_voice": "Sprachnachricht",
+        "media_poll": "Umfrage",
+        "media_geo": "Standort",
+        "media_other": "Medien",
         # formatter.py
         "daily_digest": "Tägliche Zusammenfassung",
         "overview": "Kurzer Überblick",
@@ -303,6 +339,15 @@ _STRINGS: dict[str, dict[str, str]] = {
         ),
     },
     "French": {
+        # media types (collector.py)
+        "media_photo": "Photo",
+        "media_video": "Vidéo",
+        "media_audio": "Audio",
+        "media_document": "Document",
+        "media_voice": "Message vocal",
+        "media_poll": "Sondage",
+        "media_geo": "Géolocalisation",
+        "media_other": "Média",
         # formatter.py
         "daily_digest": "Résumé Quotidien",
         "overview": "Bref Aperçu",

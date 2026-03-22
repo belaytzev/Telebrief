@@ -5,7 +5,7 @@ Message collector using Telethon to fetch messages from Telegram channels.
 import asyncio
 import logging
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List
 
 from telethon import TelegramClient
@@ -13,6 +13,7 @@ from telethon.errors import ChannelPrivateError, FloodWaitError
 from telethon.tl.types import Message as TelegramMessage
 
 from src.config_loader import ChannelConfig, Config
+from src.ui_strings import get_ui_strings
 from src.utils import get_lookback_time
 
 
@@ -42,6 +43,7 @@ class MessageCollector:
         """
         self.config = config
         self.logger = logger
+        self._ui = get_ui_strings(config.settings.output_language)
         self.client = TelegramClient(
             "sessions/user", config.telegram_api_id, config.telegram_api_hash
         )
@@ -144,10 +146,10 @@ class MessageCollector:
 
             # Fetch messages
             async for message in self.client.iter_messages(
-                entity, limit=max_messages, offset_date=datetime.utcnow()
+                entity, limit=max_messages, offset_date=datetime.now(timezone.utc)
             ):
                 # Stop if message is older than lookback time
-                if message.date < lookback_time.replace(tzinfo=message.date.tzinfo):
+                if message.date < lookback_time:
                     break
 
                 # Skip messages without text
@@ -203,25 +205,25 @@ class MessageCollector:
         media_type = type(message.media).__name__
 
         if "Photo" in media_type:
-            return "Фото"
+            return self._ui["media_photo"]
         elif "Video" in media_type or "Document" in media_type:
             if hasattr(message.media, "document"):
                 mime = getattr(message.media.document, "mime_type", "")
                 if "video" in mime:
-                    return "Видео"
+                    return self._ui["media_video"]
                 elif "audio" in mime:
-                    return "Аудио"
+                    return self._ui["media_audio"]
                 else:
-                    return "Документ"
-            return "Видео"
+                    return self._ui["media_document"]
+            return self._ui["media_video"]
         elif "Voice" in media_type or "Audio" in media_type:
-            return "Голосовое сообщение"
+            return self._ui["media_voice"]
         elif "Poll" in media_type:
-            return "Опрос"
+            return self._ui["media_poll"]
         elif "Geo" in media_type or "Location" in media_type:
-            return "Геолокация"
+            return self._ui["media_geo"]
         else:
-            return "Медиа"
+            return self._ui["media_other"]
 
     async def _get_sender_name(self, message: TelegramMessage) -> str:
         """
