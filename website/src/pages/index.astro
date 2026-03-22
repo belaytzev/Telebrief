@@ -14,6 +14,12 @@ import logoImage from '../../public/logo.webp';
           <Image src={logoImage} alt="Telebrief" class="nav-logo" width={28} height={28} loading="eager" />
           <span>telebrief</span>
         </a>
+        <input type="checkbox" id="nav-toggle" class="nav-toggle" aria-label="Toggle navigation menu" />
+        <label for="nav-toggle" class="nav-hamburger" aria-hidden="true">
+          <span></span>
+          <span></span>
+          <span></span>
+        </label>
         <div class="nav-links">
           <a href="#how-it-works" class="nav-link">How It Works</a>
           <a href="#features" class="nav-link">Features</a>
@@ -235,7 +241,7 @@ import logoImage from '../../public/logo.webp';
     <section class="section cta-section" aria-labelledby="cta-title">
       <div class="container">
         <h2 id="cta-title">Ready to get started?</h2>
-        <p class="section-desc" style="margin-bottom: 2rem;">Deploy Telebrief in minutes and start receiving intelligent daily digests</p>
+        <p class="section-desc" style="margin-bottom: 2rem; margin-left: auto; margin-right: auto;">Deploy Telebrief in minutes and start receiving intelligent daily digests</p>
         <div class="cta-actions">
           <a href="https://github.com/belaytzev/Telebrief" class="btn-primary" target="_blank" rel="noopener noreferrer">
             <svg width="17" height="17" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -299,6 +305,7 @@ import logoImage from '../../public/logo.webp';
     display: flex;
     align-items: center;
     justify-content: space-between;
+    position: relative;
   }
 
   .nav-brand {
@@ -307,7 +314,7 @@ import logoImage from '../../public/logo.webp';
     gap: 0.65rem;
     font-family: var(--font-display);
     font-weight: 800;
-    font-size: 1.05rem;
+    font-size: 1rem;
     letter-spacing: -0.025em;
     color: var(--text);
     transition: color 0.2s;
@@ -338,7 +345,7 @@ import logoImage from '../../public/logo.webp';
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
-    font-size: 0.8rem;
+    font-size: 0.8125rem;
     font-weight: 600;
     color: var(--text);
     border: 1px solid var(--border-hover);
@@ -349,6 +356,41 @@ import logoImage from '../../public/logo.webp';
   .nav-cta:hover {
     border-color: var(--accent);
     color: var(--accent);
+  }
+
+  /* ── Mobile hamburger (CSS-only) ── */
+  .nav-toggle {
+    display: none;
+  }
+
+  .nav-hamburger {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+    z-index: 10;
+  }
+
+  .nav-hamburger span {
+    display: block;
+    width: 20px;
+    height: 2px;
+    background: var(--text);
+    border-radius: 1px;
+    transition: transform 0.25s, opacity 0.25s;
+  }
+
+  .nav-toggle:checked ~ .nav-hamburger span:nth-child(1) {
+    transform: translateY(7px) rotate(45deg);
+  }
+  .nav-toggle:checked ~ .nav-hamburger span:nth-child(2) {
+    opacity: 0;
+  }
+  .nav-toggle:checked ~ .nav-hamburger span:nth-child(3) {
+    transform: translateY(-7px) rotate(-45deg);
   }
 
   /* ── Shared section elements ── */
@@ -362,7 +404,7 @@ import logoImage from '../../public/logo.webp';
 
   .eyebrow {
     font-family: var(--font-mono);
-    font-size: 0.7rem;
+    font-size: 0.75rem;
     letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--accent);
@@ -370,7 +412,7 @@ import logoImage from '../../public/logo.webp';
   }
 
   .section-desc {
-    font-size: 1.05rem;
+    font-size: 1rem;
     max-width: 520px;
     margin-top: 0.75rem;
     margin-bottom: 3.5rem;
@@ -384,7 +426,7 @@ import logoImage from '../../public/logo.webp';
     align-items: center;
     gap: 0.45rem;
     background: var(--accent);
-    color: #04111e;
+    color: var(--text-on-accent);
     font-family: var(--font-body);
     font-weight: 700;
     font-size: 0.9rem;
@@ -393,7 +435,7 @@ import logoImage from '../../public/logo.webp';
     transition: background 0.2s, transform 0.2s;
   }
   .btn-primary:hover {
-    background: #3aaee0;
+    background: var(--accent-hover);
     transform: translateY(-1px);
   }
 
@@ -429,7 +471,7 @@ import logoImage from '../../public/logo.webp';
     align-items: center;
     gap: 0.5rem;
     font-family: var(--font-mono);
-    font-size: 0.72rem;
+    font-size: 0.75rem;
     color: var(--warm);
     border: 1px solid rgba(245, 166, 35, 0.28);
     background: rgba(245, 166, 35, 0.06);
@@ -456,7 +498,7 @@ import logoImage from '../../public/logo.webp';
     max-width: 820px;
     font-size: clamp(3rem, 8vw, 5.5rem);
     line-height: 1.04;
-    color: #ffffff;
+    color: var(--text-bright);
   }
 
   .accent { color: var(--accent-light); }
@@ -504,7 +546,7 @@ import logoImage from '../../public/logo.webp';
   }
 
   .stat-label {
-    font-size: 0.72rem;
+    font-size: 0.75rem;
     color: var(--text-muted);
     white-space: nowrap;
   }
@@ -559,7 +601,7 @@ import logoImage from '../../public/logo.webp';
 
   .tag {
     font-family: var(--font-mono);
-    font-size: 0.68rem;
+    font-size: 0.75rem;
     padding: 0.22rem 0.55rem;
     border-radius: 3px;
     background: var(--bg-raised);
@@ -595,20 +637,20 @@ import logoImage from '../../public/logo.webp';
     height: 10px;
     border-radius: 50%;
   }
-  .tdot-r { background: #ff5f57; }
-  .tdot-y { background: #febc2e; }
-  .tdot-g { background: #28c840; }
+  .tdot-r { background: var(--tdot-red); }
+  .tdot-y { background: var(--tdot-yellow); }
+  .tdot-g { background: var(--tdot-green); }
 
   .terminal-title {
     margin-left: auto;
     font-family: var(--font-mono);
-    font-size: 0.68rem;
+    font-size: 0.75rem;
     color: var(--text-muted);
   }
 
   .terminal-body {
     padding: 1.5rem 1.75rem;
-    background: #050c15;
+    background: var(--bg-deep);
     display: flex;
     flex-direction: column;
     gap: 0.8rem;
@@ -623,7 +665,7 @@ import logoImage from '../../public/logo.webp';
 
   .cmd-prompt {
     color: var(--text-faint);
-    font-size: 0.85rem;
+    font-size: 0.875rem;
     width: 12px;
     flex-shrink: 0;
     user-select: none;
@@ -639,13 +681,13 @@ import logoImage from '../../public/logo.webp';
 
   .cmd-desc {
     color: var(--text-muted);
-    font-size: 0.78rem;
+    font-size: 0.8125rem;
   }
 
   /* ── Features grid ── */
   .features-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
     gap: 1px;
     background: var(--border);
     border: 1px solid var(--border);
@@ -662,14 +704,12 @@ import logoImage from '../../public/logo.webp';
 
   .feat-label {
     font-family: var(--font-mono);
-    font-size: 0.62rem;
+    font-size: 0.75rem;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--accent);
     margin-bottom: 0.65rem;
   }
-
-  .feature:last-child { grid-column: span 2; }
 
   .feature h3 {
     font-size: 1rem;
@@ -677,20 +717,29 @@ import logoImage from '../../public/logo.webp';
   }
 
   .feature p {
-    font-size: 0.85rem;
+    font-size: 0.875rem;
     line-height: 1.65;
   }
 
   /* ── CTA ── */
   .cta-section {
-    background: var(--bg-surface);
+    background:
+      radial-gradient(ellipse 70% 60% at 50% 100%, rgba(27, 142, 201, 0.12) 0%, transparent 70%),
+      var(--bg-surface);
     border-top: 1px solid var(--border);
+    text-align: center;
+    padding: 6rem 0;
+  }
+
+  .cta-section h2 {
+    font-size: clamp(2rem, 4vw, 2.8rem);
   }
 
   .cta-actions {
     display: flex;
     align-items: center;
-    gap: 0.875rem;
+    justify-content: center;
+    gap: 1rem;
     flex-wrap: wrap;
   }
 
@@ -715,7 +764,7 @@ import logoImage from '../../public/logo.webp';
     gap: 0.55rem;
     font-family: var(--font-display);
     font-weight: 800;
-    font-size: 0.95rem;
+    font-size: 1rem;
     letter-spacing: -0.025em;
     color: var(--text);
   }
@@ -733,7 +782,7 @@ import logoImage from '../../public/logo.webp';
   }
 
   .footer-links a {
-    font-size: 0.82rem;
+    font-size: 0.8125rem;
     color: var(--text-muted);
     transition: color 0.2s;
   }
@@ -750,7 +799,7 @@ import logoImage from '../../public/logo.webp';
   }
 
   .footer-bottom > span {
-    font-size: 0.78rem;
+    font-size: 0.8125rem;
     color: var(--text-muted);
   }
 
@@ -759,7 +808,7 @@ import logoImage from '../../public/logo.webp';
     align-items: center;
     gap: 0.4rem;
     font-family: var(--font-mono);
-    font-size: 0.72rem;
+    font-size: 0.75rem;
     color: var(--accent);
     border: 1px solid var(--accent-border);
     background: var(--accent-dim);
@@ -773,12 +822,31 @@ import logoImage from '../../public/logo.webp';
   }
 
   /* ── Responsive ── */
-  @media (max-width: 1024px) {
-    .features-grid { grid-template-columns: repeat(2, 1fr); }
-  }
-
   @media (max-width: 768px) {
-    .nav-link { display: none; }
+    .nav-hamburger { display: flex; }
+
+    .nav-links {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      flex-direction: column;
+      background: rgba(7, 16, 26, 0.96);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 2rem 1.5rem;
+      gap: 1rem;
+    }
+
+    .nav-toggle:checked ~ .nav-links {
+      display: flex;
+    }
+
+    .nav-link {
+      display: block;
+      padding: 0.5rem 0;
+    }
 
     .hero { padding: 3.5rem 0; }
 
@@ -801,7 +869,6 @@ import logoImage from '../../public/logo.webp';
     .phase-num { font-size: 2rem; }
 
     .features-grid { grid-template-columns: 1fr; }
-    .feature:last-child { grid-column: span 1; }
 
     .footer-inner { flex-direction: column; align-items: flex-start; }
     .footer-bottom { flex-direction: column; align-items: flex-start; }

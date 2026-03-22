@@ -20,6 +20,17 @@
   --text-muted:   #8ab8d0;
   --text-faint:   #101e2e;
 
+  /* Derived */
+  --accent-hover: #3aaee0;
+  --bg-deep:      #050c15;
+  --text-on-accent: #04111e;
+  --text-bright:  #ffffff;
+
+  /* Terminal chrome */
+  --tdot-red:     #ff5f57;
+  --tdot-yellow:  #febc2e;
+  --tdot-green:   #28c840;
+
   /* Borders — slightly tinted */
   --border:       rgba(27, 142, 201, 0.1);
   --border-hover: rgba(27, 142, 201, 0.24);
