@@ -203,7 +203,9 @@ class DigestSender:
             return True
         except TelegramError as e:
             if "Can't parse entities" in str(e):
-                self.logger.warning("Markdown parse error in send_message, falling back to plain text")
+                self.logger.warning(
+                    "Markdown parse error in send_message, falling back to plain text"
+                )
                 try:
                     await self.bot.send_message(chat_id=user_id, text=text, parse_mode=None)
                     return True
