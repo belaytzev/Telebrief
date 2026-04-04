@@ -9,6 +9,7 @@ from typing import Dict, List, Optional
 
 from src.collector import Message
 from src.config_loader import Config
+from src.grouper import GroupedPoint
 from src.summarizer import ERROR_SUMMARY_PREFIX
 from src.ui_strings import get_month_names, get_ui_strings
 
@@ -283,6 +284,94 @@ class DigestFormatter:
             f"📊 **{self._ui['digest_completed']}** - {date_str}\n\n"
             f"✅ {self._ui['channels_processed']}: {total_channels}\n"
             f"📨 {self._ui['total_messages']}: {total_messages}\n"
+            f"⏱️ {self._ui['period']}: "
+            f"{start_time.strftime('%d.%m %H:%M')} - {end_time.strftime('%d.%m %H:%M')} UTC\n"
+        )
+        return message
+
+    def _pick_group_emoji(self, group_name: str) -> str:
+        """Pick emoji for a topic group name (case-insensitive)."""
+        name_lower = group_name.lower()
+        mapping = {
+            "events": "🎪",
+            "event": "🎪",
+            "news": "📰",
+            "sport": "⚽",
+            "sports": "⚽",
+            "other": "📌",
+        }
+        return mapping.get(name_lower, "📌")
+
+    def format_group_message(
+        self, group_name: str, points: List[GroupedPoint], hours: int = 24
+    ) -> str:
+        """Format a single topic group as a Telegram message.
+
+        Args:
+            group_name: Name of the topic group
+            points: Classified bullet points with source attribution
+            hours: Time range covered
+
+        Returns:
+            Formatted message ready to send
+        """
+        if not points:
+            return ""
+
+        parts = []
+
+        # Header
+        date_str = self._format_date(datetime.now(timezone.utc))
+        emoji = self._pick_group_emoji(group_name)
+        parts.append(f"# {emoji} {group_name}\n*{date_str}*\n")
+
+        # Bullet points with source attribution
+        for p in points:
+            source_tag = f" _({self._ui['from_channel'].format(channel=p.source)})_" if p.source else ""
+            parts.append(f"- {p.point}{source_tag}")
+
+        # Stats footer
+        if self.include_stats:
+            count_str = self._ui["group_items_count"].format(count=len(points))
+            parts.append(f"\n---\n📊 {count_str}")
+            if hours == 24:
+                parts.append(f"⏱️ {self._ui['last_hours'].format(hours=hours)}")
+
+        message = "\n".join(parts)
+
+        if len(message) > 4096:
+            self.logger.warning(
+                f"Group message for '{group_name}' exceeds 4096 chars ({len(message)}), truncating..."
+            )
+            message = message[:4000] + f"\n\n{self._ui['truncated']}"
+
+        return message
+
+    def format_group_summary_message(
+        self, group_names: List[str], total_points: int, hours: int = 24
+    ) -> str:
+        """Format a summary header message listing active groups.
+
+        Args:
+            group_names: Names of groups that have content
+            total_points: Total number of classified points
+            hours: Time range covered
+
+        Returns:
+            Summary header message
+        """
+        date_str = self._format_date(datetime.now(timezone.utc))
+        end_time = datetime.now(timezone.utc)
+        start_time = end_time - timedelta(hours=hours)
+
+        groups_list = ", ".join(
+            f"{self._pick_group_emoji(name)} {name}" for name in group_names
+        )
+
+        message = (
+            f"📊 **{self._ui['digest_completed']}** - {date_str}\n\n"
+            f"✅ {self._ui['groups_processed']}: {groups_list}\n"
+            f"📨 {self._ui['total_messages']}: {total_points}\n"
             f"⏱️ {self._ui['period']}: "
             f"{start_time.strftime('%d.%m %H:%M')} - {end_time.strftime('%d.%m %H:%M')} UTC\n"
         )

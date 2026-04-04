@@ -93,16 +93,16 @@ Key benefits:
 - Modify: `src/formatter.py`
 - Modify: `tests/test_formatter.py`
 
-- [ ] Add `_pick_group_emoji(group_name: str) -> str` method — mapping: Events/event -> "🎪", News/news -> "📰", Sport/sport -> "⚽", Other/other -> "📌", default -> "📌"
-- [ ] Add `format_group_message(group_name: str, points: List[GroupedPoint], hours: int) -> str` method — formats a single group as a Telegram message with header, bullets with source attribution, and stats footer
-- [ ] Add `format_group_summary_message(group_names: List[str], total_points: int, hours: int) -> str` method — header message listing active groups and total points
-- [ ] Enforce 4096 char Telegram limit in `format_group_message()` with truncation (same pattern as `format_channel_message()`)
-- [ ] Write tests: `_pick_group_emoji()` returns correct emoji for known groups
-- [ ] Write tests: `format_group_message()` produces expected output format with source attribution
-- [ ] Write tests: `format_group_message()` truncates at 4096 chars
-- [ ] Write tests: `format_group_summary_message()` produces expected header format
-- [ ] Write tests: `format_group_message()` with empty points list (should not happen but be defensive)
-- [ ] Run tests — must pass before Task 5
+- [x] Add `_pick_group_emoji(group_name: str) -> str` method — mapping: Events/event -> "🎪", News/news -> "📰", Sport/sport -> "⚽", Other/other -> "📌", default -> "📌"
+- [x] Add `format_group_message(group_name: str, points: List[GroupedPoint], hours: int) -> str` method — formats a single group as a Telegram message with header, bullets with source attribution, and stats footer
+- [x] Add `format_group_summary_message(group_names: List[str], total_points: int, hours: int) -> str` method — header message listing active groups and total points
+- [x] Enforce 4096 char Telegram limit in `format_group_message()` with truncation (same pattern as `format_channel_message()`)
+- [x] Write tests: `_pick_group_emoji()` returns correct emoji for known groups
+- [x] Write tests: `format_group_message()` produces expected output format with source attribution
+- [x] Write tests: `format_group_message()` truncates at 4096 chars
+- [x] Write tests: `format_group_summary_message()` produces expected header format
+- [x] Write tests: `format_group_message()` with empty points list (should not happen but be defensive)
+- [x] Run tests — must pass before Task 5
 
 ### Task 5: Add digest mode orchestration to core.py
 
