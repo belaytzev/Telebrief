@@ -63,9 +63,9 @@ Key benefits:
 - Modify: `src/ui_strings.py`
 - Modify: `tests/test_ui_strings.py`
 
-- [ ] Add new keys to all language dicts in `_STRINGS`: `"group_other"` (name for implicit Other group), `"group_items_count"` ("{count} items"), `"groups_processed"` ("Groups"), `"from_channel"` ("from {channel}")
-- [ ] Write tests: new keys present in all languages (English, Russian, Spanish, German, French)
-- [ ] Run tests — must pass before Task 3
+- [x] Add new keys to all language dicts in `_STRINGS`: `"group_other"` (name for implicit Other group), `"group_items_count"` ("{count} items"), `"groups_processed"` ("Groups"), `"from_channel"` ("from {channel}")
+- [x] Write tests: new keys present in all languages (English, Russian, Spanish, German, French)
+- [x] Run tests — must pass before Task 3
 
 ### Task 3: Create DigestGrouper module
 

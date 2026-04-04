@@ -145,6 +145,11 @@ _STRINGS: dict[str, dict[str, str]] = {
             "• Links to original messages\n"
             "• Auto-cleanup of old digests (configurable)"
         ),
+        # digest grouper
+        "group_other": "Other",
+        "group_items_count": "{count} items",
+        "groups_processed": "Groups",
+        "from_channel": "from {channel}",
     },
     "Russian": {
         # media types (collector.py)
@@ -209,6 +214,11 @@ _STRINGS: dict[str, dict[str, str]] = {
             "• Ссылки на оригинальные сообщения\n"
             "• Автоматическая очистка старых дайджестов (настраивается)"
         ),
+        # digest grouper
+        "group_other": "Другое",
+        "group_items_count": "{count} элементов",
+        "groups_processed": "Группы",
+        "from_channel": "из {channel}",
     },
     "Spanish": {
         # media types (collector.py)
@@ -273,6 +283,11 @@ _STRINGS: dict[str, dict[str, str]] = {
             "• Enlaces a los mensajes originales\n"
             "• Limpieza automática de resúmenes antiguos (configurable)"
         ),
+        # digest grouper
+        "group_other": "Otros",
+        "group_items_count": "{count} elementos",
+        "groups_processed": "Grupos",
+        "from_channel": "de {channel}",
     },
     "German": {
         # media types (collector.py)
@@ -337,6 +352,11 @@ _STRINGS: dict[str, dict[str, str]] = {
             "• Links zu Originalnachrichten\n"
             "• Automatische Bereinigung alter Zusammenfassungen (konfigurierbar)"
         ),
+        # digest grouper
+        "group_other": "Sonstiges",
+        "group_items_count": "{count} Einträge",
+        "groups_processed": "Gruppen",
+        "from_channel": "von {channel}",
     },
     "French": {
         # media types (collector.py)
@@ -401,6 +421,11 @@ _STRINGS: dict[str, dict[str, str]] = {
             "• Liens vers les messages originaux\n"
             "• Nettoyage automatique des anciens résumés (configurable)"
         ),
+        # digest grouper
+        "group_other": "Autres",
+        "group_items_count": "{count} éléments",
+        "groups_processed": "Groupes",
+        "from_channel": "de {channel}",
     },
 }
 
