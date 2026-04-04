@@ -4,6 +4,7 @@ Message collector using Telethon to fetch messages from Telegram channels.
 
 import asyncio
 import logging
+import os
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Dict, List
@@ -49,8 +50,23 @@ class MessageCollector:
         )
 
     async def connect(self):
-        """Connect to Telegram."""
-        await self.client.start()
+        """Connect to Telegram using an existing user session.
+
+        Requires a pre-authenticated session file at sessions/user.session.
+        Create one by running: python -m src.collector
+        """
+        session_path = "sessions/user.session"
+        if not os.path.exists(session_path):
+            raise RuntimeError(
+                f"Telegram user session not found at '{session_path}'. "
+                "Create one by running: python -m src.collector"
+            )
+        await self.client.connect()
+        if not await self.client.is_user_authorized():
+            raise RuntimeError(
+                "Telegram user session exists but is not authorized. "
+                "Re-authenticate by running: python -m src.collector"
+            )
         self.logger.info("Connected to Telegram User API")
 
         # Cache all dialogs to populate entity cache
@@ -279,15 +295,26 @@ class MessageCollector:
 
 
 async def main():
-    """Test message collector."""
+    """Authenticate and test the message collector.
+
+    Run interactively to create sessions/user.session:
+        python -m src.collector
+    """
     from src.config_loader import load_config
     from src.utils import setup_logging
 
     config = load_config()
     logger = setup_logging(config.log_level)
 
-    collector = MessageCollector(config, logger)
+    # Interactive auth: call start() which prompts for phone + code
+    client = TelegramClient("sessions/user", config.telegram_api_id, config.telegram_api_hash)
+    print("Authenticating with Telegram User API...")
+    print("You will be prompted for your phone number and a login code.")
+    await client.start()
+    print("Authenticated! Session saved to sessions/user.session")
 
+    # Quick test: fetch 1 hour of messages
+    collector = MessageCollector(config, logger)
     try:
         await collector.connect()
         messages = await collector.fetch_messages(hours=1)
@@ -296,9 +323,9 @@ async def main():
             print(f"\n{channel_name}: {len(msgs)} messages")
             for msg in msgs[:3]:  # Show first 3
                 print(f"  - {msg.sender}: {msg.text[:50]}...")
-
     finally:
         await collector.disconnect()
+        await client.disconnect()
 
 
 if __name__ == "__main__":

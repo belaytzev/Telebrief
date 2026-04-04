@@ -1,5 +1,5 @@
 # Use Python 3.14 slim image — pinned for reproducibility
-FROM python:3.14.3-slim
+FROM mirror.gcr.io/library/python:3.14.3-slim
 
 # Set working directory
 WORKDIR /app

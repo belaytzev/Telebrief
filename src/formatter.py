@@ -330,9 +330,14 @@ class DigestFormatter:
 
         # Bullet points with source attribution
         for p in points:
-            source_tag = (
-                f" _({self._ui['from_channel'].format(channel=p.source)})_" if p.source else ""
-            )
+            if p.source and p.source_url:
+                emoji = self._pick_emoji(p.source)
+                source_tag = f" ([{emoji} {p.source}]({p.source_url}))"
+            elif p.source:
+                emoji = self._pick_emoji(p.source)
+                source_tag = f" ({emoji} {p.source})"
+            else:
+                source_tag = ""
             parts.append(f"- {p.point}{source_tag}")
 
         # Stats footer

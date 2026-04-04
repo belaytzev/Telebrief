@@ -9,12 +9,14 @@ import json
 import logging
 import re
 from dataclasses import dataclass
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from src.ai_providers import AIProvider, create_provider
 from src.config_loader import Config, DigestGroupConfig
 from src.ui_strings import get_ui_strings
 from src.xml_escape import escape_xml_delimiters
+
+_CHANNEL_URL_RE = re.compile(r"^https://t\.me/(?:c/\d+|[^/]{2,})$")
 
 
 @dataclass
@@ -22,7 +24,8 @@ class GroupedPoint:
     """A single bullet point classified into a topic group."""
 
     point: str
-    source: str  # channel name (no deep links — AI summaries don't preserve structured URLs)
+    source: str  # channel name
+    source_url: str = ""  # channel base URL (e.g. https://t.me/channel)
 
 
 class DigestGrouper:
@@ -81,6 +84,9 @@ class DigestGrouper:
             f"- Every bullet point must appear in exactly one group\n"
             f'- Use "{other_group.name}" for points that don\'t fit other groups\n'
             f"- Keep the point text concise but complete\n"
+            f"- PRESERVE emojis from the original text — each point should start with an emoji\n"
+            f"- If a point has no emoji, ADD a relevant one at the start\n"
+            f"- Preserve any links [→ url] from the original text\n"
             f"- The source must be the channel name the point came from\n"
             f"- Output raw JSON only — no markdown, no explanation"
         )
@@ -108,6 +114,7 @@ class DigestGrouper:
         self,
         response: str,
         valid_group_names: set[str],
+        channel_urls: Optional[Dict[str, str]] = None,
     ) -> Dict[str, List[GroupedPoint]]:
         """Parse AI JSON response into grouped points.
 
@@ -137,12 +144,15 @@ class DigestGrouper:
                 target_name = canonical.get(group_name.lower(), other_name)
                 grouped = []
                 skipped = 0
+                urls = channel_urls or {}
                 for item in points:
                     if isinstance(item, dict) and "point" in item:
+                        src = str(item.get("source", ""))
                         grouped.append(
                             GroupedPoint(
                                 point=str(item["point"]),
-                                source=str(item.get("source", "")),
+                                source=src,
+                                source_url=urls.get(src, ""),
                             )
                         )
                     else:
@@ -165,6 +175,7 @@ class DigestGrouper:
     async def group_summaries(
         self,
         channel_summaries: Dict[str, str],
+        channel_urls: Optional[Dict[str, str]] = None,
     ) -> Dict[str, List[GroupedPoint]]:
         """Classify bullet points from channel summaries into topic groups.
 
@@ -198,7 +209,8 @@ class DigestGrouper:
             raise
 
         valid_group_names = {g.name for g in groups}
-        result = self._parse_grouped_response(response, valid_group_names)
+        urls = channel_urls or {}
+        result = self._parse_grouped_response(response, valid_group_names, urls)
 
         # Warn about input channels missing from output
         if result:
@@ -213,7 +225,7 @@ class DigestGrouper:
 
         if not result:
             self.logger.warning("Parse returned no groups, falling back to 'Other' group")
-            result = self._build_fallback_group(channel_summaries)
+            result = self._build_fallback_group(channel_summaries, urls)
 
         total_points = sum(len(pts) for pts in result.values())
         self.logger.info(
@@ -226,15 +238,23 @@ class DigestGrouper:
     def _build_fallback_group(
         self,
         channel_summaries: Dict[str, str],
+        channel_urls: Optional[Dict[str, str]] = None,
     ) -> Dict[str, List[GroupedPoint]]:
         """Build a single 'Other' group from all channel summaries as fallback."""
+        urls = channel_urls or {}
         other_name = self._ui["group_other"]
         fallback_points = []
         for channel_name, summary in channel_summaries.items():
             for line in summary.strip().splitlines():
                 line = line.strip().lstrip("•-–— ")
                 if line:
-                    fallback_points.append(GroupedPoint(point=line, source=channel_name))
+                    fallback_points.append(
+                        GroupedPoint(
+                            point=line,
+                            source=channel_name,
+                            source_url=urls.get(channel_name, ""),
+                        )
+                    )
         if fallback_points:
             return {other_name: fallback_points}
         return {}

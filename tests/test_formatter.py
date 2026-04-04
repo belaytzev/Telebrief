@@ -391,9 +391,9 @@ def test_format_group_message_output(english_config, mock_logger):
 
     assert "📰 News" in msg
     assert "Python 3.14 released" in msg
-    assert "from TechNews" in msg
+    assert "TechNews" in msg
     assert "New AI model announced" in msg
-    assert "from AIDaily" in msg
+    assert "AIDaily" in msg
     assert "2 items" in msg
 
 

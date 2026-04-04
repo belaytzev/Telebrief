@@ -3,6 +3,7 @@ Core digest generation function.
 """
 
 import logging
+import re
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -12,6 +13,8 @@ from src.formatter import DigestFormatter
 from src.grouper import DigestGrouper
 from src.sender import DigestSender
 from src.summarizer import ERROR_SUMMARY_PREFIX, Summarizer
+
+_CHANNEL_URL_RE = re.compile(r"^https://t\.me/(?:c/\d+|[^/]{2,})$")
 
 
 async def _collect_messages(config: Config, logger: logging.Logger, hours: int) -> dict:
@@ -46,6 +49,19 @@ def _filter_valid_summaries(channel_summaries: dict) -> dict:
         for name, summary in channel_summaries.items()
         if summary and not summary.lower().startswith(ERROR_SUMMARY_PREFIX.lower())
     }
+
+
+def _build_channel_urls(messages_by_channel: dict) -> dict[str, str]:
+    """Extract base channel URL for each channel from its messages."""
+    urls: dict[str, str] = {}
+    for channel_name, messages in messages_by_channel.items():
+        for msg in messages:
+            if msg.link and msg.link != "#":
+                base = msg.link.rsplit("/", 1)[0]
+                if _CHANNEL_URL_RE.match(base):
+                    urls[channel_name] = base
+                    break
+    return urls
 
 
 async def generate_digest(config: Config, logger: logging.Logger, hours: int = 24) -> str:
@@ -198,8 +214,9 @@ async def generate_and_send_digest_grouped(
             return False
 
         logger.info("Grouping summaries by topic")
+        channel_urls = _build_channel_urls(messages_by_channel)
         grouper = DigestGrouper(config, logger)
-        grouped = await grouper.group_summaries(valid_summaries)
+        grouped = await grouper.group_summaries(valid_summaries, channel_urls)
         if not grouped:
             logger.warning("No groups produced, skipping send")
             return False
