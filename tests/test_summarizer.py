@@ -405,3 +405,39 @@ async def test_summarize_channel_retry_passes_reasoning_effort_low(
         assert result == "Retry summary"
         retry_kwargs = summarizer.provider.chat_completion.call_args_list[1].kwargs
         assert retry_kwargs.get("reasoning_effort") == "low"
+
+
+# --- Task 1: Prompt injection mitigation tests ---
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_summarize_channel_wraps_messages_in_xml_delimiters(
+    sample_config, mock_logger, sample_messages
+):
+    """User prompt wraps message content in <channel_messages> XML delimiters."""
+    with patch("src.ai_providers.AsyncOpenAI"):
+        summarizer = Summarizer(sample_config, mock_logger)
+        captured: list = []
+
+        async def capture(**kwargs):
+            captured.append(kwargs.get("messages", []))
+            return "summary"
+
+        summarizer.provider.chat_completion = capture
+        await summarizer._summarize_channel("Test", sample_messages)
+
+    user_prompt = captured[0][1]["content"]
+    assert "<channel_messages>" in user_prompt
+    assert "</channel_messages>" in user_prompt
+    # Messages text must be inside the delimiters
+    assert user_prompt.index("<channel_messages>") < user_prompt.index("User1")
+    assert user_prompt.index("User1") < user_prompt.index("</channel_messages>")
+
+
+@pytest.mark.unit
+def test_system_prompt_contains_data_isolation_instruction():
+    """System prompt instructs AI to treat XML-delimited content as DATA only."""
+    prompt = SYSTEM_PROMPT_TEMPLATE.replace("{language}", "English")
+    assert "DATA" in prompt or "data only" in prompt.lower()
+    assert "XML" in prompt or "xml" in prompt.lower() or "tags" in prompt.lower()
