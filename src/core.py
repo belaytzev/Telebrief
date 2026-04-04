@@ -51,6 +51,28 @@ def _filter_valid_summaries(channel_summaries: dict) -> dict:
     }
 
 
+def _format_group_messages(
+    formatter: "DigestFormatter", grouped: dict, config: "Config", hours: int
+) -> list[tuple[str, str]]:
+    """Format each group into a message, ordered by config definition."""
+    result = []
+    for name in _order_groups(grouped, config):
+        points = grouped.get(name, [])
+        if not points:
+            continue
+        fmt = formatter.format_group_message(group_name=name, points=points, hours=hours)
+        if fmt:
+            result.append((name, fmt))
+    return result
+
+
+def _order_groups(grouped: dict, config: "Config") -> list[str]:
+    """Order group names: config-defined order first, then remaining, 'Other' last."""
+    config_order = [g.name for g in config.settings.digest_groups]
+    remaining = sorted(grouped.keys() - set(config_order))
+    return [n for n in config_order if n in grouped] + remaining
+
+
 def _build_channel_urls(messages_by_channel: dict) -> dict[str, str]:
     """Extract base channel URL for each channel from its messages."""
     urls: dict[str, str] = {}
@@ -223,13 +245,7 @@ async def generate_and_send_digest_grouped(
 
         logger.info("Formatting group messages")
         formatter = DigestFormatter(config, logger)
-        group_messages = [
-            (name, fmt)
-            for name, points in grouped.items()
-            if points
-            for fmt in [formatter.format_group_message(group_name=name, points=points, hours=hours)]
-            if fmt
-        ]
+        group_messages = _format_group_messages(formatter, grouped, config, hours)
         if not group_messages:
             logger.warning("No valid group messages to send")
             return False

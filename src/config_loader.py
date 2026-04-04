@@ -113,7 +113,7 @@ def _resolve_ai_settings(settings_dict: dict) -> tuple:
 
 
 def _parse_digest_settings(
-    settings_dict: dict, ai_provider: str
+    settings_dict: dict,
 ) -> tuple[str, list[DigestGroupConfig], str]:
     """Parse digest_mode, digest_groups, and output_language from settings.
 
@@ -233,7 +233,7 @@ def load_config(config_path: str = "config.yaml") -> Config:
     # Parse settings
     settings_dict = yaml_config.get("settings", {})
     ai_provider, ai_model = _resolve_ai_settings(settings_dict)
-    digest_mode, digest_groups, output_language = _parse_digest_settings(settings_dict, ai_provider)
+    digest_mode, digest_groups, output_language = _parse_digest_settings(settings_dict)
 
     settings = Settings(
         schedule_time=settings_dict.get("schedule_time", "08:00"),

@@ -5,6 +5,7 @@ Takes channel summaries and uses a second AI pass to extract bullet points,
 classify each into user-defined topic groups, and return grouped results.
 """
 
+import html
 import json
 import logging
 import re
@@ -15,8 +16,6 @@ from src.ai_providers import AIProvider, create_provider
 from src.config_loader import Config, DigestGroupConfig
 from src.ui_strings import get_ui_strings
 from src.xml_escape import escape_xml_delimiters
-
-_CHANNEL_URL_RE = re.compile(r"^https://t\.me/(?:c/\d+|[^/]{2,})$")
 
 
 @dataclass
@@ -53,7 +52,9 @@ class DigestGrouper:
         """Return group definitions including implicit 'Other' if not user-defined."""
         groups = list(self.config.settings.digest_groups)
         other_name = self._ui["group_other"]
-        if not any(g.name.lower() == other_name.lower() for g in groups):
+        # Check both localized name and English "Other" to avoid duplicates across locales
+        reserved = {other_name.lower(), "other"}
+        if not any(g.name.lower() in reserved for g in groups):
             groups.append(DigestGroupConfig(name=other_name, description="Everything else"))
         return groups
 
@@ -93,7 +94,7 @@ class DigestGrouper:
 
         summaries_text = ""
         for channel_name, summary in channel_summaries.items():
-            safe_name = escape_xml_delimiters(channel_name).replace('"', "&quot;")
+            safe_name = html.escape(channel_name, quote=True)
             safe_summary = escape_xml_delimiters(summary)
             summaries_text += (
                 f'\n<channel_summary source="{safe_name}">\n{safe_summary}\n</channel_summary>\n'
