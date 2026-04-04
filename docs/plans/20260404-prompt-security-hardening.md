@@ -118,15 +118,15 @@ Note: Keep `.replace("{language}", ...)` for template substitution — the promp
 - Modify: `src/bot_commands.py`
 - Modify: `tests/test_bot_commands.py`
 
-- [ ] Write tests: rapid successive `/digest` commands from same user are throttled (30-second cooldown)
-- [ ] Write tests: rate limit resets after cooldown period
-- [ ] Write tests: rate limit message is sent to user in configured language
-- [ ] Write tests: `/status` and `/help` are not rate limited
-- [ ] Implement: Add `self._command_timestamps: dict[int, float]` instance attribute on `BotCommandHandler`
-- [ ] Implement: Add `_is_rate_limited(user_id)` method with 30-second cooldown
-- [ ] Implement: Apply rate limiting to `/digest` and `/cleanup` handlers
-- [ ] Implement: Send localized "please wait" message when rate limited (add string to `ui_strings.py`)
-- [ ] Run tests — must pass before next task
+- [x] Write tests: rapid successive `/digest` commands from same user are throttled (30-second cooldown)
+- [x] Write tests: rate limit resets after cooldown period
+- [x] Write tests: rate limit message is sent to user in configured language
+- [x] Write tests: `/status` and `/help` are not rate limited
+- [x] Implement: Add `self._command_timestamps: dict[int, float]` instance attribute on `BotCommandHandler`
+- [x] Implement: Add `_is_rate_limited(user_id)` method with 30-second cooldown
+- [x] Implement: Apply rate limiting to `/digest` and `/cleanup` handlers
+- [x] Implement: Send localized "please wait" message when rate limited (add string to `ui_strings.py`)
+- [x] Run tests — must pass before next task
 
 ### Task 7: CI security gates
 

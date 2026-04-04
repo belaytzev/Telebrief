@@ -4,6 +4,7 @@ Bot command handlers for instant digest generation.
 
 import asyncio
 import logging
+import time
 from typing import Optional
 
 from telegram import BotCommand, Update
@@ -18,6 +19,8 @@ from src.ui_strings import get_ui_strings
 
 class BotCommandHandler:
     """Handles bot commands for manual digest generation."""
+
+    RATE_LIMIT_SECONDS = 30
 
     def __init__(
         self, config: Config, logger: logging.Logger, scheduler: Optional[DigestScheduler] = None
@@ -35,6 +38,16 @@ class BotCommandHandler:
         self.scheduler = scheduler
         self.app: Optional[Application] = None
         self._ui = get_ui_strings(config.settings.output_language)
+        self._command_timestamps: dict[int, float] = {}
+
+    def _is_rate_limited(self, user_id: int) -> bool:
+        """Check if a user is rate-limited (30-second cooldown)."""
+        now = time.time()
+        last = self._command_timestamps.get(user_id, 0)
+        if now - last < self.RATE_LIMIT_SECONDS:
+            return True
+        self._command_timestamps[user_id] = now
+        return False
 
     def setup_application(self) -> Application:
         """
@@ -109,6 +122,10 @@ class BotCommandHandler:
             self.logger.warning(f"Unauthorized /digest attempt from user {user_id}")
             return  # Silently ignore
 
+        if self._is_rate_limited(user_id):
+            await update.message.reply_text(self._ui["rate_limited"])
+            return
+
         self.logger.info(f"Manual digest requested by user {user_id}")
 
         # Send "processing" message
@@ -146,6 +163,10 @@ class BotCommandHandler:
         if not self.is_authorized(user_id):
             self.logger.warning(f"Unauthorized /cleanup attempt from user {user_id}")
             return  # Silently ignore
+
+        if self._is_rate_limited(user_id):
+            await update.message.reply_text(self._ui["rate_limited"])
+            return
 
         self.logger.info(f"Manual cleanup requested by user {user_id}")
 

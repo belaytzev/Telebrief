@@ -1,4 +1,4 @@
-"""Tests for bot_commands module — language / output_language coverage."""
+"""Tests for bot_commands module — language / output_language coverage and rate limiting."""
 
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -178,3 +178,128 @@ async def test_handle_help_uses_output_language(english_config, mock_logger):
     assert "Команды:" not in help_text
     assert "Автоматический режим:" not in help_text
     assert "Возможности:" not in help_text
+
+
+# ---------------------------------------------------------------------------
+# Rate limiting
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_digest_rate_limited_on_rapid_successive_calls(english_config, mock_logger):
+    """Rapid successive /digest commands from same user are throttled."""
+    handler = BotCommandHandler(english_config, mock_logger)
+    update = _make_update(123456789)
+
+    with patch(
+        "src.bot_commands.generate_and_send_channel_digests", new=AsyncMock(return_value=True)
+    ):
+        await handler.handle_digest(update, MagicMock())
+        # Reset mock to track second call
+        update.message.reply_text.reset_mock()
+        await handler.handle_digest(update, MagicMock())
+
+    # Second call should get rate limit message, not the "generating" message
+    texts = [call[0][0] for call in update.message.reply_text.call_args_list]
+    assert len(texts) == 1
+    assert "wait" in texts[0].lower() or "Please wait" in texts[0]
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_rate_limit_resets_after_cooldown(english_config, mock_logger):
+    """Rate limit resets after the cooldown period elapses."""
+    handler = BotCommandHandler(english_config, mock_logger)
+    update = _make_update(123456789)
+
+    with (
+        patch(
+            "src.bot_commands.generate_and_send_channel_digests", new=AsyncMock(return_value=True)
+        ),
+        patch("src.bot_commands.time") as mock_time,
+    ):
+        # First call at time 0
+        mock_time.time.return_value = 0.0
+        await handler.handle_digest(update, MagicMock())
+
+        update.message.reply_text.reset_mock()
+
+        # Second call at time 31 (past the 30s cooldown)
+        mock_time.time.return_value = 31.0
+        await handler.handle_digest(update, MagicMock())
+
+    # Should get the normal "generating" message, not rate limited
+    texts = [call[0][0] for call in update.message.reply_text.call_args_list]
+    assert any("Generating" in t for t in texts)
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_rate_limit_message_uses_configured_language(sample_config, mock_logger):
+    """Rate limit message is sent in the configured language (Russian)."""
+    handler = BotCommandHandler(sample_config, mock_logger)
+    update = _make_update(123456789)
+
+    with patch(
+        "src.bot_commands.generate_and_send_channel_digests", new=AsyncMock(return_value=True)
+    ):
+        await handler.handle_digest(update, MagicMock())
+        update.message.reply_text.reset_mock()
+        await handler.handle_digest(update, MagicMock())
+
+    texts = [call[0][0] for call in update.message.reply_text.call_args_list]
+    assert len(texts) == 1
+    assert "Пожалуйста" in texts[0] or "подождите" in texts[0]
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_status_not_rate_limited(english_config, mock_logger):
+    """/status is not rate limited — can be called rapidly."""
+    handler = BotCommandHandler(english_config, mock_logger)
+    update = _make_update(123456789)
+
+    await handler.handle_status(update, MagicMock())
+    update.message.reply_text.reset_mock()
+    await handler.handle_status(update, MagicMock())
+
+    # Second call should still get the status message, not a rate limit
+    texts = [call[0][0] for call in update.message.reply_text.call_args_list]
+    assert any("Telebrief Status" in t for t in texts)
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_help_not_rate_limited(english_config, mock_logger):
+    """/help is not rate limited — can be called rapidly."""
+    handler = BotCommandHandler(english_config, mock_logger)
+    update = _make_update(123456789)
+
+    await handler.handle_help(update, MagicMock())
+    update.message.reply_text.reset_mock()
+    await handler.handle_help(update, MagicMock())
+
+    # Second call should still get the help message
+    texts = [call[0][0] for call in update.message.reply_text.call_args_list]
+    assert any("Commands:" in t for t in texts)
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_cleanup_rate_limited(english_config, mock_logger):
+    """Rapid successive /cleanup commands from same user are throttled."""
+    handler = BotCommandHandler(english_config, mock_logger)
+    update = _make_update(123456789)
+
+    with patch("src.bot_commands.DigestSender") as mock_cls:
+        mock_sender = MagicMock()
+        mock_sender.cleanup_old_digests = AsyncMock(return_value=True)
+        mock_cls.return_value = mock_sender
+        await handler.handle_cleanup(update, MagicMock())
+        update.message.reply_text.reset_mock()
+        await handler.handle_cleanup(update, MagicMock())
+
+    texts = [call[0][0] for call in update.message.reply_text.call_args_list]
+    assert len(texts) == 1
+    assert "wait" in texts[0].lower() or "Please wait" in texts[0]
