@@ -219,7 +219,7 @@ class TestPromptInjectionMitigation:
     """Tests for prompt injection defenses in grouper prompts."""
 
     def test_channel_summaries_wrapped_in_xml_delimiters(self, grouper):
-        """User prompt wraps each channel summary in <channel_summary> XML delimiters."""
+        """User prompt wraps each channel summary in <channel_summary> XML delimiters with source attribute."""
         channel_summaries = {
             "TechNews": "Summary about AI",
             "Politics": "Summary about elections",
@@ -228,10 +228,12 @@ class TestPromptInjectionMitigation:
         messages = grouper._build_classification_prompt(channel_summaries, groups)
 
         user_prompt = messages[1]["content"]
-        assert "<channel_summary>" in user_prompt
+        # Channel names must be inside the XML tag (as source attribute) for data isolation
+        assert '<channel_summary source="TechNews">' in user_prompt
+        assert '<channel_summary source="Politics">' in user_prompt
         assert "</channel_summary>" in user_prompt
         # Each channel's summary should be wrapped
-        assert user_prompt.count("<channel_summary>") == 2
+        assert user_prompt.count("<channel_summary") == 2
         assert user_prompt.count("</channel_summary>") == 2
 
     def test_system_prompt_contains_data_isolation_instruction(self, grouper):

@@ -14,6 +14,7 @@ from typing import Dict, List
 from src.ai_providers import AIProvider, create_provider
 from src.config_loader import Config, DigestGroupConfig
 from src.ui_strings import get_ui_strings
+from src.xml_escape import escape_xml_delimiters
 
 
 @dataclass
@@ -88,9 +89,10 @@ class DigestGrouper:
 
         summaries_text = ""
         for channel_name, summary in channel_summaries.items():
+            safe_name = escape_xml_delimiters(channel_name).replace('"', "&quot;")
+            safe_summary = escape_xml_delimiters(summary)
             summaries_text += (
-                f"\n=== {channel_name} ===\n"
-                f"<channel_summary>\n{summary}\n</channel_summary>\n"
+                f'\n<channel_summary source="{safe_name}">\n{safe_summary}\n</channel_summary>\n'
             )
 
         user_prompt = (
@@ -131,10 +133,12 @@ class DigestGrouper:
             canonical = {n.lower(): n for n in valid_group_names}
             for group_name, points in data.items():
                 if not isinstance(points, list):
+                    self.logger.warning("Group '%s' value is not a list, skipping", group_name)
                     continue
                 # Remap unknown group names to Other (case-insensitive)
                 target_name = canonical.get(group_name.lower(), other_name)
                 grouped = []
+                skipped = 0
                 for item in points:
                     if isinstance(item, dict) and "point" in item:
                         grouped.append(
@@ -143,6 +147,14 @@ class DigestGrouper:
                                 source=str(item.get("source", "")),
                             )
                         )
+                    else:
+                        skipped += 1
+                if skipped:
+                    self.logger.warning(
+                        "Dropped %d malformed item(s) from group '%s'",
+                        skipped,
+                        group_name,
+                    )
                 if grouped:
                     result.setdefault(target_name, []).extend(grouped)
             return result

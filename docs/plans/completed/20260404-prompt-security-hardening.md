@@ -140,21 +140,21 @@ Note: Keep `.replace("{language}", ...)` for template substitution — the promp
 
 ### Task 8: Verify acceptance criteria
 
-- [ ] Verify: prompt injection mitigations active (XML delimiters in both summarizer and grouper)
-- [ ] Verify: no contradictory constraints in prompts (single char budget, single language instruction)
-- [ ] Verify: output validation enforces 3500-char limit in code (check + retry + truncate)
-- [ ] Verify: grouper uses temperature 0.1
-- [ ] Verify: Docker runs as non-root user
-- [ ] Verify: rate limiting active on `/digest` and `/cleanup` commands
-- [ ] Verify: CI security gates fail on findings (no `|| true`)
-- [ ] Run full test suite: `uv run pytest tests/ -v`
-- [ ] Run type check: `uv run mypy src/`
-- [ ] Run lint: `uv tool run ruff check src/ tests/`
+- [x] Verify: prompt injection mitigations active (XML delimiters in both summarizer and grouper)
+- [x] Verify: no contradictory constraints in prompts (single char budget, single language instruction)
+- [x] Verify: output validation enforces 3500-char limit in code (check + retry + truncate)
+- [x] Verify: grouper uses temperature 0.1
+- [x] Verify: Docker runs as non-root user
+- [x] Verify: rate limiting active on `/digest` and `/cleanup` commands
+- [x] Verify: CI security gates fail on findings (no `|| true`)
+- [x] Run full test suite: `uv run pytest tests/ -v`
+- [x] Run type check: `uv run mypy src/`
+- [x] Run lint: `uv tool run ruff check src/ tests/`
 
 ### Task 9: [Final] Update documentation
 
-- [ ] Update CLAUDE.md if new patterns discovered
-- [ ] Move this plan to `docs/plans/completed/`
+- [x] Update CLAUDE.md if new patterns discovered
+- [x] Move this plan to `docs/plans/completed/`
 
 ## Technical Details
 

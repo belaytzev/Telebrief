@@ -57,6 +57,10 @@ REQUIRED_KEYS = [
     "group_items_count",
     "groups_processed",
     "from_channel",
+    # formatter (open channel link)
+    "open_channel",
+    # bot_commands (rate limiting)
+    "rate_limited",
 ]
 
 SUPPORTED_LANGUAGES = ["English", "Russian", "Spanish", "German", "French"]

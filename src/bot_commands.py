@@ -42,9 +42,11 @@ class BotCommandHandler:
 
     def _is_rate_limited(self, user_id: int) -> bool:
         """Check if a user is rate-limited (30-second cooldown)."""
-        now = time.time()
-        last = self._command_timestamps.get(user_id, 0)
-        if now - last < self.RATE_LIMIT_SECONDS:
+        now = time.monotonic()
+        if user_id not in self._command_timestamps:
+            self._command_timestamps[user_id] = now
+            return False
+        if now - self._command_timestamps[user_id] < self.RATE_LIMIT_SECONDS:
             return True
         self._command_timestamps[user_id] = now
         return False

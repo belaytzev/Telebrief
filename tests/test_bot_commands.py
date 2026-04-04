@@ -219,14 +219,17 @@ async def test_rate_limit_resets_after_cooldown(english_config, mock_logger):
         ),
         patch("src.bot_commands.time") as mock_time,
     ):
-        # First call at time 0
-        mock_time.time.return_value = 0.0
+        # First call at time 0 — must NOT be rate-limited
+        mock_time.monotonic.return_value = 0.0
         await handler.handle_digest(update, MagicMock())
+
+        first_texts = [call[0][0] for call in update.message.reply_text.call_args_list]
+        assert any("Generating" in t for t in first_texts), "First call should not be rate-limited"
 
         update.message.reply_text.reset_mock()
 
         # Second call at time 31 (past the 30s cooldown)
-        mock_time.time.return_value = 31.0
+        mock_time.monotonic.return_value = 31.0
         await handler.handle_digest(update, MagicMock())
 
     # Should get the normal "generating" message, not rate limited

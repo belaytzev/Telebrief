@@ -200,7 +200,7 @@ def load_config(config_path: str = "config.yaml") -> Config:
         ai_provider=ai_provider,
         ai_model=ai_model,
         ollama_base_url=settings_dict.get("ollama_base_url", "http://localhost:11434"),
-        output_language=settings_dict.get("output_language", "Russian"),
+        output_language=output_language,
         digest_mode=digest_mode,
         digest_groups=digest_groups,
     )

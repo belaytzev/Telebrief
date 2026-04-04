@@ -308,7 +308,7 @@ async def test_summarizer_custom_output_language(sample_config, mock_logger, sam
         system_msg = captured_messages[0][0]["content"]
         user_msg = captured_messages[0][1]["content"]
         assert "Spanish" in system_msg
-        assert "Spanish" in user_msg
+        assert "Spanish" not in user_msg  # language instruction only in system prompt
 
 
 @pytest.mark.unit
@@ -596,6 +596,28 @@ async def test_summarize_channel_truncates_at_sentence_boundary_as_fallback(
         assert result.rstrip().endswith((".", "!", "?"))
         # Warning should be logged
         mock_logger.warning.assert_called()
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_summarize_channel_length_retry_exception_falls_through_to_truncation(
+    sample_config, mock_logger, sample_messages
+):
+    """When length-reduction retry raises, fall through to sentence-boundary truncation."""
+    long_output = "First sentence. Second sentence. " + "C" * 4000
+
+    with patch("src.ai_providers.AsyncOpenAI"):
+        summarizer = Summarizer(sample_config, mock_logger)
+        summarizer.provider.chat_completion = AsyncMock(
+            side_effect=[long_output, RuntimeError("transient AI error")]
+        )
+
+        result = await summarizer._summarize_channel("Test", sample_messages)
+
+        # Should fall back to truncation, not raise
+        assert len(result) <= MAX_SUMMARY_CHARS
+        assert result.rstrip().endswith((".", "!", "?"))
+        mock_logger.error.assert_called()
 
 
 @pytest.mark.unit

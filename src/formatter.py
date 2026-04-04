@@ -257,7 +257,8 @@ class DigestFormatter:
                 f"Channel message for '{channel_name}' exceeds 4096 chars ({len(message)}), truncating..."
             )
             # Truncate to 4000 to leave room for ellipsis
-            message = message[:4000] + f"\n\n{self._ui['truncated']}"
+            truncated = message[:4000].rsplit("\n", 1)[0]
+            message = truncated + f"\n\n{self._ui['truncated']}"
 
         self.logger.info(f"Formatted message for {channel_name}: {len(message)} characters")
         return message
@@ -347,7 +348,8 @@ class DigestFormatter:
             self.logger.warning(
                 f"Group message for '{group_name}' exceeds 4096 chars ({len(message)}), truncating..."
             )
-            message = message[:4000] + f"\n\n{self._ui['truncated']}"
+            truncated = message[:4000].rsplit("\n", 1)[0]
+            message = truncated + f"\n\n{self._ui['truncated']}"
 
         return message
 

@@ -9,6 +9,7 @@ from typing import Any, Dict, List
 from src.ai_providers import AIProvider, TokenBudgetExhaustedError, create_provider
 from src.collector import Message
 from src.config_loader import Config
+from src.xml_escape import escape_xml_delimiters
 
 ERROR_SUMMARY_PREFIX = "Error processing channel"
 MAX_SUMMARY_CHARS = 3500
@@ -181,7 +182,7 @@ class Summarizer:
 
         prompt = f"""
 Analyze the following messages from Telegram channel "{channel_name}" \
-and create a concise summary in {self.output_language}.
+and create a concise summary.
 
 CRITICAL - LENGTH CONSTRAINT:
 - Telegram has a 4096 character limit per message
@@ -205,7 +206,7 @@ SECTION 2 — 📎 Also: (all remaining posts not covered in Section 1)
 
 Messages (total: {actual_count}):
 <channel_messages>
-{messages_text}
+{escape_xml_delimiters(messages_text)}
 </channel_messages>
 """
 
@@ -278,7 +279,6 @@ Messages (total: {actual_count}):
                 self.logger.error(
                     "Length-reduction retry failed for %s: %s", channel_name, e
                 )
-                raise
 
             if len(summary) > MAX_SUMMARY_CHARS:
                 summary = self._truncate_at_sentence_boundary(
