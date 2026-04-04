@@ -94,10 +94,10 @@ Note: Keep `.replace("{language}", ...)` for template substitution — the promp
 - Modify: `src/config_loader.py`
 - Modify: `tests/test_config_loader.py`
 
-- [ ] Write tests: `output_language` validated against allowlist of supported languages (English, Russian, Spanish, German, French)
-- [ ] Write tests: invalid `output_language` raises clear error with list of supported languages
-- [ ] Implement: Add `SUPPORTED_LANGUAGES` constant and validate `output_language` against it in config loader
-- [ ] Run tests — must pass before next task
+- [x] Write tests: `output_language` validated against allowlist of supported languages (English, Russian, Spanish, German, French)
+- [x] Write tests: invalid `output_language` raises clear error with list of supported languages
+- [x] Implement: Add `SUPPORTED_LANGUAGES` constant and validate `output_language` against it in config loader
+- [x] Run tests — must pass before next task
 
 ### Task 5: Docker security hardening
 

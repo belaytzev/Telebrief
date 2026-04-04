@@ -70,6 +70,8 @@ class Config:
     anthropic_api_key: str = ""
 
 
+SUPPORTED_LANGUAGES = ("English", "Russian", "Spanish", "German", "French")
+
 _SUPPORTED_PROVIDERS = {"openai", "ollama", "anthropic"}
 _PROVIDER_DEFAULT_MODELS = {
     "openai": "gpt-5-nano",
@@ -165,6 +167,13 @@ def load_config(config_path: str = "config.yaml") -> Config:
                 f"digest_groups[{i}] 'name' and 'description' must be strings"
             )
         digest_groups.append(DigestGroupConfig(name=g["name"], description=g["description"]))
+
+    output_language = settings_dict.get("output_language", "Russian")
+    if output_language not in SUPPORTED_LANGUAGES:
+        raise ValueError(
+            f"Unsupported output_language: '{output_language}'. "
+            f"Supported languages: {', '.join(SUPPORTED_LANGUAGES)}"
+        )
 
     if digest_mode == "digest" and not digest_groups:
         logger = logging.getLogger("telebrief")

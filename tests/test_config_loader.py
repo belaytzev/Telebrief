@@ -459,3 +459,47 @@ settings:
 
     with pytest.raises(ValueError, match="must be strings"):
         load_config(str(config_file))
+
+
+@pytest.mark.unit
+def test_load_config_valid_output_languages(tmp_path, mock_env_vars):
+    """Test that all supported languages are accepted."""
+    for lang in ("English", "Russian", "Spanish", "German", "French"):
+        config_content = f"""
+channels:
+  - id: "@test"
+    name: "Test"
+
+settings:
+  target_user_id: 123456789
+  output_language: "{lang}"
+"""
+        config_file = tmp_path / "config.yaml"
+        config_file.write_text(config_content)
+
+        config = load_config(str(config_file))
+        assert config.settings.output_language == lang
+
+
+@pytest.mark.unit
+def test_load_config_invalid_output_language(tmp_path, mock_env_vars):
+    """Test that invalid output_language raises ValueError with supported list."""
+    config_content = """
+channels:
+  - id: "@test"
+    name: "Test"
+
+settings:
+  target_user_id: 123456789
+  output_language: "Klingon"
+"""
+    config_file = tmp_path / "config.yaml"
+    config_file.write_text(config_content)
+
+    with pytest.raises(ValueError, match="Unsupported output_language") as exc_info:
+        load_config(str(config_file))
+
+    error_msg = str(exc_info.value)
+    assert "Klingon" in error_msg
+    for lang in ("English", "Russian", "Spanish", "German", "French"):
+        assert lang in error_msg
