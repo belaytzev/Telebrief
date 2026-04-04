@@ -180,7 +180,7 @@ class DigestGrouper:
             response = await self.provider.chat_completion(
                 messages=messages,
                 model=self.model,
-                temperature=self.temperature,
+                temperature=0.1,
                 max_tokens=self.max_tokens,
             )
         except Exception as e:
@@ -189,6 +189,21 @@ class DigestGrouper:
 
         valid_group_names = {g.name for g in groups}
         result = self._parse_grouped_response(response, valid_group_names)
+
+        # Warn about input channels missing from output
+        if result:
+            output_sources = {
+                pt.source
+                for pts in result.values()
+                for pt in pts
+            }
+            input_channels = set(channel_summaries.keys())
+            missing = input_channels - output_sources
+            if missing:
+                self.logger.warning(
+                    "Input channels missing from grouped output: %s",
+                    ", ".join(sorted(missing)),
+                )
 
         if not result:
             # Fallback: put all content in "Other" so no content is lost

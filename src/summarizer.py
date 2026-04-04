@@ -11,6 +11,7 @@ from src.collector import Message
 from src.config_loader import Config
 
 ERROR_SUMMARY_PREFIX = "Error processing channel"
+MAX_SUMMARY_CHARS = 3500
 
 # System prompt template with configurable output language
 SYSTEM_PROMPT_TEMPLATE = """
@@ -248,8 +249,67 @@ Messages (total: {actual_count}):
             self.logger.error(f"AI provider error for {channel_name}: {e}")
             raise
 
+        # Post-generation length validation
+        if len(summary) > MAX_SUMMARY_CHARS:
+            self.logger.warning(
+                "Summary for %s is %d chars (limit %d), requesting shorter version",
+                channel_name,
+                len(summary),
+                MAX_SUMMARY_CHARS,
+            )
+            retry_messages = chat_messages + [
+                {"role": "assistant", "content": summary},
+                {
+                    "role": "user",
+                    "content": (
+                        f"Your response was {len(summary)} characters. "
+                        f"Shorten to under {MAX_SUMMARY_CHARS} characters."
+                    ),
+                },
+            ]
+            try:
+                summary = await self.provider.chat_completion(
+                    messages=retry_messages,
+                    model=self.model,
+                    temperature=self.temperature,
+                    max_tokens=self.max_tokens,
+                )
+            except Exception as e:
+                self.logger.error(
+                    "Length-reduction retry failed for %s: %s", channel_name, e
+                )
+                raise
+
+            if len(summary) > MAX_SUMMARY_CHARS:
+                summary = self._truncate_at_sentence_boundary(
+                    summary, MAX_SUMMARY_CHARS
+                )
+                self.logger.warning(
+                    "Summary for %s still over limit after retry, "
+                    "truncated to %d chars at sentence boundary",
+                    channel_name,
+                    len(summary),
+                )
+
         self.logger.debug(f"Summary for {channel_name}: {len(summary)} chars")
         return summary
+
+    @staticmethod
+    def _truncate_at_sentence_boundary(text: str, max_chars: int) -> str:
+        """Truncate text at the last complete sentence within max_chars."""
+        if len(text) <= max_chars:
+            return text
+        truncated = text[:max_chars]
+        # Find the last sentence-ending punctuation
+        last_period = -1
+        for i in range(len(truncated) - 1, -1, -1):
+            if truncated[i] in ".!?":
+                last_period = i
+                break
+        if last_period > 0:
+            return truncated[: last_period + 1]
+        # No sentence boundary found — hard truncate
+        return truncated
 
     def _format_messages_for_prompt(self, messages: List[Message], max_chars: int = 8000) -> str:
         """

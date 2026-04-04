@@ -512,3 +512,105 @@ def test_system_prompt_contains_never_invent_urls():
     prompt_lower = prompt.lower()
     assert "never invent" in prompt_lower or "do not invent" in prompt_lower
     assert "url" in prompt_lower or "link" in prompt_lower
+
+
+# --- Task 3: Output validation layer tests ---
+
+
+MAX_SUMMARY_CHARS = 3500
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_summarize_channel_detects_output_over_3500_chars(
+    sample_config, mock_logger, sample_messages
+):
+    """Summarizer detects when AI output exceeds 3500 characters and retries."""
+    long_output = "A" * 4000  # Over 3500
+    short_output = "B" * 3000  # Under 3500
+
+    with patch("src.ai_providers.AsyncOpenAI"):
+        summarizer = Summarizer(sample_config, mock_logger)
+        summarizer.provider.chat_completion = AsyncMock(
+            side_effect=[long_output, short_output]
+        )
+
+        result = await summarizer._summarize_channel("Test", sample_messages)
+
+        # Should have retried and returned the shorter output
+        assert result == short_output
+        assert summarizer.provider.chat_completion.call_count == 2
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_summarize_channel_retry_includes_shorten_instruction(
+    sample_config, mock_logger, sample_messages
+):
+    """Retry prompt includes instruction to shorten with the actual character count."""
+    long_output = "A" * 4000
+    short_output = "B" * 3000
+
+    with patch("src.ai_providers.AsyncOpenAI"):
+        summarizer = Summarizer(sample_config, mock_logger)
+        captured_calls: list = []
+
+        async def capture(**kwargs):
+            captured_calls.append(kwargs)
+            if len(captured_calls) == 1:
+                return long_output
+            return short_output
+
+        summarizer.provider.chat_completion = capture
+
+        await summarizer._summarize_channel("Test", sample_messages)
+
+        # Second call should have the shorten instruction in the user message
+        retry_messages = captured_calls[1]["messages"]
+        # There should be an additional message asking to shorten
+        last_msg = retry_messages[-1]["content"]
+        assert "4000" in last_msg  # mentions actual char count
+        assert "3500" in last_msg  # mentions the limit
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_summarize_channel_truncates_at_sentence_boundary_as_fallback(
+    sample_config, mock_logger, sample_messages
+):
+    """When retry still exceeds limit, truncate at last complete sentence."""
+    long_output = "A" * 4000
+    still_long = "First sentence. Second sentence. " + "C" * 3500
+
+    with patch("src.ai_providers.AsyncOpenAI"):
+        summarizer = Summarizer(sample_config, mock_logger)
+        summarizer.provider.chat_completion = AsyncMock(
+            side_effect=[long_output, still_long]
+        )
+
+        result = await summarizer._summarize_channel("Test", sample_messages)
+
+        # Result must be within limit
+        assert len(result) <= MAX_SUMMARY_CHARS
+        # Should end at a sentence boundary (period, exclamation, or question mark)
+        assert result.rstrip().endswith((".", "!", "?"))
+        # Warning should be logged
+        mock_logger.warning.assert_called()
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_summarize_channel_no_retry_when_under_limit(
+    sample_config, mock_logger, sample_messages
+):
+    """No retry or truncation when output is within 3500 chars."""
+    short_output = "Short summary. Only 30 chars."
+
+    with patch("src.ai_providers.AsyncOpenAI"):
+        summarizer = Summarizer(sample_config, mock_logger)
+        summarizer.provider.chat_completion = AsyncMock(return_value=short_output)
+
+        result = await summarizer._summarize_channel("Test", sample_messages)
+
+        assert result == short_output
+        assert summarizer.provider.chat_completion.call_count == 1

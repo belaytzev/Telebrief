@@ -76,17 +76,17 @@ Note: Keep `.replace("{language}", ...)` for template substitution — the promp
 - Modify: `tests/test_summarizer.py`
 - Modify: `tests/test_grouper.py`
 
-- [ ] Write tests: summarizer detects when output exceeds 3500 characters
-- [ ] Write tests: summarizer retries with "shorten" instruction when over limit
-- [ ] Write tests: summarizer truncates at last complete sentence as final fallback
-- [ ] Write tests: grouper uses lower temperature (0.1) override for classification calls
-- [ ] Write tests: extend existing `_parse_grouped_response` to verify all input channels are represented in output
-- [ ] Implement: Add post-generation length check in `_summarize_channel()`
-- [ ] Implement: Add retry with "Your response was {n} characters. Shorten to under 3500 characters" appended to user prompt
-- [ ] Implement: Add sentence-boundary truncation fallback if retry still exceeds limit, with warning log
-- [ ] Implement: Override temperature to 0.1 for grouper AI calls (separate from global config)
-- [ ] Implement: Extend `_parse_grouped_response()` to log warning when input channels are missing from output
-- [ ] Run tests — must pass before next task
+- [x] Write tests: summarizer detects when output exceeds 3500 characters
+- [x] Write tests: summarizer retries with "shorten" instruction when over limit
+- [x] Write tests: summarizer truncates at last complete sentence as final fallback
+- [x] Write tests: grouper uses lower temperature (0.1) override for classification calls
+- [x] Write tests: extend existing `_parse_grouped_response` to verify all input channels are represented in output
+- [x] Implement: Add post-generation length check in `_summarize_channel()`
+- [x] Implement: Add retry with "Your response was {n} characters. Shorten to under 3500 characters" appended to user prompt
+- [x] Implement: Add sentence-boundary truncation fallback if retry still exceeds limit, with warning log
+- [x] Implement: Override temperature to 0.1 for grouper AI calls (separate from global config)
+- [x] Implement: Extend `_parse_grouped_response()` to log warning when input channels are missing from output
+- [x] Run tests — must pass before next task
 
 ### Task 4: Config validation hardening
 

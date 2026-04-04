@@ -243,3 +243,76 @@ class TestPromptInjectionMitigation:
         system_prompt = messages[0]["content"]
         assert "DATA" in system_prompt or "data only" in system_prompt.lower()
         assert "XML" in system_prompt or "xml" in system_prompt.lower() or "tags" in system_prompt.lower()
+
+
+# --- Task 3: Output validation layer tests ---
+
+
+class TestGrouperTemperatureOverride:
+    """Tests for grouper using lower temperature for classification."""
+
+    @pytest.mark.asyncio
+    async def test_grouper_uses_low_temperature_for_classification(self, grouper):
+        """Grouper AI calls use temperature 0.1 regardless of global config."""
+        ai_response = json.dumps({
+            "Events": [{"point": "Test event", "source": "Ch1"}],
+        })
+        grouper.provider.chat_completion.return_value = ai_response
+
+        await grouper.group_summaries({"Ch1": "Summary about events"})
+
+        call_kwargs = grouper.provider.chat_completion.call_args
+        # Temperature should be 0.1, not the global config value (0.7)
+        temp = call_kwargs.kwargs.get("temperature") or call_kwargs[1].get("temperature")
+        assert temp == 0.1
+
+
+class TestGrouperMissingChannelWarning:
+    """Tests for warning when input channels are missing from grouped output."""
+
+    @pytest.mark.asyncio
+    async def test_logs_warning_when_input_channels_missing_from_output(
+        self, grouper, mock_logger
+    ):
+        """Warning logged when some input channels have no points in the grouped output."""
+        # Only Events has a point from Ch1; Ch2 is missing entirely
+        ai_response = json.dumps({
+            "Events": [{"point": "Test event", "source": "Ch1"}],
+        })
+        grouper.provider.chat_completion.return_value = ai_response
+
+        await grouper.group_summaries({
+            "Ch1": "Summary about events",
+            "Ch2": "Summary about news",
+        })
+
+        # Should log a warning about Ch2 being missing
+        warning_calls = [
+            str(call) for call in mock_logger.warning.call_args_list
+        ]
+        assert any("Ch2" in w for w in warning_calls)
+
+    @pytest.mark.asyncio
+    async def test_no_warning_when_all_channels_represented(
+        self, grouper, mock_logger
+    ):
+        """No missing-channel warning when all input channels appear in output."""
+        ai_response = json.dumps({
+            "Events": [{"point": "Event from Ch1", "source": "Ch1"}],
+            "News": [{"point": "News from Ch2", "source": "Ch2"}],
+        })
+        grouper.provider.chat_completion.return_value = ai_response
+
+        # Reset mock to clear any init warnings
+        mock_logger.warning.reset_mock()
+
+        await grouper.group_summaries({
+            "Ch1": "Summary about events",
+            "Ch2": "Summary about news",
+        })
+
+        # No warning about missing channels
+        warning_calls = [
+            str(call) for call in mock_logger.warning.call_args_list
+        ]
+        assert not any("missing" in w.lower() for w in warning_calls)
