@@ -164,7 +164,9 @@ async def test_generate_and_send_digest_send_failure(sample_config, mock_logger,
 
 @pytest.mark.unit
 @pytest.mark.asyncio
-async def test_generate_and_send_digest_grouped_success(sample_config, mock_logger, sample_messages):
+async def test_generate_and_send_digest_grouped_success(
+    sample_config, mock_logger, sample_messages
+):
     """Test digest-grouped flow calls grouper and formatter correctly."""
     with (
         patch("src.core.MessageCollector") as mock_collector_class,
@@ -296,9 +298,7 @@ async def test_channel_digests_delegates_to_grouped_when_digest_mode(
     """Test mode switch delegates to grouped function when mode is 'digest'."""
     sample_config.settings.digest_mode = "digest"
 
-    with patch(
-        "src.core.generate_and_send_digest_grouped", new_callable=AsyncMock
-    ) as mock_grouped:
+    with patch("src.core.generate_and_send_digest_grouped", new_callable=AsyncMock) as mock_grouped:
         mock_grouped.return_value = True
 
         result = await generate_and_send_channel_digests(
@@ -322,9 +322,7 @@ async def test_channel_digests_uses_per_channel_flow_when_channel_mode(
         patch("src.core.Summarizer") as mock_summarizer_class,
         patch("src.core.DigestFormatter") as mock_formatter_class,
         patch("src.core.DigestSender") as mock_sender_class,
-        patch(
-            "src.core.generate_and_send_digest_grouped", new_callable=AsyncMock
-        ) as mock_grouped,
+        patch("src.core.generate_and_send_digest_grouped", new_callable=AsyncMock) as mock_grouped,
     ):
         mock_collector = MagicMock()
         mock_collector.connect = AsyncMock()

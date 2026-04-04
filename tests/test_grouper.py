@@ -82,15 +82,17 @@ class TestParseGroupedResponse:
 
     def test_valid_json_returns_correct_dict(self, grouper):
         """Valid JSON response is parsed into GroupedPoint objects."""
-        response = json.dumps({
-            "Events": [
-                {"point": "Conference on AI", "source": "TechNews"},
-                {"point": "Product launch", "source": "Startups"},
-            ],
-            "News": [
-                {"point": "Election results", "source": "Politics"},
-            ],
-        })
+        response = json.dumps(
+            {
+                "Events": [
+                    {"point": "Conference on AI", "source": "TechNews"},
+                    {"point": "Product launch", "source": "Startups"},
+                ],
+                "News": [
+                    {"point": "Election results", "source": "Politics"},
+                ],
+            }
+        )
         groups = grouper._build_group_definitions()
         valid_names = {g.name for g in groups}
         result = grouper._parse_grouped_response(response, valid_names)
@@ -104,9 +106,11 @@ class TestParseGroupedResponse:
 
     def test_json_with_markdown_fences_parses_correctly(self, grouper):
         """JSON wrapped in markdown code fences is parsed correctly."""
-        inner = json.dumps({
-            "Events": [{"point": "Meetup tonight", "source": "Local"}],
-        })
+        inner = json.dumps(
+            {
+                "Events": [{"point": "Meetup tonight", "source": "Local"}],
+            }
+        )
         response = f"```json\n{inner}\n```"
         groups = grouper._build_group_definitions()
         valid_names = {g.name for g in groups}
@@ -134,10 +138,12 @@ class TestParseGroupedResponse:
 
     def test_case_insensitive_group_matching(self, grouper):
         """AI-returned group names are matched case-insensitively."""
-        response = json.dumps({
-            "events": [{"point": "Lowercase match", "source": "Ch1"}],
-            "NEWS": [{"point": "Uppercase match", "source": "Ch2"}],
-        })
+        response = json.dumps(
+            {
+                "events": [{"point": "Lowercase match", "source": "Ch1"}],
+                "NEWS": [{"point": "Uppercase match", "source": "Ch2"}],
+            }
+        )
         groups = grouper._build_group_definitions()
         valid_names = {g.name for g in groups}
         result = grouper._parse_grouped_response(response, valid_names)
@@ -149,10 +155,12 @@ class TestParseGroupedResponse:
 
     def test_empty_groups_excluded(self, grouper):
         """Groups with no valid points are not included in result."""
-        response = json.dumps({
-            "Events": [{"point": "Something", "source": "Ch1"}],
-            "News": [],  # empty list
-        })
+        response = json.dumps(
+            {
+                "Events": [{"point": "Something", "source": "Ch1"}],
+                "News": [],  # empty list
+            }
+        )
         groups = grouper._build_group_definitions()
         valid_names = {g.name for g in groups}
         result = grouper._parse_grouped_response(response, valid_names)
@@ -167,14 +175,16 @@ class TestGroupSummaries:
 
     async def test_end_to_end_with_mocked_provider(self, grouper):
         """group_summaries calls AI provider and returns parsed groups."""
-        ai_response = json.dumps({
-            "Events": [
-                {"point": "AI Summit 2026", "source": "TechChannel"},
-            ],
-            "News": [
-                {"point": "Market update", "source": "FinanceChannel"},
-            ],
-        })
+        ai_response = json.dumps(
+            {
+                "Events": [
+                    {"point": "AI Summit 2026", "source": "TechChannel"},
+                ],
+                "News": [
+                    {"point": "Market update", "source": "FinanceChannel"},
+                ],
+            }
+        )
         grouper.provider.chat_completion.return_value = ai_response
 
         channel_summaries = {
@@ -244,7 +254,11 @@ class TestPromptInjectionMitigation:
 
         system_prompt = messages[0]["content"]
         assert "DATA" in system_prompt or "data only" in system_prompt.lower()
-        assert "XML" in system_prompt or "xml" in system_prompt.lower() or "tags" in system_prompt.lower()
+        assert (
+            "XML" in system_prompt
+            or "xml" in system_prompt.lower()
+            or "tags" in system_prompt.lower()
+        )
 
 
 # --- Task 3: Output validation layer tests ---
@@ -256,9 +270,11 @@ class TestGrouperTemperatureOverride:
     @pytest.mark.asyncio
     async def test_grouper_uses_low_temperature_for_classification(self, grouper):
         """Grouper AI calls use temperature 0.1 regardless of global config."""
-        ai_response = json.dumps({
-            "Events": [{"point": "Test event", "source": "Ch1"}],
-        })
+        ai_response = json.dumps(
+            {
+                "Events": [{"point": "Test event", "source": "Ch1"}],
+            }
+        )
         grouper.provider.chat_completion.return_value = ai_response
 
         await grouper.group_summaries({"Ch1": "Summary about events"})
@@ -273,48 +289,48 @@ class TestGrouperMissingChannelWarning:
     """Tests for warning when input channels are missing from grouped output."""
 
     @pytest.mark.asyncio
-    async def test_logs_warning_when_input_channels_missing_from_output(
-        self, grouper, mock_logger
-    ):
+    async def test_logs_warning_when_input_channels_missing_from_output(self, grouper, mock_logger):
         """Warning logged when some input channels have no points in the grouped output."""
         # Only Events has a point from Ch1; Ch2 is missing entirely
-        ai_response = json.dumps({
-            "Events": [{"point": "Test event", "source": "Ch1"}],
-        })
+        ai_response = json.dumps(
+            {
+                "Events": [{"point": "Test event", "source": "Ch1"}],
+            }
+        )
         grouper.provider.chat_completion.return_value = ai_response
 
-        await grouper.group_summaries({
-            "Ch1": "Summary about events",
-            "Ch2": "Summary about news",
-        })
+        await grouper.group_summaries(
+            {
+                "Ch1": "Summary about events",
+                "Ch2": "Summary about news",
+            }
+        )
 
         # Should log a warning about Ch2 being missing
-        warning_calls = [
-            str(call) for call in mock_logger.warning.call_args_list
-        ]
+        warning_calls = [str(call) for call in mock_logger.warning.call_args_list]
         assert any("Ch2" in w for w in warning_calls)
 
     @pytest.mark.asyncio
-    async def test_no_warning_when_all_channels_represented(
-        self, grouper, mock_logger
-    ):
+    async def test_no_warning_when_all_channels_represented(self, grouper, mock_logger):
         """No missing-channel warning when all input channels appear in output."""
-        ai_response = json.dumps({
-            "Events": [{"point": "Event from Ch1", "source": "Ch1"}],
-            "News": [{"point": "News from Ch2", "source": "Ch2"}],
-        })
+        ai_response = json.dumps(
+            {
+                "Events": [{"point": "Event from Ch1", "source": "Ch1"}],
+                "News": [{"point": "News from Ch2", "source": "Ch2"}],
+            }
+        )
         grouper.provider.chat_completion.return_value = ai_response
 
         # Reset mock to clear any init warnings
         mock_logger.warning.reset_mock()
 
-        await grouper.group_summaries({
-            "Ch1": "Summary about events",
-            "Ch2": "Summary about news",
-        })
+        await grouper.group_summaries(
+            {
+                "Ch1": "Summary about events",
+                "Ch2": "Summary about news",
+            }
+        )
 
         # No warning about missing channels
-        warning_calls = [
-            str(call) for call in mock_logger.warning.call_args_list
-        ]
+        warning_calls = [str(call) for call in mock_logger.warning.call_args_list]
         assert not any("missing" in w.lower() for w in warning_calls)

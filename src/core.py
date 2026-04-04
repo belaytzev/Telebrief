@@ -14,6 +14,40 @@ from src.sender import DigestSender
 from src.summarizer import ERROR_SUMMARY_PREFIX, Summarizer
 
 
+async def _collect_messages(config: Config, logger: logging.Logger, hours: int) -> dict:
+    """Collect messages from Telegram channels."""
+    logger.info("Collecting messages from Telegram")
+    collector = MessageCollector(config, logger)
+    await collector.connect()
+    try:
+        messages_by_channel = await collector.fetch_messages(hours=hours)
+    finally:
+        await collector.disconnect()
+    total = sum(len(msgs) for msgs in messages_by_channel.values())
+    logger.info(f"Collected {total} messages from {len(messages_by_channel)} channels")
+    return messages_by_channel
+
+
+async def _summarize_channels(
+    config: Config, logger: logging.Logger, messages_by_channel: dict
+) -> dict:
+    """Generate AI summaries for all channels."""
+    logger.info("Generating AI summaries")
+    summarizer = Summarizer(config, logger)
+    summary_result = await summarizer.summarize_all(messages_by_channel)
+    logger.info(f"Generated summaries for {len(summary_result['channel_summaries'])} channels")
+    return summary_result
+
+
+def _filter_valid_summaries(channel_summaries: dict) -> dict:
+    """Filter out empty or error summaries."""
+    return {
+        name: summary
+        for name, summary in channel_summaries.items()
+        if summary and not summary.lower().startswith(ERROR_SUMMARY_PREFIX.lower())
+    }
+
+
 async def generate_digest(config: Config, logger: logging.Logger, hours: int = 24) -> str:
     """
     Core digest generation function.
@@ -150,101 +184,58 @@ async def generate_and_send_digest_grouped(
 
     try:
         start_time = datetime.now(timezone.utc)
-        logger.info(f"{'=' * 60}")
         logger.info(f"Starting digest-grouped generation for last {hours} hours")
-        logger.info(f"{'=' * 60}")
-        # Step 1: Collect messages
-        logger.info("STEP 1: Collecting messages from Telegram")
-        collector = MessageCollector(config, logger)
 
-        await collector.connect()
-        try:
-            messages_by_channel = await collector.fetch_messages(hours=hours)
-        finally:
-            await collector.disconnect()
-
-        total_messages = sum(len(msgs) for msgs in messages_by_channel.values())
-        logger.info(f"Collected {total_messages} messages from {len(messages_by_channel)} channels")
-
-        if total_messages == 0:
+        messages_by_channel = await _collect_messages(config, logger, hours)
+        if not sum(len(msgs) for msgs in messages_by_channel.values()):
             logger.warning("No messages collected, skipping digest generation")
             return False
 
-        # Step 2: Generate per-channel summaries
-        logger.info("STEP 2: Generating AI summaries")
-        summarizer = Summarizer(config, logger)
-        summary_result = await summarizer.summarize_all(messages_by_channel)
-
-        channel_summaries = summary_result["channel_summaries"]
-        logger.info(f"Generated summaries for {len(channel_summaries)} channels")
-
-        # Filter out empty/error summaries
-        valid_summaries = {
-            name: summary
-            for name, summary in channel_summaries.items()
-            if summary and not summary.lower().startswith(ERROR_SUMMARY_PREFIX.lower())
-        }
-
+        summary_result = await _summarize_channels(config, logger, messages_by_channel)
+        valid_summaries = _filter_valid_summaries(summary_result["channel_summaries"])
         if not valid_summaries:
             logger.warning("No valid channel summaries to group")
             return False
 
-        # Step 3: Group summaries by topic
-        logger.info("STEP 3: Grouping summaries by topic")
+        logger.info("Grouping summaries by topic")
         grouper = DigestGrouper(config, logger)
         grouped = await grouper.group_summaries(valid_summaries)
-
         if not grouped:
             logger.warning("No groups produced, skipping send")
             return False
 
-        # Step 4: Format per-group messages
-        logger.info("STEP 4: Formatting group messages")
+        logger.info("Formatting group messages")
         formatter = DigestFormatter(config, logger)
-        group_messages = []
-
-        for group_name, points in grouped.items():
-            if not points:
-                continue
-            formatted = formatter.format_group_message(
-                group_name=group_name, points=points, hours=hours
-            )
-            if formatted:
-                group_messages.append((group_name, formatted))
-                logger.info(f"Formatted message for group {group_name}: {len(formatted)} chars")
-
+        group_messages = [
+            (name, fmt)
+            for name, points in grouped.items()
+            if points
+            for fmt in [formatter.format_group_message(group_name=name, points=points, hours=hours)]
+            if fmt
+        ]
         if not group_messages:
             logger.warning("No valid group messages to send")
             return False
 
-        # Step 5: Cleanup old digests (if enabled)
         sender = DigestSender(config, logger)
         if config.settings.auto_cleanup_old_digests:
-            logger.info("STEP 5: Cleaning up old digest messages")
             await sender.cleanup_old_digests(user_id)
 
-        # Step 6: Send group messages with tracking
         total_points = sum(len(pts) for pts in grouped.values())
         group_names = [name for name, _ in group_messages]
         summary_message = formatter.format_group_summary_message(
             group_names=group_names, total_points=total_points, hours=hours
         )
-        logger.info(f"STEP 6: Sending {len(group_messages)} group messages")
         success = await sender.send_channel_messages_with_tracking(
             group_messages, summary_message, user_id
         )
 
-        # Calculate execution time
         execution_time = (datetime.now(timezone.utc) - start_time).total_seconds()
-
-        logger.info(f"{'=' * 60}")
-        logger.info(f"✅ Digest-grouped generation completed in {execution_time:.1f}s")
-        logger.info(f"{'=' * 60}")
-
+        logger.info(f"Digest-grouped generation completed in {execution_time:.1f}s")
         return success
 
     except Exception as e:
-        logger.error(f"❌ Digest-grouped generation failed: {e}", exc_info=True)
+        logger.error(f"Digest-grouped generation failed: {e}", exc_info=True)
         return False
 
 
@@ -271,70 +262,36 @@ async def generate_and_send_channel_digests(
         raise ValueError(f"hours must be positive, got {hours}")
 
     start_time = datetime.now(timezone.utc)
-    logger.info(f"{'=' * 60}")
     logger.info(f"Starting per-channel digest generation for last {hours} hours")
-    logger.info(f"{'=' * 60}")
 
     try:
-        # Step 1: Collect messages
-        logger.info("STEP 1: Collecting messages from Telegram")
-        collector = MessageCollector(config, logger)
-
-        await collector.connect()
-        try:
-            messages_by_channel = await collector.fetch_messages(hours=hours)
-        finally:
-            await collector.disconnect()
-
+        messages_by_channel = await _collect_messages(config, logger, hours)
         total_messages = sum(len(msgs) for msgs in messages_by_channel.values())
-        logger.info(f"Collected {total_messages} messages from {len(messages_by_channel)} channels")
-
         if total_messages == 0:
             logger.warning("No messages collected, skipping digest generation")
             return False
 
-        # Step 2: Generate summaries
-        logger.info("STEP 2: Generating AI summaries")
-        summarizer = Summarizer(config, logger)
-        summary_result = await summarizer.summarize_all(messages_by_channel)
-
+        summary_result = await _summarize_channels(config, logger, messages_by_channel)
         channel_summaries = summary_result["channel_summaries"]
-        logger.info(f"Generated summaries for {len(channel_summaries)} channels")
+        valid_summaries = _filter_valid_summaries(channel_summaries)
 
-        # Step 3: Format individual channel messages
-        logger.info("STEP 3: Formatting individual channel messages")
         formatter = DigestFormatter(config, logger)
         channel_messages = []
-
-        for channel_name, summary in channel_summaries.items():
-            # Skip empty summaries or errors
-            if not summary or summary.lower().startswith(ERROR_SUMMARY_PREFIX.lower()):
-                logger.warning(f"Skipping channel '{channel_name}': empty or error summary")
-                continue
-
-            # Get messages for this channel
+        for channel_name, summary in valid_summaries.items():
             messages = messages_by_channel.get(channel_name, [])
-
-            # Format message
             formatted_message = formatter.format_channel_message(
                 channel_name=channel_name, summary=summary, messages=messages, hours=hours
             )
-
             channel_messages.append((channel_name, formatted_message))
-            logger.info(f"Formatted message for {channel_name}: {len(formatted_message)} chars")
 
         if not channel_messages:
             logger.warning("No valid channel messages to send")
             return False
 
-        # Step 4: Cleanup old digests (if enabled)
         sender = DigestSender(config, logger)
         if config.settings.auto_cleanup_old_digests:
-            logger.info("STEP 4: Cleaning up old digest messages")
             await sender.cleanup_old_digests(user_id)
 
-        # Step 5: Send channel messages with tracking
-        logger.info(f"STEP 5: Sending {len(channel_messages)} channel messages")
         summary_message = formatter.format_summary_message(
             total_channels=len(channel_messages), total_messages=total_messages, hours=hours
         )
@@ -342,15 +299,10 @@ async def generate_and_send_channel_digests(
             channel_messages, summary_message, user_id
         )
 
-        # Calculate execution time
         execution_time = (datetime.now(timezone.utc) - start_time).total_seconds()
-
-        logger.info(f"{'=' * 60}")
-        logger.info(f"✅ Per-channel digest generation completed in {execution_time:.1f}s")
-        logger.info(f"{'=' * 60}")
-
+        logger.info(f"Per-channel digest generation completed in {execution_time:.1f}s")
         return success
 
     except Exception as e:
-        logger.error(f"❌ Per-channel digest generation failed: {e}", exc_info=True)
+        logger.error(f"Per-channel digest generation failed: {e}", exc_info=True)
         return False

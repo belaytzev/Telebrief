@@ -330,7 +330,9 @@ class DigestFormatter:
 
         # Bullet points with source attribution
         for p in points:
-            source_tag = f" _({self._ui['from_channel'].format(channel=p.source)})_" if p.source else ""
+            source_tag = (
+                f" _({self._ui['from_channel'].format(channel=p.source)})_" if p.source else ""
+            )
             parts.append(f"- {p.point}{source_tag}")
 
         # Stats footer
@@ -370,9 +372,7 @@ class DigestFormatter:
         date_str = self._format_date(now)
         start_time = now - timedelta(hours=hours)
 
-        groups_list = ", ".join(
-            f"{self._pick_group_emoji(name)} {name}" for name in group_names
-        )
+        groups_list = ", ".join(f"{self._pick_group_emoji(name)} {name}" for name in group_names)
 
         e = self.use_emojis
         message = (

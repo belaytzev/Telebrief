@@ -216,8 +216,16 @@ Messages (total: {actual_count}):
             {"role": "user", "content": prompt},
         ]
 
+        summary = await self._call_ai_with_retry(channel_name, chat_messages)
+        summary = await self._enforce_length_limit(channel_name, summary, chat_messages)
+
+        self.logger.debug(f"Summary for {channel_name}: {len(summary)} chars")
+        return summary
+
+    async def _call_ai_with_retry(self, channel_name: str, chat_messages: list) -> str:
+        """Call AI provider, retrying with higher token budget on exhaustion."""
         try:
-            summary = await self.provider.chat_completion(
+            return await self.provider.chat_completion(
                 messages=chat_messages,
                 model=self.model,
                 temperature=self.temperature,
@@ -231,7 +239,7 @@ Messages (total: {actual_count}):
                 retry_max_tokens,
             )
             try:
-                summary = await self.provider.chat_completion(
+                return await self.provider.chat_completion(
                     messages=chat_messages,
                     model=self.model,
                     temperature=self.temperature,
@@ -250,48 +258,47 @@ Messages (total: {actual_count}):
             self.logger.error(f"AI provider error for {channel_name}: {e}")
             raise
 
-        # Post-generation length validation
+    async def _enforce_length_limit(
+        self, channel_name: str, summary: str, chat_messages: list
+    ) -> str:
+        """Request shorter summary if over limit, truncate as last resort."""
+        if len(summary) <= MAX_SUMMARY_CHARS:
+            return summary
+
+        self.logger.warning(
+            "Summary for %s is %d chars (limit %d), requesting shorter version",
+            channel_name,
+            len(summary),
+            MAX_SUMMARY_CHARS,
+        )
+        retry_messages = chat_messages + [
+            {"role": "assistant", "content": summary},
+            {
+                "role": "user",
+                "content": (
+                    f"Your response was {len(summary)} characters. "
+                    f"Shorten to under {MAX_SUMMARY_CHARS} characters."
+                ),
+            },
+        ]
+        try:
+            summary = await self.provider.chat_completion(
+                messages=retry_messages,
+                model=self.model,
+                temperature=self.temperature,
+                max_tokens=self.max_tokens,
+            )
+        except Exception as e:
+            self.logger.error("Length-reduction retry failed for %s: %s", channel_name, e)
+
         if len(summary) > MAX_SUMMARY_CHARS:
+            summary = self._truncate_at_sentence_boundary(summary, MAX_SUMMARY_CHARS)
             self.logger.warning(
-                "Summary for %s is %d chars (limit %d), requesting shorter version",
+                "Summary for %s still over limit after retry, "
+                "truncated to %d chars at sentence boundary",
                 channel_name,
                 len(summary),
-                MAX_SUMMARY_CHARS,
             )
-            retry_messages = chat_messages + [
-                {"role": "assistant", "content": summary},
-                {
-                    "role": "user",
-                    "content": (
-                        f"Your response was {len(summary)} characters. "
-                        f"Shorten to under {MAX_SUMMARY_CHARS} characters."
-                    ),
-                },
-            ]
-            try:
-                summary = await self.provider.chat_completion(
-                    messages=retry_messages,
-                    model=self.model,
-                    temperature=self.temperature,
-                    max_tokens=self.max_tokens,
-                )
-            except Exception as e:
-                self.logger.error(
-                    "Length-reduction retry failed for %s: %s", channel_name, e
-                )
-
-            if len(summary) > MAX_SUMMARY_CHARS:
-                summary = self._truncate_at_sentence_boundary(
-                    summary, MAX_SUMMARY_CHARS
-                )
-                self.logger.warning(
-                    "Summary for %s still over limit after retry, "
-                    "truncated to %d chars at sentence boundary",
-                    channel_name,
-                    len(summary),
-                )
-
-        self.logger.debug(f"Summary for {channel_name}: {len(summary)} chars")
         return summary
 
     @staticmethod

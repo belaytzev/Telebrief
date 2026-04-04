@@ -531,9 +531,7 @@ async def test_summarize_channel_detects_output_over_3500_chars(
 
     with patch("src.ai_providers.AsyncOpenAI"):
         summarizer = Summarizer(sample_config, mock_logger)
-        summarizer.provider.chat_completion = AsyncMock(
-            side_effect=[long_output, short_output]
-        )
+        summarizer.provider.chat_completion = AsyncMock(side_effect=[long_output, short_output])
 
         result = await summarizer._summarize_channel("Test", sample_messages)
 
@@ -584,9 +582,7 @@ async def test_summarize_channel_truncates_at_sentence_boundary_as_fallback(
 
     with patch("src.ai_providers.AsyncOpenAI"):
         summarizer = Summarizer(sample_config, mock_logger)
-        summarizer.provider.chat_completion = AsyncMock(
-            side_effect=[long_output, still_long]
-        )
+        summarizer.provider.chat_completion = AsyncMock(side_effect=[long_output, still_long])
 
         result = await summarizer._summarize_channel("Test", sample_messages)
 

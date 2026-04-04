@@ -60,9 +60,7 @@ class DigestGrouper:
         groups: List[DigestGroupConfig],
     ) -> list[dict[str, str]]:
         """Build the system + user messages for AI classification."""
-        group_list = "\n".join(
-            f'- "{g.name}": {g.description}' for g in groups
-        )
+        group_list = "\n".join(f'- "{g.name}": {g.description}' for g in groups)
 
         other_name = self._ui["group_other"]
         other_group = next(
@@ -204,11 +202,7 @@ class DigestGrouper:
 
         # Warn about input channels missing from output
         if result:
-            output_sources = {
-                pt.source
-                for pts in result.values()
-                for pt in pts
-            }
+            output_sources = {pt.source for pts in result.values() for pt in pts}
             input_channels = set(channel_summaries.keys())
             missing = input_channels - output_sources
             if missing:
@@ -218,21 +212,8 @@ class DigestGrouper:
                 )
 
         if not result:
-            # Fallback: put all content in "Other" so no content is lost
-            self.logger.warning(
-                "Parse returned no groups, falling back to 'Other' group"
-            )
-            other_name = self._ui["group_other"]
-            fallback_points = []
-            for channel_name, summary in channel_summaries.items():
-                for line in summary.strip().splitlines():
-                    line = line.strip().lstrip("•-–— ")
-                    if line:
-                        fallback_points.append(
-                            GroupedPoint(point=line, source=channel_name)
-                        )
-            if fallback_points:
-                result = {other_name: fallback_points}
+            self.logger.warning("Parse returned no groups, falling back to 'Other' group")
+            result = self._build_fallback_group(channel_summaries)
 
         total_points = sum(len(pts) for pts in result.values())
         self.logger.info(
@@ -241,3 +222,19 @@ class DigestGrouper:
             len(result),
         )
         return result
+
+    def _build_fallback_group(
+        self,
+        channel_summaries: Dict[str, str],
+    ) -> Dict[str, List[GroupedPoint]]:
+        """Build a single 'Other' group from all channel summaries as fallback."""
+        other_name = self._ui["group_other"]
+        fallback_points = []
+        for channel_name, summary in channel_summaries.items():
+            for line in summary.strip().splitlines():
+                line = line.strip().lstrip("•-–— ")
+                if line:
+                    fallback_points.append(GroupedPoint(point=line, source=channel_name))
+        if fallback_points:
+            return {other_name: fallback_points}
+        return {}
