@@ -105,12 +105,12 @@ Note: Keep `.replace("{language}", ...)` for template substitution — the promp
 - Modify: `Dockerfile`
 - Modify: `docker-compose.yml`
 
-- [ ] Implement: Add non-root user to Dockerfile (`RUN useradd -r telebrief && USER telebrief`)
-- [ ] Implement: Ensure logs/sessions/data directories are owned by non-root user (`RUN chown`)
-- [ ] Implement: Pin Python base image to specific version tag for reproducibility
-- [ ] Implement: Add comment in docker-compose.yml documenting that `sessions/` must remain read-write (Telethon SQLite session files)
-- [ ] Verify: `docker build` succeeds with non-root user
-- [ ] Run tests — must pass before next task
+- [x] Implement: Add non-root user to Dockerfile (`RUN useradd -r telebrief && USER telebrief`)
+- [x] Implement: Ensure logs/sessions/data directories are owned by non-root user (`RUN chown`)
+- [x] Implement: Pin Python base image to specific version tag for reproducibility
+- [x] Implement: Add comment in docker-compose.yml documenting that `sessions/` must remain read-write (Telethon SQLite session files)
+- [x] Verify: `docker build` succeeds with non-root user
+- [x] Run tests — must pass before next task
 
 ### Task 6: Bot command rate limiting
 

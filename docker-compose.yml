@@ -23,6 +23,7 @@ services:
 
       # Persistent data directories
       - ./logs:/app/logs
+      # sessions/ must remain read-write: Telethon stores SQLite session files here
       - ./sessions:/app/sessions
       - ./data:/app/data
 
