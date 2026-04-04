@@ -122,13 +122,13 @@ Key benefits:
 
 ### Task 6: Verify acceptance criteria
 
-- [ ] Verify existing per-channel mode works identically (no regression)
-- [ ] Verify digest mode config is optional — missing `digest_mode` defaults to "channel"
-- [ ] Verify implicit "Other" group catches unmatched points
-- [ ] Verify empty groups produce no message
-- [ ] Run full test suite: `uv run pytest tests/ -v`
-- [ ] Run type check: `uv run mypy src/`
-- [ ] Run linter: `uv tool run ruff check src/ tests/`
+- [x] Verify existing per-channel mode works identically (no regression)
+- [x] Verify digest mode config is optional — missing `digest_mode` defaults to "channel"
+- [x] Verify implicit "Other" group catches unmatched points
+- [x] Verify empty groups produce no message
+- [x] Run full test suite: `uv run pytest tests/ -v`
+- [x] Run type check: `uv run mypy src/`
+- [x] Run linter: `uv tool run ruff check src/ tests/`
 
 ### Task 7: [Final] Update documentation
 
