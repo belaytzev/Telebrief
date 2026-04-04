@@ -57,14 +57,14 @@
 - Modify: `src/summarizer.py`
 - Modify: `tests/test_summarizer.py`
 
-- [ ] Write tests: system prompt has no word count range (120-500 words removed)
-- [ ] Write tests: language instruction appears exactly once (in system prompt only, not repeated in user prompt)
-- [ ] Write tests: "VERIFY" character counting instruction removed from user prompt
-- [ ] Implement: Remove word budget (120-250/250-500 words) from system prompt; 3500-char limit in user prompt is the single constraint
-- [ ] Implement: Remove duplicate "Respond ONLY in {language}" from user prompt (keep only in system prompt)
-- [ ] Implement: Remove "VERIFY that the final length does NOT exceed 3500 characters" (unreliable for LLMs — enforce in code in Task 3)
-- [ ] Implement: Add "Never invent URLs; use only links present in the input" to system prompt, consolidating with existing "Use the exact link from the input" instruction
-- [ ] Run tests — must pass before next task
+- [x] Write tests: system prompt has no word count range (120-500 words removed)
+- [x] Write tests: language instruction appears exactly once (in system prompt only, not repeated in user prompt)
+- [x] Write tests: "VERIFY" character counting instruction removed from user prompt
+- [x] Implement: Remove word budget (120-250/250-500 words) from system prompt; 3500-char limit in user prompt is the single constraint
+- [x] Implement: Remove duplicate "Respond ONLY in {language}" from user prompt (keep only in system prompt)
+- [x] Implement: Remove "VERIFY that the final length does NOT exceed 3500 characters" (unreliable for LLMs — enforce in code in Task 3)
+- [x] Implement: Add "Never invent URLs; use only links present in the input" to system prompt, consolidating with existing "Use the exact link from the input" instruction
+- [x] Run tests — must pass before next task
 
 Note: Keep `.replace("{language}", ...)` for template substitution — the prompt contains many literal braces (JSON examples, output template) that make `str.format()` error-prone. `.replace()` is the correct choice here.
 

@@ -441,3 +441,74 @@ def test_system_prompt_contains_data_isolation_instruction():
     prompt = SYSTEM_PROMPT_TEMPLATE.replace("{language}", "English")
     assert "DATA" in prompt or "data only" in prompt.lower()
     assert "XML" in prompt or "xml" in prompt.lower() or "tags" in prompt.lower()
+
+
+# --- Task 2: Prompt quality fixes ---
+
+
+@pytest.mark.unit
+def test_system_prompt_no_word_count_range():
+    """System prompt must not contain word count ranges like 120-250 or 250-500."""
+    prompt = SYSTEM_PROMPT_TEMPLATE.replace("{language}", "English")
+    assert "120-250" not in prompt
+    assert "250-500" not in prompt
+    assert "120" not in prompt
+    assert "500 words" not in prompt
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_language_instruction_only_in_system_prompt(
+    sample_config, mock_logger, sample_messages
+):
+    """Language instruction appears only in system prompt, not duplicated in user prompt."""
+    sample_config.settings.output_language = "English"
+
+    with patch("src.ai_providers.AsyncOpenAI"):
+        summarizer = Summarizer(sample_config, mock_logger)
+        captured: list = []
+
+        async def capture(**kwargs):
+            captured.append(kwargs.get("messages", []))
+            return "summary"
+
+        summarizer.provider.chat_completion = capture
+        await summarizer._summarize_channel("Test", sample_messages)
+
+    system_prompt = captured[0][0]["content"]
+    user_prompt = captured[0][1]["content"]
+    # System prompt must contain language instruction
+    assert "English" in system_prompt
+    # User prompt must NOT contain "Respond ONLY in" directive
+    assert "Respond ONLY in" not in user_prompt
+    assert "respond only in" not in user_prompt.lower()
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_verify_instruction_removed_from_user_prompt(
+    sample_config, mock_logger, sample_messages
+):
+    """User prompt must not contain 'VERIFY' character counting instruction."""
+    with patch("src.ai_providers.AsyncOpenAI"):
+        summarizer = Summarizer(sample_config, mock_logger)
+        captured: list = []
+
+        async def capture(**kwargs):
+            captured.append(kwargs.get("messages", []))
+            return "summary"
+
+        summarizer.provider.chat_completion = capture
+        await summarizer._summarize_channel("Test", sample_messages)
+
+    user_prompt = captured[0][1]["content"]
+    assert "VERIFY" not in user_prompt
+
+
+@pytest.mark.unit
+def test_system_prompt_contains_never_invent_urls():
+    """System prompt must instruct AI to never invent URLs."""
+    prompt = SYSTEM_PROMPT_TEMPLATE.replace("{language}", "English")
+    prompt_lower = prompt.lower()
+    assert "never invent" in prompt_lower or "do not invent" in prompt_lower
+    assert "url" in prompt_lower or "link" in prompt_lower
