@@ -110,15 +110,15 @@ Key benefits:
 - Modify: `src/core.py`
 - Modify: `tests/test_core.py`
 
-- [ ] Add `generate_and_send_digest_grouped()` as a standalone async function that duplicates the collect+summarize steps from the per-channel flow (acceptable duplication for two callers — no shared helper extraction needed). Flow: collect -> summarize -> group -> format per-group -> cleanup -> send
-- [ ] Skip empty groups (no message sent)
-- [ ] Use `formatter.format_group_summary_message()` for header and `formatter.format_group_message()` for each group
-- [ ] Reuse `sender.send_channel_messages_with_tracking()` — pass list of `(group_name, formatted_message)` tuples
-- [ ] Add mode switch at the top of `generate_and_send_channel_digests()`: if `config.settings.digest_mode == "digest"`, delegate to `generate_and_send_digest_grouped()` and return early
-- [ ] Write tests: `generate_and_send_digest_grouped()` calls grouper and formatter correctly (mock AI + sender)
-- [ ] Write tests: mode switch in `generate_and_send_channel_digests()` delegates to grouped function when mode is "digest"
-- [ ] Write tests: mode switch uses existing per-channel flow when mode is "channel" (backward compat)
-- [ ] Run tests — must pass before Task 6
+- [x] Add `generate_and_send_digest_grouped()` as a standalone async function that duplicates the collect+summarize steps from the per-channel flow (acceptable duplication for two callers — no shared helper extraction needed). Flow: collect -> summarize -> group -> format per-group -> cleanup -> send
+- [x] Skip empty groups (no message sent)
+- [x] Use `formatter.format_group_summary_message()` for header and `formatter.format_group_message()` for each group
+- [x] Reuse `sender.send_channel_messages_with_tracking()` — pass list of `(group_name, formatted_message)` tuples
+- [x] Add mode switch at the top of `generate_and_send_channel_digests()`: if `config.settings.digest_mode == "digest"`, delegate to `generate_and_send_digest_grouped()` and return early
+- [x] Write tests: `generate_and_send_digest_grouped()` calls grouper and formatter correctly (mock AI + sender)
+- [x] Write tests: mode switch in `generate_and_send_channel_digests()` delegates to grouped function when mode is "digest"
+- [x] Write tests: mode switch uses existing per-channel flow when mode is "channel" (backward compat)
+- [x] Run tests — must pass before Task 6
 
 ### Task 6: Verify acceptance criteria
 
