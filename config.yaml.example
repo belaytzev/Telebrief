@@ -42,6 +42,18 @@ settings:
   # Ollama settings (only used when ai_provider is "ollama")
   ollama_base_url: "http://localhost:11434"
 
+  # Digest mode: "channel" (default) groups by channel, "digest" groups by topic
+  digest_mode: "channel"
+  # Topic groups for digest mode (only used when digest_mode is "digest")
+  # An implicit "Other" group catches anything that doesn't match defined groups.
+  # digest_groups:
+  #   - name: "Events"
+  #     description: "Conferences, meetups, releases, launches, announcements"
+  #   - name: "News"
+  #     description: "Politics, economy, world affairs, breaking news"
+  #   - name: "Sport"
+  #     description: "Sports results, transfers, tournaments, matches"
+
   # Output
   output_language: "Russian"  # Language for AI summaries (e.g., "English", "Russian", "Spanish")
   use_emojis: true

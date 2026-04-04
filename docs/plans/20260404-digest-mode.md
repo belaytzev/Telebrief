@@ -43,19 +43,19 @@ Key benefits:
 - Modify: `config.yaml.example`
 - Modify: `tests/test_config_loader.py`
 
-- [ ] Add `DigestGroupConfig` dataclass to `config_loader.py` with fields: `name: str`, `description: str`
-- [ ] Add `digest_mode: str = "channel"` field to `Settings` dataclass (valid values: "channel", "digest")
-- [ ] Add `digest_groups: List[DigestGroupConfig]` field to `Settings` dataclass (default: empty list)
-- [ ] Parse `digest_groups` from YAML in `load_config()` — map each entry to `DigestGroupConfig`
-- [ ] Update `Settings(...)` constructor call in `load_config()` to pass `digest_mode` and `digest_groups`
-- [ ] Add validation: if `digest_mode` not in ("channel", "digest"), raise ValueError
-- [ ] Add validation: if `digest_mode == "digest"` and `digest_groups` is empty, log a warning ("digest mode enabled but no digest_groups configured — all content will go to 'Other'")
-- [ ] Add `digest_mode` and `digest_groups` example to `config.yaml.example` with comments
-- [ ] Write tests: valid digest config loads correctly
-- [ ] Write tests: missing digest_groups defaults to empty list, digest_mode defaults to "channel"
-- [ ] Write tests: invalid digest_mode value raises ValueError
-- [ ] Write tests: digest_mode "digest" with empty digest_groups logs warning
-- [ ] Run tests — must pass before Task 2
+- [x] Add `DigestGroupConfig` dataclass to `config_loader.py` with fields: `name: str`, `description: str`
+- [x] Add `digest_mode: str = "channel"` field to `Settings` dataclass (valid values: "channel", "digest")
+- [x] Add `digest_groups: List[DigestGroupConfig]` field to `Settings` dataclass (default: empty list)
+- [x] Parse `digest_groups` from YAML in `load_config()` — map each entry to `DigestGroupConfig`
+- [x] Update `Settings(...)` constructor call in `load_config()` to pass `digest_mode` and `digest_groups`
+- [x] Add validation: if `digest_mode` not in ("channel", "digest"), raise ValueError
+- [x] Add validation: if `digest_mode == "digest"` and `digest_groups` is empty, log a warning ("digest mode enabled but no digest_groups configured — all content will go to 'Other'")
+- [x] Add `digest_mode` and `digest_groups` example to `config.yaml.example` with comments
+- [x] Write tests: valid digest config loads correctly
+- [x] Write tests: missing digest_groups defaults to empty list, digest_mode defaults to "channel"
+- [x] Write tests: invalid digest_mode value raises ValueError
+- [x] Write tests: digest_mode "digest" with empty digest_groups logs warning
+- [x] Run tests — must pass before Task 2
 
 ### Task 2: Add UI strings for digest groups
 

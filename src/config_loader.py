@@ -3,8 +3,9 @@ Configuration loader for Telebrief.
 Loads settings from config.yaml and environment variables.
 """
 
+import logging
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List
 
 import yaml
@@ -17,6 +18,14 @@ class ChannelConfig:
 
     id: str
     name: str
+
+
+@dataclass
+class DigestGroupConfig:
+    """Configuration for a single digest topic group."""
+
+    name: str
+    description: str
 
 
 @dataclass
@@ -41,6 +50,8 @@ class Settings:
     ai_model: str = ""
     ollama_base_url: str = "http://localhost:11434"
     output_language: str = "Russian"
+    digest_mode: str = "channel"
+    digest_groups: List[DigestGroupConfig] = field(default_factory=list)
 
 
 @dataclass
@@ -135,6 +146,25 @@ def load_config(config_path: str = "config.yaml") -> Config:
     settings_dict = yaml_config.get("settings", {})
     ai_provider, ai_model = _resolve_ai_settings(settings_dict)
 
+    # Parse digest settings
+    digest_mode = settings_dict.get("digest_mode", "channel")
+    if digest_mode not in ("channel", "digest"):
+        raise ValueError(
+            f"Invalid digest_mode: '{digest_mode}'. Must be 'channel' or 'digest'."
+        )
+
+    digest_groups = [
+        DigestGroupConfig(name=g["name"], description=g["description"])
+        for g in settings_dict.get("digest_groups", [])
+    ]
+
+    if digest_mode == "digest" and not digest_groups:
+        logger = logging.getLogger("telebrief")
+        logger.warning(
+            "digest mode enabled but no digest_groups configured"
+            " — all content will go to 'Other'"
+        )
+
     settings = Settings(
         schedule_time=settings_dict.get("schedule_time", "08:00"),
         timezone=settings_dict.get("timezone", "UTC"),
@@ -154,6 +184,8 @@ def load_config(config_path: str = "config.yaml") -> Config:
         ai_model=ai_model,
         ollama_base_url=settings_dict.get("ollama_base_url", "http://localhost:11434"),
         output_language=settings_dict.get("output_language", "Russian"),
+        digest_mode=digest_mode,
+        digest_groups=digest_groups,
     )
 
     if settings.target_user_id == 0:

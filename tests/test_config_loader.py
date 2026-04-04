@@ -1,10 +1,11 @@
 """Tests for config_loader module."""
 
+import logging
 from unittest.mock import patch
 
 import pytest
 
-from src.config_loader import load_config
+from src.config_loader import DigestGroupConfig, load_config
 
 
 @pytest.mark.unit
@@ -324,3 +325,97 @@ settings:
     config = load_config(str(config_file))
 
     assert config.settings.max_prompt_chars == 4000
+
+
+@pytest.mark.unit
+def test_load_config_digest_mode_with_groups(tmp_path, mock_env_vars):
+    """Test valid digest config loads correctly."""
+    config_content = """
+channels:
+  - id: "@test"
+    name: "Test"
+
+settings:
+  target_user_id: 123456789
+  digest_mode: "digest"
+  digest_groups:
+    - name: "Events"
+      description: "Conferences and meetups"
+    - name: "News"
+      description: "World affairs"
+"""
+    config_file = tmp_path / "config.yaml"
+    config_file.write_text(config_content)
+
+    config = load_config(str(config_file))
+
+    assert config.settings.digest_mode == "digest"
+    assert len(config.settings.digest_groups) == 2
+    assert config.settings.digest_groups[0] == DigestGroupConfig(
+        name="Events", description="Conferences and meetups"
+    )
+    assert config.settings.digest_groups[1] == DigestGroupConfig(
+        name="News", description="World affairs"
+    )
+
+
+@pytest.mark.unit
+def test_load_config_digest_defaults(tmp_path, mock_env_vars):
+    """Test missing digest_groups defaults to empty list, digest_mode defaults to channel."""
+    config_content = """
+channels:
+  - id: "@test"
+    name: "Test"
+
+settings:
+  target_user_id: 123456789
+"""
+    config_file = tmp_path / "config.yaml"
+    config_file.write_text(config_content)
+
+    config = load_config(str(config_file))
+
+    assert config.settings.digest_mode == "channel"
+    assert config.settings.digest_groups == []
+
+
+@pytest.mark.unit
+def test_load_config_invalid_digest_mode(tmp_path, mock_env_vars):
+    """Test invalid digest_mode value raises ValueError."""
+    config_content = """
+channels:
+  - id: "@test"
+    name: "Test"
+
+settings:
+  target_user_id: 123456789
+  digest_mode: "invalid"
+"""
+    config_file = tmp_path / "config.yaml"
+    config_file.write_text(config_content)
+
+    with pytest.raises(ValueError, match="Invalid digest_mode"):
+        load_config(str(config_file))
+
+
+@pytest.mark.unit
+def test_load_config_digest_mode_empty_groups_warns(tmp_path, mock_env_vars, caplog):
+    """Test digest_mode 'digest' with empty digest_groups logs warning."""
+    config_content = """
+channels:
+  - id: "@test"
+    name: "Test"
+
+settings:
+  target_user_id: 123456789
+  digest_mode: "digest"
+"""
+    config_file = tmp_path / "config.yaml"
+    config_file.write_text(config_content)
+
+    with caplog.at_level(logging.WARNING, logger="telebrief"):
+        config = load_config(str(config_file))
+
+    assert config.settings.digest_mode == "digest"
+    assert config.settings.digest_groups == []
+    assert "digest mode enabled but no digest_groups configured" in caplog.text
