@@ -133,10 +133,10 @@ Note: Keep `.replace("{language}", ...)` for template substitution — the promp
 **Files:**
 - Modify: `.github/workflows/ci.yml`
 
-- [ ] Implement: Remove `|| true` from Bandit CI step so security findings fail the build
-- [ ] Implement: Remove `|| true` from Safety CI step so vulnerable dependencies fail the build
-- [ ] Verify: CI config is valid YAML after changes
-- [ ] Run tests — must pass before next task
+- [x] Implement: Remove `|| true` from Bandit CI step so security findings fail the build
+- [x] Implement: Remove `|| true` from Safety CI step so vulnerable dependencies fail the build
+- [x] Verify: CI config is valid YAML after changes
+- [x] Run tests — must pass before next task
 
 ### Task 8: Verify acceptance criteria
 
