@@ -276,21 +276,23 @@ class DigestFormatter:
         Returns:
             Summary message
         """
-        date_str = self._format_date(datetime.now(timezone.utc))
-        end_time = datetime.now(timezone.utc)
-        start_time = end_time - timedelta(hours=hours)
+        now = datetime.now(timezone.utc)
+        date_str = self._format_date(now)
+        start_time = now - timedelta(hours=hours)
 
         message = (
             f"📊 **{self._ui['digest_completed']}** - {date_str}\n\n"
             f"✅ {self._ui['channels_processed']}: {total_channels}\n"
             f"📨 {self._ui['total_messages']}: {total_messages}\n"
             f"⏱️ {self._ui['period']}: "
-            f"{start_time.strftime('%d.%m %H:%M')} - {end_time.strftime('%d.%m %H:%M')} UTC\n"
+            f"{start_time.strftime('%d.%m %H:%M')} - {now.strftime('%d.%m %H:%M')} UTC\n"
         )
         return message
 
     def _pick_group_emoji(self, group_name: str) -> str:
         """Pick emoji for a topic group name (case-insensitive)."""
+        if not self.use_emojis:
+            return "•"
         name_lower = group_name.lower()
         mapping = {
             "events": "🎪",
@@ -333,9 +335,11 @@ class DigestFormatter:
         # Stats footer
         if self.include_stats:
             count_str = self._ui["group_items_count"].format(count=len(points))
-            parts.append(f"\n---\n📊 {count_str}")
+            stats_icon = "📊 " if self.use_emojis else ""
+            time_icon = "⏱️ " if self.use_emojis else ""
+            parts.append(f"\n---\n{stats_icon}{count_str}")
             if hours == 24:
-                parts.append(f"⏱️ {self._ui['last_hours'].format(hours=hours)}")
+                parts.append(f"{time_icon}{self._ui['last_hours'].format(hours=hours)}")
 
         message = "\n".join(parts)
 
@@ -360,20 +364,21 @@ class DigestFormatter:
         Returns:
             Summary header message
         """
-        date_str = self._format_date(datetime.now(timezone.utc))
-        end_time = datetime.now(timezone.utc)
-        start_time = end_time - timedelta(hours=hours)
+        now = datetime.now(timezone.utc)
+        date_str = self._format_date(now)
+        start_time = now - timedelta(hours=hours)
 
         groups_list = ", ".join(
             f"{self._pick_group_emoji(name)} {name}" for name in group_names
         )
 
+        e = self.use_emojis
         message = (
-            f"📊 **{self._ui['digest_completed']}** - {date_str}\n\n"
-            f"✅ {self._ui['groups_processed']}: {groups_list}\n"
-            f"📨 {self._ui['total_messages']}: {total_points}\n"
-            f"⏱️ {self._ui['period']}: "
-            f"{start_time.strftime('%d.%m %H:%M')} - {end_time.strftime('%d.%m %H:%M')} UTC\n"
+            f"{'📊 ' if e else ''}**{self._ui['digest_completed']}** - {date_str}\n\n"
+            f"{'✅ ' if e else ''}{self._ui['groups_processed']}: {groups_list}\n"
+            f"{'📨 ' if e else ''}{self._ui['group_items_count'].format(count=total_points)}\n"
+            f"{'⏱️ ' if e else ''}{self._ui['period']}: "
+            f"{start_time.strftime('%d.%m %H:%M')} - {now.strftime('%d.%m %H:%M')} UTC\n"
         )
         return message
 

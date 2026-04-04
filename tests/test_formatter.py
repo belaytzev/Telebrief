@@ -405,7 +405,7 @@ def test_format_group_message_truncation(english_config, mock_logger):
     points = [GroupedPoint(point="x" * 200, source="Ch") for _ in range(30)]
     msg = formatter.format_group_message("News", points, hours=24)
 
-    assert len(msg) <= 4096 + 100  # small tolerance for truncation suffix
+    assert len(msg) <= 4096  # must fit within Telegram's message limit
     assert "truncated" in msg
 
 
@@ -442,7 +442,7 @@ def test_format_group_summary_message(english_config, mock_logger):
     assert "🎪 Events" in msg
     assert "📰 News" in msg
     assert "📌 Other" in msg
-    assert "42" in msg
+    assert "42 items" in msg
     assert "UTC" in msg
 
 

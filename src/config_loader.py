@@ -153,10 +153,18 @@ def load_config(config_path: str = "config.yaml") -> Config:
             f"Invalid digest_mode: '{digest_mode}'. Must be 'channel' or 'digest'."
         )
 
-    digest_groups = [
-        DigestGroupConfig(name=g["name"], description=g["description"])
-        for g in settings_dict.get("digest_groups", [])
-    ]
+    digest_groups = []
+    raw_groups = settings_dict.get("digest_groups") or []
+    for i, g in enumerate(raw_groups):
+        if not isinstance(g, dict) or "name" not in g or "description" not in g:
+            raise ValueError(
+                f"digest_groups[{i}] must be a dict with 'name' and 'description' fields"
+            )
+        if not isinstance(g["name"], str) or not isinstance(g["description"], str):
+            raise ValueError(
+                f"digest_groups[{i}] 'name' and 'description' must be strings"
+            )
+        digest_groups.append(DigestGroupConfig(name=g["name"], description=g["description"]))
 
     if digest_mode == "digest" and not digest_groups:
         logger = logging.getLogger("telebrief")

@@ -132,8 +132,8 @@ Key benefits:
 
 ### Task 7: [Final] Update documentation
 
-- [ ] Update `config.yaml.example` comments if needed after implementation
-- [ ] Move this plan to `docs/plans/completed/`
+- [x] Update `config.yaml.example` comments if needed after implementation
+- [x] Move this plan to `docs/plans/completed/`
 
 ## Technical Details
 

@@ -148,12 +148,11 @@ async def generate_and_send_digest_grouped(
     if hours <= 0:
         raise ValueError(f"hours must be positive, got {hours}")
 
-    start_time = datetime.now(timezone.utc)
-    logger.info(f"{'=' * 60}")
-    logger.info(f"Starting digest-grouped generation for last {hours} hours")
-    logger.info(f"{'=' * 60}")
-
     try:
+        start_time = datetime.now(timezone.utc)
+        logger.info(f"{'=' * 60}")
+        logger.info(f"Starting digest-grouped generation for last {hours} hours")
+        logger.info(f"{'=' * 60}")
         # Step 1: Collect messages
         logger.info("STEP 1: Collecting messages from Telegram")
         collector = MessageCollector(config, logger)

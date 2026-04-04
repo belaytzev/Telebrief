@@ -41,8 +41,9 @@ class DigestGrouper:
         )
         self.model = config.settings.ai_model
         self.temperature = config.settings.temperature
-        self.max_tokens = config.settings.max_tokens_per_summary
-        self.output_language = config.settings.output_language
+        # Classification output contains ALL points from ALL channels in JSON,
+        # so it needs a higher token budget than a single channel summary.
+        self.max_tokens = config.settings.max_tokens_per_summary * 3
 
     def _build_group_definitions(self) -> List[DigestGroupConfig]:
         """Return group definitions including implicit 'Other' if not user-defined."""
@@ -62,6 +63,12 @@ class DigestGrouper:
             f'- "{g.name}": {g.description}' for g in groups
         )
 
+        other_name = self._ui["group_other"]
+        other_group = next(
+            (g for g in groups if g.name.lower() == other_name.lower()),
+            groups[-1],
+        )
+
         system_prompt = (
             f"You are a classification assistant. Your task is to extract individual bullet points "
             f"from channel summaries and classify each into one of the defined topic groups.\n\n"
@@ -71,7 +78,7 @@ class DigestGrouper:
             f'{{"GroupName": [{{"point": "bullet text", "source": "ChannelName"}}]}}\n\n'
             f"Rules:\n"
             f"- Every bullet point must appear in exactly one group\n"
-            f'- Use "{groups[-1].name}" for points that don\'t fit other groups\n'
+            f'- Use "{other_group.name}" for points that don\'t fit other groups\n'
             f"- Keep the point text concise but complete\n"
             f"- The source must be the channel name the point came from\n"
             f"- Output raw JSON only — no markdown, no explanation"
@@ -95,12 +102,13 @@ class DigestGrouper:
     def _parse_grouped_response(
         self,
         response: str,
-        groups: List[DigestGroupConfig],
+        valid_group_names: set[str],
     ) -> Dict[str, List[GroupedPoint]]:
         """Parse AI JSON response into grouped points.
 
-        Strips markdown code fences before parsing. Falls back to putting
-        everything in 'Other' on parse failure.
+        Strips markdown code fences before parsing. Returns empty dict on
+        parse failure (caller handles fallback). Remaps unknown group names
+        to the 'Other' group.
         """
         # Strip markdown code fences if present
         cleaned = re.sub(r"^```(?:json)?\s*\n?", "", response.strip())
@@ -114,9 +122,13 @@ class DigestGrouper:
                 raise ValueError("Expected JSON object at top level")
 
             result: Dict[str, List[GroupedPoint]] = {}
+            # Case-insensitive lookup: AI models may vary casing
+            canonical = {n.lower(): n for n in valid_group_names}
             for group_name, points in data.items():
                 if not isinstance(points, list):
                     continue
+                # Remap unknown group names to Other (case-insensitive)
+                target_name = canonical.get(group_name.lower(), other_name)
                 grouped = []
                 for item in points:
                     if isinstance(item, dict) and "point" in item:
@@ -127,13 +139,13 @@ class DigestGrouper:
                             )
                         )
                 if grouped:
-                    result[group_name] = grouped
+                    result.setdefault(target_name, []).extend(grouped)
             return result
 
         except (json.JSONDecodeError, ValueError) as e:
             self.logger.warning("Failed to parse grouper AI response: %s", e)
             self.logger.debug("Raw response: %s", response[:500])
-            return {other_name: [GroupedPoint(point=response.strip(), source="")]}
+            return {}
 
     async def group_summaries(
         self,
@@ -170,7 +182,26 @@ class DigestGrouper:
             self.logger.error("AI provider error during grouping: %s", e)
             raise
 
-        result = self._parse_grouped_response(response, groups)
+        valid_group_names = {g.name for g in groups}
+        result = self._parse_grouped_response(response, valid_group_names)
+
+        if not result:
+            # Fallback: put all content in "Other" so no content is lost
+            self.logger.warning(
+                "Parse returned no groups, falling back to 'Other' group"
+            )
+            other_name = self._ui["group_other"]
+            fallback_points = []
+            for channel_name, summary in channel_summaries.items():
+                for line in summary.strip().splitlines():
+                    line = line.strip().lstrip("•-–— ")
+                    if line:
+                        fallback_points.append(
+                            GroupedPoint(point=line, source=channel_name)
+                        )
+            if fallback_points:
+                result = {other_name: fallback_points}
+
         total_points = sum(len(pts) for pts in result.values())
         self.logger.info(
             "Grouped %d points into %d groups",

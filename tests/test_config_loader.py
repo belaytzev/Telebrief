@@ -419,3 +419,43 @@ settings:
     assert config.settings.digest_mode == "digest"
     assert config.settings.digest_groups == []
     assert "digest mode enabled but no digest_groups configured" in caplog.text
+
+
+@pytest.mark.unit
+def test_load_config_digest_groups_null(tmp_path, mock_env_vars):
+    """Test digest_groups: null (YAML key with no value) defaults to empty list."""
+    config_content = """
+channels:
+  - id: "@test"
+    name: "Test"
+
+settings:
+  target_user_id: 123456789
+  digest_groups:
+"""
+    config_file = tmp_path / "config.yaml"
+    config_file.write_text(config_content)
+
+    config = load_config(str(config_file))
+    assert config.settings.digest_groups == []
+
+
+@pytest.mark.unit
+def test_load_config_digest_groups_non_string_fields(tmp_path, mock_env_vars):
+    """Test digest_groups with non-string name/description raises ValueError."""
+    config_content = """
+channels:
+  - id: "@test"
+    name: "Test"
+
+settings:
+  target_user_id: 123456789
+  digest_groups:
+    - name: 123
+      description: "A numeric name"
+"""
+    config_file = tmp_path / "config.yaml"
+    config_file.write_text(config_content)
+
+    with pytest.raises(ValueError, match="must be strings"):
+        load_config(str(config_file))

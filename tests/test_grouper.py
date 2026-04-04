@@ -92,7 +92,8 @@ class TestParseGroupedResponse:
             ],
         })
         groups = grouper._build_group_definitions()
-        result = grouper._parse_grouped_response(response, groups)
+        valid_names = {g.name for g in groups}
+        result = grouper._parse_grouped_response(response, valid_names)
 
         assert "Events" in result
         assert len(result["Events"]) == 2
@@ -108,22 +109,43 @@ class TestParseGroupedResponse:
         })
         response = f"```json\n{inner}\n```"
         groups = grouper._build_group_definitions()
-        result = grouper._parse_grouped_response(response, groups)
+        valid_names = {g.name for g in groups}
+        result = grouper._parse_grouped_response(response, valid_names)
 
         assert "Events" in result
         assert result["Events"][0].point == "Meetup tonight"
 
-    def test_invalid_json_falls_back_to_other(self, grouper):
-        """Invalid JSON falls back to putting everything in Other."""
+    def test_invalid_json_returns_empty_dict(self, grouper):
+        """Invalid JSON returns empty dict instead of exposing raw AI response."""
         response = "This is not JSON at all"
         groups = grouper._build_group_definitions()
-        result = grouper._parse_grouped_response(response, groups)
+        valid_names = {g.name for g in groups}
+        result = grouper._parse_grouped_response(response, valid_names)
 
-        # Falls back to the localized Other name
-        other_name = "Другое"  # Russian
-        assert other_name in result
-        assert len(result[other_name]) == 1
-        assert result[other_name][0].point == "This is not JSON at all"
+        assert result == {}
+
+    def test_empty_invalid_json_returns_empty_dict(self, grouper):
+        """Empty/whitespace-only invalid response returns empty dict."""
+        groups = grouper._build_group_definitions()
+        valid_names = {g.name for g in groups}
+        result = grouper._parse_grouped_response("   ", valid_names)
+
+        assert result == {}
+
+    def test_case_insensitive_group_matching(self, grouper):
+        """AI-returned group names are matched case-insensitively."""
+        response = json.dumps({
+            "events": [{"point": "Lowercase match", "source": "Ch1"}],
+            "NEWS": [{"point": "Uppercase match", "source": "Ch2"}],
+        })
+        groups = grouper._build_group_definitions()
+        valid_names = {g.name for g in groups}
+        result = grouper._parse_grouped_response(response, valid_names)
+
+        assert "Events" in result
+        assert result["Events"][0].point == "Lowercase match"
+        assert "News" in result
+        assert result["News"][0].point == "Uppercase match"
 
     def test_empty_groups_excluded(self, grouper):
         """Groups with no valid points are not included in result."""
@@ -132,7 +154,8 @@ class TestParseGroupedResponse:
             "News": [],  # empty list
         })
         groups = grouper._build_group_definitions()
-        result = grouper._parse_grouped_response(response, groups)
+        valid_names = {g.name for g in groups}
+        result = grouper._parse_grouped_response(response, valid_names)
 
         assert "Events" in result
         assert "News" not in result
