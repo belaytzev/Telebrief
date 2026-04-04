@@ -73,19 +73,19 @@ Key benefits:
 - Create: `src/grouper.py`
 - Create: `tests/test_grouper.py`
 
-- [ ] Create `GroupedPoint` dataclass: `point: str`, `source: str` (channel name only — no deep links, since AI summaries don't preserve structured URLs reliably)
-- [ ] Create `DigestGrouper` class with `__init__(self, config: Config, logger: logging.Logger)` — instantiate AI provider via `create_provider()` using same pattern as `Summarizer.__init__`
-- [ ] Implement `_build_group_definitions()` — returns list of groups including implicit "Other" if not user-defined
-- [ ] Implement `_build_classification_prompt()` — system prompt instructing AI to classify bullet points into groups, output JSON format: `{"GroupName": [{"point": "...", "source": "ChannelName"}]}`
-- [ ] Implement `_parse_grouped_response()` — strip markdown code fences (` ```json...``` `) before parsing, then parse AI JSON response into `Dict[str, List[GroupedPoint]]`, fallback: put everything in "Other" on parse failure
-- [ ] Implement `async group_summaries(channel_summaries: Dict[str, str]) -> Dict[str, List[GroupedPoint]]` — main method: builds prompt from all channel summaries, calls AI via provider, parses response
-- [ ] Write tests: `_build_group_definitions()` adds implicit "Other" when not in config
-- [ ] Write tests: `_build_group_definitions()` does NOT duplicate "Other" when already in config
-- [ ] Write tests: `_parse_grouped_response()` with valid JSON returns correct dict
-- [ ] Write tests: `_parse_grouped_response()` with JSON wrapped in markdown code fences parses correctly
-- [ ] Write tests: `_parse_grouped_response()` with invalid JSON falls back to "Other"
-- [ ] Write tests: `group_summaries()` end-to-end with mocked AI provider
-- [ ] Run tests — must pass before Task 4
+- [x] Create `GroupedPoint` dataclass: `point: str`, `source: str` (channel name only — no deep links, since AI summaries don't preserve structured URLs reliably)
+- [x] Create `DigestGrouper` class with `__init__(self, config: Config, logger: logging.Logger)` — instantiate AI provider via `create_provider()` using same pattern as `Summarizer.__init__`
+- [x] Implement `_build_group_definitions()` — returns list of groups including implicit "Other" if not user-defined
+- [x] Implement `_build_classification_prompt()` — system prompt instructing AI to classify bullet points into groups, output JSON format: `{"GroupName": [{"point": "...", "source": "ChannelName"}]}`
+- [x] Implement `_parse_grouped_response()` — strip markdown code fences (` ```json...``` `) before parsing, then parse AI JSON response into `Dict[str, List[GroupedPoint]]`, fallback: put everything in "Other" on parse failure
+- [x] Implement `async group_summaries(channel_summaries: Dict[str, str]) -> Dict[str, List[GroupedPoint]]` — main method: builds prompt from all channel summaries, calls AI via provider, parses response
+- [x] Write tests: `_build_group_definitions()` adds implicit "Other" when not in config
+- [x] Write tests: `_build_group_definitions()` does NOT duplicate "Other" when already in config
+- [x] Write tests: `_parse_grouped_response()` with valid JSON returns correct dict
+- [x] Write tests: `_parse_grouped_response()` with JSON wrapped in markdown code fences parses correctly
+- [x] Write tests: `_parse_grouped_response()` with invalid JSON falls back to "Other"
+- [x] Write tests: `group_summaries()` end-to-end with mocked AI provider
+- [x] Run tests — must pass before Task 4
 
 ### Task 4: Add formatter methods for group messages
 
