@@ -308,7 +308,7 @@ async def test_summarizer_custom_output_language(sample_config, mock_logger, sam
         system_msg = captured_messages[0][0]["content"]
         user_msg = captured_messages[0][1]["content"]
         assert "Spanish" in system_msg
-        assert "Spanish" in user_msg
+        assert "Spanish" not in user_msg  # language instruction only in system prompt
 
 
 @pytest.mark.unit
@@ -405,3 +405,230 @@ async def test_summarize_channel_retry_passes_reasoning_effort_low(
         assert result == "Retry summary"
         retry_kwargs = summarizer.provider.chat_completion.call_args_list[1].kwargs
         assert retry_kwargs.get("reasoning_effort") == "low"
+
+
+# --- Task 1: Prompt injection mitigation tests ---
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_summarize_channel_wraps_messages_in_xml_delimiters(
+    sample_config, mock_logger, sample_messages
+):
+    """User prompt wraps message content in <channel_messages> XML delimiters."""
+    with patch("src.ai_providers.AsyncOpenAI"):
+        summarizer = Summarizer(sample_config, mock_logger)
+        captured: list = []
+
+        async def capture(**kwargs):
+            captured.append(kwargs.get("messages", []))
+            return "summary"
+
+        summarizer.provider.chat_completion = capture
+        await summarizer._summarize_channel("Test", sample_messages)
+
+    user_prompt = captured[0][1]["content"]
+    assert "<channel_messages>" in user_prompt
+    assert "</channel_messages>" in user_prompt
+    # Messages text must be inside the delimiters
+    assert user_prompt.index("<channel_messages>") < user_prompt.index("User1")
+    assert user_prompt.index("User1") < user_prompt.index("</channel_messages>")
+
+
+@pytest.mark.unit
+def test_system_prompt_contains_data_isolation_instruction():
+    """System prompt instructs AI to treat XML-delimited content as DATA only."""
+    prompt = SYSTEM_PROMPT_TEMPLATE.replace("{language}", "English")
+    assert "DATA" in prompt or "data only" in prompt.lower()
+    assert "XML" in prompt or "xml" in prompt.lower() or "tags" in prompt.lower()
+
+
+# --- Task 2: Prompt quality fixes ---
+
+
+@pytest.mark.unit
+def test_system_prompt_no_word_count_range():
+    """System prompt must not contain word count ranges like 120-250 or 250-500."""
+    prompt = SYSTEM_PROMPT_TEMPLATE.replace("{language}", "English")
+    assert "120-250" not in prompt
+    assert "250-500" not in prompt
+    assert "120" not in prompt
+    assert "500 words" not in prompt
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_language_instruction_only_in_system_prompt(
+    sample_config, mock_logger, sample_messages
+):
+    """Language instruction appears only in system prompt, not duplicated in user prompt."""
+    sample_config.settings.output_language = "English"
+
+    with patch("src.ai_providers.AsyncOpenAI"):
+        summarizer = Summarizer(sample_config, mock_logger)
+        captured: list = []
+
+        async def capture(**kwargs):
+            captured.append(kwargs.get("messages", []))
+            return "summary"
+
+        summarizer.provider.chat_completion = capture
+        await summarizer._summarize_channel("Test", sample_messages)
+
+    system_prompt = captured[0][0]["content"]
+    user_prompt = captured[0][1]["content"]
+    # System prompt must contain language instruction
+    assert "English" in system_prompt
+    # User prompt must NOT contain "Respond ONLY in" directive
+    assert "Respond ONLY in" not in user_prompt
+    assert "respond only in" not in user_prompt.lower()
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_verify_instruction_removed_from_user_prompt(
+    sample_config, mock_logger, sample_messages
+):
+    """User prompt must not contain 'VERIFY' character counting instruction."""
+    with patch("src.ai_providers.AsyncOpenAI"):
+        summarizer = Summarizer(sample_config, mock_logger)
+        captured: list = []
+
+        async def capture(**kwargs):
+            captured.append(kwargs.get("messages", []))
+            return "summary"
+
+        summarizer.provider.chat_completion = capture
+        await summarizer._summarize_channel("Test", sample_messages)
+
+    user_prompt = captured[0][1]["content"]
+    assert "VERIFY" not in user_prompt
+
+
+@pytest.mark.unit
+def test_system_prompt_contains_never_invent_urls():
+    """System prompt must instruct AI to never invent URLs."""
+    prompt = SYSTEM_PROMPT_TEMPLATE.replace("{language}", "English")
+    prompt_lower = prompt.lower()
+    assert "never invent" in prompt_lower or "do not invent" in prompt_lower
+    assert "url" in prompt_lower or "link" in prompt_lower
+
+
+# --- Task 3: Output validation layer tests ---
+
+
+MAX_SUMMARY_CHARS = 3500
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_summarize_channel_detects_output_over_3500_chars(
+    sample_config, mock_logger, sample_messages
+):
+    """Summarizer detects when AI output exceeds 3500 characters and retries."""
+    long_output = "A" * 4000  # Over 3500
+    short_output = "B" * 3000  # Under 3500
+
+    with patch("src.ai_providers.AsyncOpenAI"):
+        summarizer = Summarizer(sample_config, mock_logger)
+        summarizer.provider.chat_completion = AsyncMock(side_effect=[long_output, short_output])
+
+        result = await summarizer._summarize_channel("Test", sample_messages)
+
+        # Should have retried and returned the shorter output
+        assert result == short_output
+        assert summarizer.provider.chat_completion.call_count == 2
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_summarize_channel_retry_includes_shorten_instruction(
+    sample_config, mock_logger, sample_messages
+):
+    """Retry prompt includes instruction to shorten with the actual character count."""
+    long_output = "A" * 4000
+    short_output = "B" * 3000
+
+    with patch("src.ai_providers.AsyncOpenAI"):
+        summarizer = Summarizer(sample_config, mock_logger)
+        captured_calls: list = []
+
+        async def capture(**kwargs):
+            captured_calls.append(kwargs)
+            if len(captured_calls) == 1:
+                return long_output
+            return short_output
+
+        summarizer.provider.chat_completion = capture
+
+        await summarizer._summarize_channel("Test", sample_messages)
+
+        # Second call should have the shorten instruction in the user message
+        retry_messages = captured_calls[1]["messages"]
+        # There should be an additional message asking to shorten
+        last_msg = retry_messages[-1]["content"]
+        assert "4000" in last_msg  # mentions actual char count
+        assert "3500" in last_msg  # mentions the limit
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_summarize_channel_truncates_at_sentence_boundary_as_fallback(
+    sample_config, mock_logger, sample_messages
+):
+    """When retry still exceeds limit, truncate at last complete sentence."""
+    long_output = "A" * 4000
+    still_long = "First sentence. Second sentence. " + "C" * 3500
+
+    with patch("src.ai_providers.AsyncOpenAI"):
+        summarizer = Summarizer(sample_config, mock_logger)
+        summarizer.provider.chat_completion = AsyncMock(side_effect=[long_output, still_long])
+
+        result = await summarizer._summarize_channel("Test", sample_messages)
+
+        # Result must be within limit
+        assert len(result) <= MAX_SUMMARY_CHARS
+        # Should end at a sentence boundary (period, exclamation, or question mark)
+        assert result.rstrip().endswith((".", "!", "?"))
+        # Warning should be logged
+        mock_logger.warning.assert_called()
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_summarize_channel_length_retry_exception_falls_through_to_truncation(
+    sample_config, mock_logger, sample_messages
+):
+    """When length-reduction retry raises, fall through to sentence-boundary truncation."""
+    long_output = "First sentence. Second sentence. " + "C" * 4000
+
+    with patch("src.ai_providers.AsyncOpenAI"):
+        summarizer = Summarizer(sample_config, mock_logger)
+        summarizer.provider.chat_completion = AsyncMock(
+            side_effect=[long_output, RuntimeError("transient AI error")]
+        )
+
+        result = await summarizer._summarize_channel("Test", sample_messages)
+
+        # Should fall back to truncation, not raise
+        assert len(result) <= MAX_SUMMARY_CHARS
+        assert result.rstrip().endswith((".", "!", "?"))
+        mock_logger.error.assert_called()
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_summarize_channel_no_retry_when_under_limit(
+    sample_config, mock_logger, sample_messages
+):
+    """No retry or truncation when output is within 3500 chars."""
+    short_output = "Short summary. Only 30 chars."
+
+    with patch("src.ai_providers.AsyncOpenAI"):
+        summarizer = Summarizer(sample_config, mock_logger)
+        summarizer.provider.chat_completion = AsyncMock(return_value=short_output)
+
+        result = await summarizer._summarize_channel("Test", sample_messages)
+
+        assert result == short_output
+        assert summarizer.provider.chat_completion.call_count == 1

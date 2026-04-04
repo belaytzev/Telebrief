@@ -52,6 +52,15 @@ REQUIRED_KEYS = [
     "help_auto_desc",
     "help_features",
     "help_features_list",
+    # digest grouper
+    "group_other",
+    "group_items_count",
+    "groups_processed",
+    "from_channel",
+    # formatter (open channel link)
+    "open_channel",
+    # bot_commands (rate limiting)
+    "rate_limited",
 ]
 
 SUPPORTED_LANGUAGES = ["English", "Russian", "Spanish", "German", "French"]
@@ -116,6 +125,27 @@ def test_no_empty_strings_for_any_language(language):
     s = get_ui_strings(language)
     for key in REQUIRED_KEYS:
         assert s[key], f"Empty value for key '{key}' in language '{language}'"
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("language", SUPPORTED_LANGUAGES)
+def test_digest_group_keys_present_for_each_language(language):
+    """Every supported language provides all digest group keys."""
+    s = get_ui_strings(language)
+    digest_keys = ["group_other", "group_items_count", "groups_processed", "from_channel"]
+    for key in digest_keys:
+        assert key in s, f"Missing digest key '{key}' for language '{language}'"
+        assert s[key], f"Empty value for digest key '{key}' in language '{language}'"
+
+
+@pytest.mark.unit
+def test_digest_group_keys_english_values():
+    """English digest group keys have expected values."""
+    s = get_ui_strings("English")
+    assert s["group_other"] == "Other"
+    assert s["group_items_count"] == "{count} items"
+    assert s["groups_processed"] == "Groups"
+    assert s["from_channel"] == "from {channel}"
 
 
 @pytest.mark.unit

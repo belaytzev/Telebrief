@@ -42,6 +42,18 @@ settings:
   # Ollama settings (only used when ai_provider is "ollama")
   ollama_base_url: "http://localhost:11434"
 
+  # Digest mode: "channel" (default) groups by channel, "digest" groups by topic
+  digest_mode: "channel"
+  # Topic groups for digest mode (only used when digest_mode is "digest")
+  # An implicit "Other" group catches anything that doesn't match defined groups.
+  # digest_groups:
+  #   - name: "Events"
+  #     description: "Conferences, meetups, releases, launches, announcements"
+  #   - name: "News"
+  #     description: "Politics, economy, world affairs, breaking news"
+  #   - name: "Sport"
+  #     description: "Sports results, transfers, tournaments, matches"
+
   # Output
   output_language: "Russian"  # Language for AI summaries (e.g., "English", "Russian", "Spanish")
   use_emojis: true
@@ -53,7 +65,31 @@ settings:
 
   # Safety limits
   max_messages_per_channel: 500
-  max_prompt_chars: 8000  # Max characters of message content fed to AI per channel (~2000 tokens).
-                          # Keeps the most recent messages that fit. Increase for non-reasoning
-                          # models; decrease if you hit "empty content + finish_reason=length".
+  max_prompt_chars: 8000  # Max characters of message content fed to AI per channel.
+                          # Keeps the most recent messages that fit. Increase for models with
+                          # large context windows; decrease if you hit "empty content + finish_reason=length".
+                          #
+                          # How to calculate:
+                          #   1. Find your model's context window (total tokens for input + output):
+                          #      - OpenAI:    https://platform.openai.com/docs/models
+                          #      - Anthropic: https://docs.anthropic.com/en/docs/about-claude/models
+                          #      - Ollama:    check model card on https://ollama.com/library
+                          #   2. Subtract max output tokens (e.g. max_tokens_per_summary * 2 as buffer)
+                          #   3. Subtract ~2000 tokens for system prompt and formatting
+                          #   4. Multiply remaining tokens by chars-per-token ratio:
+                          #      - English text:          ~4 chars/token
+                          #      - Russian/Cyrillic text: ~2-3 chars/token
+                          #      - Mixed/CJK text:       ~1.5-2 chars/token
+                          #
+                          # Example for gpt-4o-mini (128K context, 16K max output):
+                          #   (128000 - 16000 - 2000) * 2.5 = 275,000 chars (aggressive)
+                          #   Safe recommendation: 50000 (conservative for Russian content)
+                          #
+                          # Example for claude-sonnet (200K context, 8K max output):
+                          #   (200000 - 8000 - 2000) * 2.5 = 475,000 chars (aggressive)
+                          #   Safe recommendation: 100000
+                          #
+                          # Example for ollama llama3-8b (8K context, 2K max output):
+                          #   (8000 - 2000 - 2000) * 2.5 = 10,000 chars
+                          #   Safe recommendation: 8000
   api_timeout: 30  # Ollama may need 120-300s for local models (enforced minimum: 120s)

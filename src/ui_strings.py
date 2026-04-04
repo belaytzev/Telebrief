@@ -114,8 +114,9 @@ _STRINGS: dict[str, dict[str, str]] = {
         "cmd_cleanup_desc": "Delete old digests",
         "cmd_status_desc": "Show status and settings",
         "cmd_help_desc": "Show help",
+        "rate_limited": "⏳ Please wait before sending this command again.",
         "generating_digest": "⏳ Generating digest for the last 24 hours...\nThis may take 1-2 minutes.",
-        "digest_done": "✅ Digest ready! Each channel sent as a separate message.",
+        "digest_done": "✅ Digest ready!",
         "digest_error": "❌ Error generating digest. Check logs for details.",
         "digest_exception": "❌ An error occurred while generating the digest. Check logs.",
         "cleaning_up": "🧹 Deleting previous digests...",
@@ -145,6 +146,11 @@ _STRINGS: dict[str, dict[str, str]] = {
             "• Links to original messages\n"
             "• Auto-cleanup of old digests (configurable)"
         ),
+        # digest grouper
+        "group_other": "Other",
+        "group_items_count": "{count} items",
+        "groups_processed": "Groups",
+        "from_channel": "from {channel}",
     },
     "Russian": {
         # media types (collector.py)
@@ -178,8 +184,9 @@ _STRINGS: dict[str, dict[str, str]] = {
         "cmd_cleanup_desc": "Удалить старые дайджесты",
         "cmd_status_desc": "Показать статус и настройки",
         "cmd_help_desc": "Показать справку",
+        "rate_limited": "⏳ Пожалуйста, подождите перед повторной отправкой команды.",
         "generating_digest": "⏳ Генерирую дайджест за последние 24 часа...\nЭто может занять 1-2 минуты.",
-        "digest_done": "✅ Дайджест готов! Каждый канал отправлен отдельным сообщением.",
+        "digest_done": "✅ Дайджест готов!",
         "digest_error": "❌ Ошибка при генерации дайджеста. Проверьте логи для деталей.",
         "digest_exception": "❌ Произошла ошибка при генерации дайджеста. Проверьте логи.",
         "cleaning_up": "🧹 Удаляю предыдущие дайджесты...",
@@ -209,6 +216,11 @@ _STRINGS: dict[str, dict[str, str]] = {
             "• Ссылки на оригинальные сообщения\n"
             "• Автоматическая очистка старых дайджестов (настраивается)"
         ),
+        # digest grouper
+        "group_other": "Другое",
+        "group_items_count": "{count} элементов",
+        "groups_processed": "Группы",
+        "from_channel": "из {channel}",
     },
     "Spanish": {
         # media types (collector.py)
@@ -242,8 +254,9 @@ _STRINGS: dict[str, dict[str, str]] = {
         "cmd_cleanup_desc": "Eliminar resúmenes antiguos",
         "cmd_status_desc": "Mostrar estado y configuración",
         "cmd_help_desc": "Mostrar ayuda",
+        "rate_limited": "⏳ Por favor, espere antes de enviar este comando nuevamente.",
         "generating_digest": "⏳ Generando resumen de las últimas 24 horas...\nEsto puede tardar 1-2 minutos.",
-        "digest_done": "✅ ¡Resumen listo! Cada canal enviado como mensaje separado.",
+        "digest_done": "✅ ¡Resumen listo!",
         "digest_error": "❌ Error al generar el resumen. Consulte los registros.",
         "digest_exception": "❌ Ocurrió un error al generar el resumen. Consulte los registros.",
         "cleaning_up": "🧹 Eliminando resúmenes anteriores...",
@@ -273,6 +286,11 @@ _STRINGS: dict[str, dict[str, str]] = {
             "• Enlaces a los mensajes originales\n"
             "• Limpieza automática de resúmenes antiguos (configurable)"
         ),
+        # digest grouper
+        "group_other": "Otros",
+        "group_items_count": "{count} elementos",
+        "groups_processed": "Grupos",
+        "from_channel": "de {channel}",
     },
     "German": {
         # media types (collector.py)
@@ -306,8 +324,9 @@ _STRINGS: dict[str, dict[str, str]] = {
         "cmd_cleanup_desc": "Alte Zusammenfassungen löschen",
         "cmd_status_desc": "Status und Einstellungen anzeigen",
         "cmd_help_desc": "Hilfe anzeigen",
+        "rate_limited": "⏳ Bitte warten Sie, bevor Sie diesen Befehl erneut senden.",
         "generating_digest": "⏳ Erstelle Zusammenfassung der letzten 24 Stunden...\nDies kann 1-2 Minuten dauern.",
-        "digest_done": "✅ Zusammenfassung fertig! Jeder Kanal als separate Nachricht gesendet.",
+        "digest_done": "✅ Zusammenfassung fertig!",
         "digest_error": "❌ Fehler beim Erstellen der Zusammenfassung. Protokolle prüfen.",
         "digest_exception": "❌ Beim Erstellen der Zusammenfassung ist ein Fehler aufgetreten. Protokolle prüfen.",
         "cleaning_up": "🧹 Lösche vorherige Zusammenfassungen...",
@@ -337,6 +356,11 @@ _STRINGS: dict[str, dict[str, str]] = {
             "• Links zu Originalnachrichten\n"
             "• Automatische Bereinigung alter Zusammenfassungen (konfigurierbar)"
         ),
+        # digest grouper
+        "group_other": "Sonstiges",
+        "group_items_count": "{count} Einträge",
+        "groups_processed": "Gruppen",
+        "from_channel": "von {channel}",
     },
     "French": {
         # media types (collector.py)
@@ -370,8 +394,9 @@ _STRINGS: dict[str, dict[str, str]] = {
         "cmd_cleanup_desc": "Supprimer les anciens résumés",
         "cmd_status_desc": "Afficher le statut et les paramètres",
         "cmd_help_desc": "Afficher l'aide",
+        "rate_limited": "⏳ Veuillez patienter avant de renvoyer cette commande.",
         "generating_digest": "⏳ Génération du résumé des 24 dernières heures...\nCela peut prendre 1-2 minutes.",
-        "digest_done": "✅ Résumé prêt ! Chaque chaîne envoyée comme message séparé.",
+        "digest_done": "✅ Résumé prêt !",
         "digest_error": "❌ Erreur lors de la génération du résumé. Vérifiez les journaux.",
         "digest_exception": "❌ Une erreur s'est produite lors de la génération du résumé. Vérifiez les journaux.",
         "cleaning_up": "🧹 Suppression des résumés précédents...",
@@ -401,6 +426,11 @@ _STRINGS: dict[str, dict[str, str]] = {
             "• Liens vers les messages originaux\n"
             "• Nettoyage automatique des anciens résumés (configurable)"
         ),
+        # digest grouper
+        "group_other": "Autres",
+        "group_items_count": "{count} éléments",
+        "groups_processed": "Groupes",
+        "from_channel": "de {channel}",
     },
 }
 

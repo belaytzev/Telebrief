@@ -3,6 +3,7 @@
 import pytest
 
 from src.formatter import DigestFormatter
+from src.grouper import GroupedPoint
 
 
 @pytest.fixture
@@ -351,3 +352,109 @@ def test_channel_section_no_link_when_no_messages(sample_config, mock_logger):
     formatter = DigestFormatter(sample_config, mock_logger)
     section = formatter._create_channel_section("Test Channel", "Summary", [])
     assert "https://t.me" not in section
+
+
+# --- Group formatter tests ---
+
+
+@pytest.mark.unit
+def test_pick_group_emoji_known_groups(sample_config, mock_logger):
+    """_pick_group_emoji returns correct emoji for known group names."""
+    formatter = DigestFormatter(sample_config, mock_logger)
+
+    assert formatter._pick_group_emoji("Events") == "🎪"
+    assert formatter._pick_group_emoji("event") == "🎪"
+    assert formatter._pick_group_emoji("News") == "📰"
+    assert formatter._pick_group_emoji("news") == "📰"
+    assert formatter._pick_group_emoji("Sport") == "⚽"
+    assert formatter._pick_group_emoji("sports") == "⚽"
+    assert formatter._pick_group_emoji("Other") == "📌"
+    assert formatter._pick_group_emoji("other") == "📌"
+
+
+@pytest.mark.unit
+def test_pick_group_emoji_default(sample_config, mock_logger):
+    """_pick_group_emoji returns default emoji for unknown groups."""
+    formatter = DigestFormatter(sample_config, mock_logger)
+    assert formatter._pick_group_emoji("RandomTopic") == "📌"
+
+
+@pytest.mark.unit
+def test_format_group_message_output(english_config, mock_logger):
+    """format_group_message produces expected format with source attribution."""
+    formatter = DigestFormatter(english_config, mock_logger)
+    points = [
+        GroupedPoint(point="Python 3.14 released", source="TechNews"),
+        GroupedPoint(point="New AI model announced", source="AIDaily"),
+    ]
+    msg = formatter.format_group_message("News", points, hours=24)
+
+    assert "📰 News" in msg
+    assert "Python 3.14 released" in msg
+    assert "TechNews" in msg
+    assert "New AI model announced" in msg
+    assert "AIDaily" in msg
+    assert "2 items" in msg
+
+
+@pytest.mark.unit
+def test_format_group_message_truncation(english_config, mock_logger):
+    """format_group_message truncates at 4096 chars."""
+    formatter = DigestFormatter(english_config, mock_logger)
+    # Create enough points to exceed 4096 chars
+    points = [GroupedPoint(point="x" * 200, source="Ch") for _ in range(30)]
+    msg = formatter.format_group_message("News", points, hours=24)
+
+    assert len(msg) <= 4096  # must fit within Telegram's message limit
+    assert "truncated" in msg
+
+
+@pytest.mark.unit
+def test_format_group_message_empty_points(english_config, mock_logger):
+    """format_group_message returns empty string for empty points list."""
+    formatter = DigestFormatter(english_config, mock_logger)
+    msg = formatter.format_group_message("News", [], hours=24)
+    assert msg == ""
+
+
+@pytest.mark.unit
+def test_format_group_message_no_source(english_config, mock_logger):
+    """format_group_message omits source tag when source is empty."""
+    formatter = DigestFormatter(english_config, mock_logger)
+    points = [GroupedPoint(point="Some point", source="")]
+    msg = formatter.format_group_message("News", points, hours=24)
+
+    assert "Some point" in msg
+    assert "from" not in msg
+
+
+@pytest.mark.unit
+def test_format_group_summary_message(english_config, mock_logger):
+    """format_group_summary_message produces expected header format."""
+    formatter = DigestFormatter(english_config, mock_logger)
+    msg = formatter.format_group_summary_message(
+        group_names=["Events", "News", "Other"],
+        total_points=42,
+        hours=24,
+    )
+
+    assert "Digest completed" in msg
+    assert "🎪 Events" in msg
+    assert "📰 News" in msg
+    assert "📌 Other" in msg
+    assert "42 items" in msg
+    assert "UTC" in msg
+
+
+@pytest.mark.unit
+def test_format_group_summary_message_russian(sample_config, mock_logger):
+    """format_group_summary_message respects output_language (Russian)."""
+    formatter = DigestFormatter(sample_config, mock_logger)
+    msg = formatter.format_group_summary_message(
+        group_names=["Events"],
+        total_points=10,
+        hours=24,
+    )
+
+    assert "Дайджест завершён" in msg
+    assert "Группы" in msg

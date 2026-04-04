@@ -104,10 +104,10 @@ jobs:
         pip install pre-commit safety
 
     - name: Run Bandit via pre-commit
-      run: pre-commit run bandit --all-files || true
+      run: pre-commit run bandit --all-files
 
     - name: Run Safety (dependency security check)
-      run: safety check --json || true
+      run: safety check --json
 
   website-build:
     name: Website Build Check
@@ -135,7 +135,7 @@ jobs:
   build:
     name: Build Check
     runs-on: ubuntu-latest
-    needs: [lint, test, website-build]
+    needs: [lint, test, security, website-build]
 
     steps:
     - name: Checkout code

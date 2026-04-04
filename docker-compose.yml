@@ -23,6 +23,7 @@ services:
 
       # Persistent data directories
       - ./logs:/app/logs
+      # sessions/ must remain read-write: Telethon stores SQLite session files here
       - ./sessions:/app/sessions
       - ./data:/app/data
 
@@ -38,7 +39,7 @@ services:
 
     # Health check
     healthcheck:
-      test: ["CMD", "python", "-c", "import os; exit(0 if os.path.exists('logs/telebrief.log') else 1)"]
+      test: ["CMD", "python", "-c", "import os, signal; os.kill(1, 0)"]
       interval: 30s
       timeout: 10s
       retries: 3

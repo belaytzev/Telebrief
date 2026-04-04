@@ -3,8 +3,9 @@ Configuration loader for Telebrief.
 Loads settings from config.yaml and environment variables.
 """
 
+import logging
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List
 
 import yaml
@@ -17,6 +18,14 @@ class ChannelConfig:
 
     id: str
     name: str
+
+
+@dataclass
+class DigestGroupConfig:
+    """Configuration for a single digest topic group."""
+
+    name: str
+    description: str
 
 
 @dataclass
@@ -41,6 +50,8 @@ class Settings:
     ai_model: str = ""
     ollama_base_url: str = "http://localhost:11434"
     output_language: str = "Russian"
+    digest_mode: str = "channel"
+    digest_groups: List[DigestGroupConfig] = field(default_factory=list)
 
 
 @dataclass
@@ -58,6 +69,8 @@ class Config:
     log_level: str
     anthropic_api_key: str = ""
 
+
+SUPPORTED_LANGUAGES = ("English", "Russian", "Spanish", "German", "French")
 
 _SUPPORTED_PROVIDERS = {"openai", "ollama", "anthropic"}
 _PROVIDER_DEFAULT_MODELS = {
@@ -99,6 +112,92 @@ def _resolve_ai_settings(settings_dict: dict) -> tuple:
     return ai_provider, ai_model
 
 
+def _parse_digest_settings(
+    settings_dict: dict,
+) -> tuple[str, list[DigestGroupConfig], str]:
+    """Parse digest_mode, digest_groups, and output_language from settings.
+
+    Returns:
+        Tuple of (digest_mode, digest_groups, output_language)
+    """
+    digest_mode = settings_dict.get("digest_mode", "channel")
+    if digest_mode not in ("channel", "digest"):
+        raise ValueError(f"Invalid digest_mode: '{digest_mode}'. Must be 'channel' or 'digest'.")
+
+    digest_groups = []
+    raw_groups = settings_dict.get("digest_groups") or []
+    for i, g in enumerate(raw_groups):
+        if not isinstance(g, dict) or "name" not in g or "description" not in g:
+            raise ValueError(
+                f"digest_groups[{i}] must be a dict with 'name' and 'description' fields"
+            )
+        if not isinstance(g["name"], str) or not isinstance(g["description"], str):
+            raise ValueError(f"digest_groups[{i}] 'name' and 'description' must be strings")
+        digest_groups.append(DigestGroupConfig(name=g["name"], description=g["description"]))
+
+    output_language = settings_dict.get("output_language", "Russian")
+    if output_language not in SUPPORTED_LANGUAGES:
+        raise ValueError(
+            f"Unsupported output_language: '{output_language}'. "
+            f"Supported languages: {', '.join(SUPPORTED_LANGUAGES)}"
+        )
+
+    if digest_mode == "digest" and not digest_groups:
+        logger = logging.getLogger("telebrief")
+        logger.warning(
+            "digest mode enabled but no digest_groups configured"
+            " — all content will go to 'Other'"
+        )
+
+    return digest_mode, digest_groups, output_language
+
+
+def _load_and_validate_env_vars(ai_provider: str) -> dict:
+    """Load and validate required environment variables.
+
+    Returns:
+        Dict with keys matching Config env var fields.
+    """
+    telegram_api_id = os.getenv("TELEGRAM_API_ID")
+    telegram_api_hash = os.getenv("TELEGRAM_API_HASH")
+    telegram_bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
+    openai_api_key = os.getenv("OPENAI_API_KEY", "")
+    anthropic_api_key = os.getenv("ANTHROPIC_API_KEY", "")
+    log_level = os.getenv("LOG_LEVEL", "INFO")
+
+    missing_vars = []
+    if not telegram_api_id:
+        missing_vars.append("TELEGRAM_API_ID")
+    if not telegram_api_hash:
+        missing_vars.append("TELEGRAM_API_HASH")
+    if not telegram_bot_token:
+        missing_vars.append("TELEGRAM_BOT_TOKEN")
+
+    if ai_provider == "openai" and not openai_api_key:
+        missing_vars.append("OPENAI_API_KEY")
+    elif ai_provider == "anthropic" and not anthropic_api_key:
+        missing_vars.append("ANTHROPIC_API_KEY")
+
+    if missing_vars:
+        raise ValueError(
+            f"Missing required environment variables: {', '.join(missing_vars)}\n"
+            f"Please set them in .env file (see .env.example)"
+        )
+
+    assert telegram_api_id is not None
+    assert telegram_api_hash is not None
+    assert telegram_bot_token is not None
+
+    return {
+        "telegram_api_id": int(telegram_api_id),
+        "telegram_api_hash": telegram_api_hash,
+        "telegram_bot_token": telegram_bot_token,
+        "openai_api_key": openai_api_key,
+        "anthropic_api_key": anthropic_api_key,
+        "log_level": log_level,
+    }
+
+
 def load_config(config_path: str = "config.yaml") -> Config:
     """
     Load configuration from YAML file and environment variables.
@@ -134,6 +233,7 @@ def load_config(config_path: str = "config.yaml") -> Config:
     # Parse settings
     settings_dict = yaml_config.get("settings", {})
     ai_provider, ai_model = _resolve_ai_settings(settings_dict)
+    digest_mode, digest_groups, output_language = _parse_digest_settings(settings_dict)
 
     settings = Settings(
         schedule_time=settings_dict.get("schedule_time", "08:00"),
@@ -153,7 +253,9 @@ def load_config(config_path: str = "config.yaml") -> Config:
         ai_provider=ai_provider,
         ai_model=ai_model,
         ollama_base_url=settings_dict.get("ollama_base_url", "http://localhost:11434"),
-        output_language=settings_dict.get("output_language", "Russian"),
+        output_language=output_language,
+        digest_mode=digest_mode,
+        digest_groups=digest_groups,
     )
 
     if settings.target_user_id == 0:
@@ -162,53 +264,13 @@ def load_config(config_path: str = "config.yaml") -> Config:
             "Get your Telegram user ID from @userinfobot"
         )
 
-    # Load environment variables
-    telegram_api_id = os.getenv("TELEGRAM_API_ID")
-    telegram_api_hash = os.getenv("TELEGRAM_API_HASH")
-    telegram_bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
-    openai_api_key = os.getenv("OPENAI_API_KEY", "")
-    anthropic_api_key = os.getenv("ANTHROPIC_API_KEY", "")
-    log_level = os.getenv("LOG_LEVEL", "INFO")
+    env_vars = _load_and_validate_env_vars(ai_provider)
 
-    # Validate required environment variables
-    missing_vars = []
-    if not telegram_api_id:
-        missing_vars.append("TELEGRAM_API_ID")
-    if not telegram_api_hash:
-        missing_vars.append("TELEGRAM_API_HASH")
-    if not telegram_bot_token:
-        missing_vars.append("TELEGRAM_BOT_TOKEN")
-
-    # Validate API key for the selected provider
-    if ai_provider == "openai" and not openai_api_key:
-        missing_vars.append("OPENAI_API_KEY")
-    elif ai_provider == "anthropic" and not anthropic_api_key:
-        missing_vars.append("ANTHROPIC_API_KEY")
-
-    if missing_vars:
-        raise ValueError(
-            f"Missing required environment variables: {', '.join(missing_vars)}\n"
-            f"Please set them in .env file (see .env.example)"
-        )
-
-    # Create complete config
-    # Type assertions: variables are validated above
-    assert telegram_api_id is not None
-    assert telegram_api_hash is not None
-    assert telegram_bot_token is not None
-
-    config = Config(
+    return Config(
         channels=channels,
         settings=settings,
-        telegram_api_id=int(telegram_api_id),
-        telegram_api_hash=telegram_api_hash,
-        telegram_bot_token=telegram_bot_token,
-        openai_api_key=openai_api_key,
-        anthropic_api_key=anthropic_api_key,
-        log_level=log_level,
+        **env_vars,
     )
-
-    return config
 
 
 if __name__ == "__main__":
