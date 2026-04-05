@@ -5,7 +5,7 @@
 
   **Automated Telegram Digest Generator powered by AI**
 
-  Telebrief collects messages from your Telegram channels (in any language), generates AI-powered summaries, and delivers beautiful daily digests directly to your Telegram account. Supports multiple AI providers: **OpenAI**, **Ollama** (local), and **Anthropic**. Output language is configurable (default: Russian).
+  Telebrief collects messages from your Telegram channels (in any language), generates AI-powered summaries, and delivers beautiful daily digests directly to your Telegram account. Group digests by channel or by **AI-detected topics**. Supports multiple AI providers: **OpenAI**, **Ollama** (local), and **Anthropic**. Output language is configurable (default: Russian).
 </div>
 
 ---
@@ -17,7 +17,8 @@
 - 🤖 **Multi-Provider AI** - Supports OpenAI, Ollama (local), and Anthropic for summarization
 - ⏰ **Scheduled & On-Demand** - Daily automatic digests + instant generation via bot commands
 - 🔒 **Private Channel Support** - Access your private chats and channels
-- 🎨 **Smart Formatting** - Markdown with emojis, bullet points, and clickable message links
+- 📑 **Digest Modes** - Group by channel (default) or by AI-detected topics like News, Events, Sport
+- 🎨 **Smart Formatting** - Markdown with emojis, bullet points, and clickable channel links
 - 🔐 **Secure** - Single-user only, credentials stored safely
 - 🧹 **Auto-cleanup** - Automatically removes old digest messages
 
@@ -27,7 +28,7 @@
 
 Before you begin, you'll need:
 
-1. **Python 3.10+** - [Download Python](https://www.python.org/downloads/)
+1. **Python 3.14+** - [Download Python](https://www.python.org/downloads/)
 
 2. **Telegram App Credentials** - [Get from my.telegram.org](https://my.telegram.org)
    - `api_id` and `api_hash`
@@ -73,13 +74,19 @@ Open Telegram and message your bot:
 |---------|-------------|
 | `/start` | Show welcome message and available commands |
 | `/help` | Display help message with all commands |
-| `/digest` | Generate and send digest for last 24 hours instantly |
+| `/digest` | Generate and send digest for last 24 hours (uses configured `digest_mode`) |
 | `/status` | Show configuration, next scheduled run, and system info |
 | `/cleanup` | Manually delete old digest messages |
 
 ---
 
 ## 📊 Example Output
+
+Telebrief supports two digest modes configured via `digest_mode` in `config.yaml`.
+
+### Channel mode (`digest_mode: "channel"` — default)
+
+Groups summaries by source channel with clickable channel links:
 
 ```markdown
 # 📊 Ежедневный дайджест - 14 декабря 2025
@@ -108,23 +115,45 @@ Open Telegram and message your bot:
 📈 **Статистика**: 20 каналов, 1,847 сообщений обработано
 ```
 
-> The summary message is sent **first**, followed by each channel's digest. All labels (header, statistics, bot commands) use the configured `output_language` — the example above shows the default Russian output.
+### Topic mode (`digest_mode: "digest"`)
+
+Groups summaries by AI-detected topics. You define topic groups in `config.yaml`:
+
+```yaml
+digest_mode: "digest"
+digest_groups:
+  - name: "Events"
+    description: "Conferences, meetups, releases, launches, announcements"
+  - name: "News"
+    description: "Politics, economy, world affairs, breaking news"
+  - name: "Sport"
+    description: "Sports results, transfers, tournaments, matches"
+```
+
+Messages that don't match any defined group are placed into an automatic "Other" category.
+
+> All labels (header, statistics, bot commands) use the configured `output_language` — the examples above show the default Russian output.
 
 ---
 
 ## 🛠️ Development & Testing
 
+This project uses [uv](https://docs.astral.sh/uv/) for package management.
+
 ### Running Tests
 
 ```bash
 # Install development dependencies
-pip install -r requirements-dev.txt
+uv sync --extra dev
 
-# Run all tests with coverage
-make test
+# Run all tests
+uv run pytest tests/ -v
 
-# Run linters
-make lint
+# Type checking
+uv run mypy src/
+
+# Linting
+uv tool run ruff check src/ tests/
 
 # Auto-format code
 make format
@@ -145,6 +174,9 @@ A: Currently single-user only. Multi-user support would require database and add
 
 **Q: Does it work with group chats?**
 A: Yes! Add group chat IDs to `config.yaml` the same way as channels.
+
+**Q: How do I switch to topic-based digests?**
+A: Set `digest_mode: "digest"` in `config.yaml` and define your `digest_groups`. Each group has a `name` and `description` that guides the AI classification. An implicit "Other" group catches anything that doesn't match.
 
 **Q: Can I customize the digest format?**
 A: Yes! Edit `src/formatter.py` to change Markdown structure, emojis, and sections.
