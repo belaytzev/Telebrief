@@ -1,44 +1,50 @@
-/* Telebrief — Navy-cerulean dark theme derived from logo palette */
+/* Telebrief — Editorial Blueprint dark theme: warm charcoal with cerulean */
 
 :root {
-  /* Backgrounds — deepened logo navy */
-  --bg:           #07101a;
-  --bg-surface:   #0b1825;
-  --bg-raised:    #101f30;
+  /* Backgrounds — warm charcoal, not cold navy */
+  --bg:           #141310;
+  --bg-surface:   #1a1916;
+  --bg-raised:    #21201c;
 
-  /* Accent — cerulean from logo background + ice-blue from icon */
-  --accent:       #1b8ec9;
+  /* Accent — cerulean, slightly brightened for dark bg */
+  --accent:       #3da5db;
   --accent-light: #7bbde0;
-  --accent-dim:   rgba(27, 142, 201, 0.09);
-  --accent-border:rgba(27, 142, 201, 0.28);
+  --accent-dim:   rgba(61, 165, 219, 0.1);
+  --accent-border:rgba(61, 165, 219, 0.3);
+  --accent-hover: #5bb8e8;
+
+  /* Secondary accent */
+  --accent-violet: #6366f1;
 
   /* Utility */
   --warm:         #f5a623;
 
-  /* Text — cool off-white with blue tint */
-  --text:         #eaf5fc;
-  --text-muted:   #8ab8d0;
-  --text-faint:   #101e2e;
+  /* Text — warm off-white */
+  --text:         #e8e6e1;
+  --text-muted:   #a09d95;
+  --text-faint:   #3a3835;
 
   /* Derived */
-  --accent-hover: #3aaee0;
-  --bg-deep:      #050c15;
-  --text-on-accent: #04111e;
-  --text-bright:  #ffffff;
+  --bg-deep:      #0c0b09;
+  --text-on-accent: #0e0d0b;
+  --text-bright:  #f5f4f1;
 
   /* Terminal chrome */
   --tdot-red:     #ff5f57;
   --tdot-yellow:  #febc2e;
   --tdot-green:   #28c840;
 
-  /* Borders — slightly tinted */
-  --border:       rgba(27, 142, 201, 0.1);
-  --border-hover: rgba(27, 142, 201, 0.24);
+  /* Borders — warm, clearly visible */
+  --border:       #3d3a36;
+  --border-hover: #524e48;
 
   /* Fonts */
   --font-display: 'Bricolage Grotesque', sans-serif;
   --font-body:    'DM Sans', sans-serif;
   --font-mono:    'JetBrains Mono', monospace;
+
+  /* Easing */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 *, *::before, *::after {
@@ -56,6 +62,7 @@ html {
   html { scroll-behavior: auto; }
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
+    animation-delay: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
 }
@@ -67,13 +74,14 @@ body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  position: relative;
 }
 
 h1, h2, h3, h4 {
   font-family: var(--font-display);
   font-weight: 800;
   line-height: 1.08;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
   color: var(--text);
 }
 
