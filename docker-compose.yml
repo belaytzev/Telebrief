@@ -1,9 +1,6 @@
 services:
   telebrief:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: telebrief:latest
+    image: ghcr.io/belaytzev/telebrief:latest
     container_name: telebrief
     restart: unless-stopped
 
