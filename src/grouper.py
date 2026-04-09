@@ -34,13 +34,16 @@ class DigestGrouper:
         self.config = config
         self.logger = logger
         self._ui = get_ui_strings(config.settings.output_language)
+        # Grouping sends ALL channel summaries in one request — needs a higher
+        # timeout than individual summarization calls.
+        grouper_timeout = config.settings.api_timeout * 3
         self.provider: AIProvider = create_provider(
             provider_name=config.settings.ai_provider,
             logger=logger,
             openai_api_key=config.openai_api_key,
             anthropic_api_key=config.anthropic_api_key,
             ollama_base_url=config.settings.ollama_base_url,
-            api_timeout=config.settings.api_timeout,
+            api_timeout=grouper_timeout,
         )
         self.model = config.settings.ai_model
         self.temperature = config.settings.temperature
