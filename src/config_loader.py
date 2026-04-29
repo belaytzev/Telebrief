@@ -165,6 +165,11 @@ def _parse_channel_entry(i: int, ch: object) -> ChannelConfig:
     for required in ("id", "name"):
         if required not in ch:
             raise ValueError(f"channels[{i}] missing required field '{required}'")
+    # id accepts str (username) or int (numeric Telegram ID); name must be a non-empty string
+    if not isinstance(ch["name"], str) or not ch["name"].strip():
+        raise ValueError(f"channels[{i}].name must be a non-empty string, got {ch['name']!r}")
+    if not isinstance(ch["id"], (str, int)) or isinstance(ch["id"], bool):
+        raise ValueError(f"channels[{i}].id must be a string or int, got {type(ch['id']).__name__}")
     lookback_hours = ch.get("lookback_hours")
     if lookback_hours is not None:
         if not isinstance(lookback_hours, int) or isinstance(lookback_hours, bool):
@@ -193,7 +198,16 @@ def _parse_channels(yaml_config: dict) -> List[ChannelConfig]:
     Raises:
         ValueError: If channels list is empty, entries are invalid, or names are duplicated
     """
-    channels = [_parse_channel_entry(i, ch) for i, ch in enumerate(yaml_config.get("channels", []))]
+    if not isinstance(yaml_config, dict):
+        raise ValueError(
+            f"config.yaml must contain a top-level mapping, got {type(yaml_config).__name__}"
+        )
+    channels_value = yaml_config.get("channels", [])
+    if not isinstance(channels_value, list):
+        raise ValueError(
+            f"config.yaml field 'channels' must be a list, got {type(channels_value).__name__}"
+        )
+    channels = [_parse_channel_entry(i, ch) for i, ch in enumerate(channels_value)]
 
     if not channels:
         raise ValueError("No channels configured in config.yaml")
