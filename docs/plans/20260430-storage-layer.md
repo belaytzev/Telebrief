@@ -65,7 +65,7 @@ collect → **save to DB** → summarize → format → send
 **Files:**
 - Modify: `src/config_loader.py`
 
-- [ ] Add `StorageConfig` dataclass after `DigestGroupConfig`:
+- [x] Add `StorageConfig` dataclass after `DigestGroupConfig`:
   ```python
   @dataclass
   class StorageConfig:
@@ -74,21 +74,21 @@ collect → **save to DB** → summarize → format → send
       path: str = "data/messages.db"
       url: str = ""                 # postgres only
   ```
-- [ ] Add `_parse_storage_config(yaml_config: dict) -> StorageConfig` helper that:
+- [x] Add `_parse_storage_config(yaml_config: dict) -> StorageConfig` helper that:
   - Reads optional top-level `storage:` block (missing = all defaults)
   - Validates each field with `isinstance` checks matching `_parse_channel_entry` style
   - Validates `backend` is `"sqlite"` or `"postgres"` (raises `ValueError` otherwise)
   - Validates `url` is non-empty when `backend == "postgres"` **and** `enabled is True` (raises `ValueError`)
   - Validates `path` is a non-empty string for sqlite
-- [ ] Add `storage: StorageConfig = field(default_factory=StorageConfig)` to `Config` dataclass
-- [ ] Call `_parse_storage_config(yaml_config)` in `load_config()` and pass result to `Config(..., storage=storage_config)`
-- [ ] Write tests for `_parse_storage_config`:
+- [x] Add `storage: StorageConfig = field(default_factory=StorageConfig)` to `Config` dataclass
+- [x] Call `_parse_storage_config(yaml_config)` in `load_config()` and pass result to `Config(..., storage=storage_config)`
+- [x] Write tests for `_parse_storage_config`:
   - Missing `storage:` block → returns defaults (enabled=False, backend="sqlite")
   - `backend: "postgres"` with `enabled: true` and empty `url` → `ValueError`
   - `backend: "invalid"` → `ValueError`
   - `enabled` not bool → `ValueError`
   - `path` empty string → `ValueError`
-- [ ] Run tests — must pass before Task 2
+- [x] Run tests — must pass before Task 2
 
 ### Task 2: Create src/storage.py
 

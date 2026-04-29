@@ -31,6 +31,16 @@ class DigestGroupConfig:
 
 
 @dataclass
+class StorageConfig:
+    """Configuration for the persistent message storage backend."""
+
+    enabled: bool = False
+    backend: str = "sqlite"        # "sqlite" | "postgres"
+    path: str = "data/messages.db"
+    url: str = ""                  # postgres only
+
+
+@dataclass
 class Settings:
     """Application settings."""
 
@@ -70,6 +80,7 @@ class Config:
     openai_api_key: str
     log_level: str
     anthropic_api_key: str = ""
+    storage: StorageConfig = field(default_factory=StorageConfig)
 
 
 SUPPORTED_LANGUAGES = ("English", "Russian", "Spanish", "German", "French")
@@ -192,6 +203,41 @@ def _parse_channel_entry(i: int, ch: object) -> ChannelConfig:
     )
 
 
+def _parse_storage_config(yaml_config: dict) -> StorageConfig:
+    """Parse and validate the optional top-level storage: block.
+
+    Raises:
+        ValueError: If any field has wrong type or invalid value.
+    """
+    raw = yaml_config.get("storage")
+    if raw is None:
+        return StorageConfig()
+    if not isinstance(raw, dict):
+        raise ValueError(f"'storage' must be a mapping, got {type(raw).__name__}")
+
+    enabled = raw.get("enabled", False)
+    if not isinstance(enabled, bool):
+        raise ValueError(f"storage.enabled must be a bool, got {type(enabled).__name__}")
+
+    backend = raw.get("backend", "sqlite")
+    if not isinstance(backend, str):
+        raise ValueError(f"storage.backend must be a string, got {type(backend).__name__}")
+    if backend not in ("sqlite", "postgres"):
+        raise ValueError(f"storage.backend must be 'sqlite' or 'postgres', got {backend!r}")
+
+    path = raw.get("path", "data/messages.db")
+    if not isinstance(path, str) or not path:
+        raise ValueError("storage.path must be a non-empty string")
+
+    url = raw.get("url", "")
+    if not isinstance(url, str):
+        raise ValueError(f"storage.url must be a string, got {type(url).__name__}")
+    if backend == "postgres" and enabled and not url:
+        raise ValueError("storage.url must be set when backend is 'postgres' and enabled is true")
+
+    return StorageConfig(enabled=enabled, backend=backend, path=path, url=url)
+
+
 def _parse_channels(yaml_config: dict) -> List[ChannelConfig]:
     """Parse and validate channel configs from YAML.
 
@@ -297,6 +343,9 @@ def load_config(config_path: str = "config.yaml") -> Config:
     # Parse channels
     channels = _parse_channels(yaml_config)
 
+    # Parse storage config
+    storage_config = _parse_storage_config(yaml_config)
+
     # Parse settings
     settings_dict = yaml_config.get("settings", {})
     ai_provider, ai_model = _resolve_ai_settings(settings_dict)
@@ -336,6 +385,7 @@ def load_config(config_path: str = "config.yaml") -> Config:
     return Config(
         channels=channels,
         settings=settings,
+        storage=storage_config,
         **env_vars,
     )
 
