@@ -164,9 +164,9 @@ collect → **save to DB** → summarize → format → send
 
 Wire at the `_collect_messages()` level — this is the single collection chokepoint used by all orchestration paths (scheduler, bot commands, digest mode). Wiring here avoids duplicating the logic in every caller.
 
-- [ ] Import `create_storage` and `StorageConfig` from `src.storage` (or only `create_storage` if `StorageConfig` not needed directly)
-- [ ] Modify `_collect_messages()` signature to accept `storage_config: StorageConfig` (passed from `config.storage`)
-- [ ] After `await collector.disconnect()` (inside the `finally`), add storage block:
+- [x] Import `create_storage` and `StorageConfig` from `src.storage` (or only `create_storage` if `StorageConfig` not needed directly)
+- [x] Modify `_collect_messages()` signature to accept `storage_config: StorageConfig` (passed from `config.storage`)
+- [x] After `await collector.disconnect()` (inside the `finally`), add storage block:
   ```python
   storage = await create_storage(storage_config)
   if storage:
@@ -180,13 +180,13 @@ Wire at the `_collect_messages()` level — this is the single collection chokep
           await storage.close()
   ```
   Storage failures are logged but **do not abort digest generation**.
-- [ ] Update all callers of `_collect_messages()` to pass `config.storage`
-- [ ] Write tests for `_collect_messages` wiring (use `AsyncMock`/`MagicMock`):
+- [x] Update all callers of `_collect_messages()` to pass `config.storage`
+- [x] Write tests for `_collect_messages` wiring (use `AsyncMock`/`MagicMock`):
   - `storage.enabled=False` → `create_storage` not called (or returns None, no save)
   - `storage.enabled=True` → `save_messages` called with flat message list
   - `save_messages` raises → exception logged, function returns normally (digest not aborted)
   - `close()` called even when `save_messages` raises
-- [ ] Run tests — must pass before Task 4
+- [x] Run tests — must pass before Task 4
 
 ### Task 4: Update requirements.txt and config.yaml.example
 

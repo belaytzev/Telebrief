@@ -8,17 +8,20 @@ from datetime import datetime, timezone
 from typing import Optional
 
 from src.collector import MessageCollector
-from src.config_loader import Config
+from src.config_loader import Config, StorageConfig
 from src.formatter import DigestFormatter
 from src.grouper import DigestGrouper
 from src.sender import DigestSender
+from src.storage import create_storage
 from src.summarizer import ERROR_SUMMARY_PREFIX, Summarizer
 from src.utils import split_message
 
 _CHANNEL_URL_RE = re.compile(r"^https://t\.me/(?:c/\d+|[^/]{2,})$")
 
 
-async def _collect_messages(config: Config, logger: logging.Logger, hours: int) -> dict:
+async def _collect_messages(
+    config: Config, logger: logging.Logger, hours: int, storage_config: StorageConfig | None = None
+) -> dict:
     """Collect messages from Telegram channels."""
     logger.info("Collecting messages from Telegram")
     collector = MessageCollector(config, logger)
@@ -29,6 +32,17 @@ async def _collect_messages(config: Config, logger: logging.Logger, hours: int) 
         await collector.disconnect()
     total = sum(len(msgs) for msgs in messages_by_channel.values())
     logger.info(f"Collected {total} messages from {len(messages_by_channel)} channels")
+    sc = storage_config if storage_config is not None else config.storage
+    storage = await create_storage(sc)
+    if storage:
+        try:
+            flat = [msg for msgs in messages_by_channel.values() for msg in msgs]
+            saved = await storage.save_messages(flat)
+            logger.info(f"Stored {saved} messages ({sc.backend})")
+        except Exception as e:
+            logger.error(f"Storage write failed, digest continues: {e}")
+        finally:
+            await storage.close()
     return messages_by_channel
 
 
@@ -226,7 +240,7 @@ async def generate_and_send_digest_grouped(
         start_time = datetime.now(timezone.utc)
         logger.info(f"Starting digest-grouped generation for last {hours} hours")
 
-        messages_by_channel = await _collect_messages(config, logger, hours)
+        messages_by_channel = await _collect_messages(config, logger, hours, config.storage)
         if not sum(len(msgs) for msgs in messages_by_channel.values()):
             logger.warning("No messages collected, skipping digest generation")
             return False
@@ -300,7 +314,7 @@ async def generate_and_send_channel_digests(
     logger.info(f"Starting per-channel digest generation for last {hours} hours")
 
     try:
-        messages_by_channel = await _collect_messages(config, logger, hours)
+        messages_by_channel = await _collect_messages(config, logger, hours, config.storage)
         total_messages = sum(len(msgs) for msgs in messages_by_channel.values())
         if total_messages == 0:
             logger.warning("No messages collected, skipping digest generation")
