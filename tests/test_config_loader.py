@@ -503,3 +503,88 @@ settings:
     assert "Klingon" in error_msg
     for lang in ("English", "Russian", "Spanish", "German", "French"):
         assert lang in error_msg
+
+
+@pytest.mark.unit
+def test_load_config_per_channel_overrides(tmp_path, mock_env_vars):
+    """Per-channel lookback_hours and prompt_extra are parsed into ChannelConfig."""
+    config_content = """
+channels:
+  - id: "@jobs"
+    name: "Jobs"
+    lookback_hours: 72
+    prompt_extra: "Focus on backend roles only."
+  - id: "@news"
+    name: "News"
+
+settings:
+  target_user_id: 123456789
+"""
+    config_file = tmp_path / "config.yaml"
+    config_file.write_text(config_content)
+
+    config = load_config(str(config_file))
+
+    jobs, news = config.channels
+    assert jobs.lookback_hours == 72
+    assert jobs.prompt_extra == "Focus on backend roles only."
+    assert news.lookback_hours is None
+    assert news.prompt_extra == ""
+
+
+@pytest.mark.unit
+def test_load_config_invalid_lookback_hours_type(tmp_path, mock_env_vars):
+    """Non-int lookback_hours raises ValueError."""
+    config_content = """
+channels:
+  - id: "@test"
+    name: "Test"
+    lookback_hours: "72h"
+
+settings:
+  target_user_id: 123456789
+"""
+    config_file = tmp_path / "config.yaml"
+    config_file.write_text(config_content)
+
+    with pytest.raises(ValueError, match="lookback_hours must be an int"):
+        load_config(str(config_file))
+
+
+@pytest.mark.unit
+def test_load_config_invalid_lookback_hours_value(tmp_path, mock_env_vars):
+    """Non-positive lookback_hours raises ValueError."""
+    config_content = """
+channels:
+  - id: "@test"
+    name: "Test"
+    lookback_hours: 0
+
+settings:
+  target_user_id: 123456789
+"""
+    config_file = tmp_path / "config.yaml"
+    config_file.write_text(config_content)
+
+    with pytest.raises(ValueError, match="lookback_hours must be positive"):
+        load_config(str(config_file))
+
+
+@pytest.mark.unit
+def test_load_config_duplicate_channel_names(tmp_path, mock_env_vars):
+    """Duplicate channel names raise ValueError to prevent silent override loss."""
+    config_content = """
+channels:
+  - id: "@first"
+    name: "Same Name"
+  - id: "@second"
+    name: "Same Name"
+
+settings:
+  target_user_id: 123456789
+"""
+    config_file = tmp_path / "config.yaml"
+    config_file.write_text(config_content)
+
+    with pytest.raises(ValueError, match="Duplicate channel names.*Same Name"):
+        load_config(str(config_file))

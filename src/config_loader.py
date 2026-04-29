@@ -18,6 +18,8 @@ class ChannelConfig:
 
     id: str
     name: str
+    lookback_hours: int | None = None  # None = use global settings.lookback_hours
+    prompt_extra: str = ""  # appended to system prompt when summarizing this channel
 
 
 @dataclass
@@ -223,12 +225,46 @@ def load_config(config_path: str = "config.yaml") -> Config:
         yaml_config = yaml.safe_load(f)
 
     # Parse channels
-    channels = [
-        ChannelConfig(id=ch["id"], name=ch["name"]) for ch in yaml_config.get("channels", [])
-    ]
+    channels = []
+    for i, ch in enumerate(yaml_config.get("channels", [])):
+        lookback_hours = ch.get("lookback_hours")
+        if lookback_hours is not None:
+            if not isinstance(lookback_hours, int) or isinstance(lookback_hours, bool):
+                raise ValueError(
+                    f"channels[{i}].lookback_hours must be an int, "
+                    f"got {type(lookback_hours).__name__}"
+                )
+            if lookback_hours <= 0:
+                raise ValueError(
+                    f"channels[{i}].lookback_hours must be positive, got {lookback_hours}"
+                )
+        prompt_extra = ch.get("prompt_extra", "")
+        if not isinstance(prompt_extra, str):
+            raise ValueError(
+                f"channels[{i}].prompt_extra must be a string, got {type(prompt_extra).__name__}"
+            )
+        channels.append(
+            ChannelConfig(
+                id=ch["id"],
+                name=ch["name"],
+                lookback_hours=lookback_hours,
+                prompt_extra=prompt_extra,
+            )
+        )
 
     if not channels:
         raise ValueError("No channels configured in config.yaml")
+
+    seen: set[str] = set()
+    duplicates: set[str] = set()
+    for c in channels:
+        if c.name in seen:
+            duplicates.add(c.name)
+        seen.add(c.name)
+    if duplicates:
+        raise ValueError(
+            f"Duplicate channel names in config.yaml: {', '.join(sorted(duplicates))}"
+        )
 
     # Parse settings
     settings_dict = yaml_config.get("settings", {})

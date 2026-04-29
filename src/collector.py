@@ -95,10 +95,13 @@ class MessageCollector:
             f"Fetching messages from {len(self.config.channels)} channels (last {hours}h)"
         )
 
-        lookback_time = get_lookback_time(hours)
         all_messages = {}
 
         for channel_config in self.config.channels:
+            channel_hours = (
+                hours if channel_config.lookback_hours is None else channel_config.lookback_hours
+            )
+            lookback_time = get_lookback_time(channel_hours)
             try:
                 messages = await self._fetch_channel_messages(channel_config, lookback_time)
                 all_messages[channel_config.name] = messages
