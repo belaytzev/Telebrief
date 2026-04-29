@@ -92,7 +92,8 @@ class MessageCollector:
             Dictionary mapping channel names to lists of messages
         """
         self.logger.info(
-            f"Fetching messages from {len(self.config.channels)} channels (last {hours}h)"
+            f"Fetching messages from {len(self.config.channels)} channels "
+            f"(default lookback: {hours}h; individual channels may override)"
         )
 
         all_messages = {}

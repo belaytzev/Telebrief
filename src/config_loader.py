@@ -165,6 +165,11 @@ def _parse_channels(yaml_config: dict) -> List[ChannelConfig]:
     """
     channels = []
     for i, ch in enumerate(yaml_config.get("channels", [])):
+        if not isinstance(ch, dict):
+            raise ValueError(f"channels[{i}] must be a mapping, got {type(ch).__name__}")
+        for required in ("id", "name"):
+            if required not in ch:
+                raise ValueError(f"channels[{i}] missing required field '{required}'")
         lookback_hours = ch.get("lookback_hours")
         if lookback_hours is not None:
             if not isinstance(lookback_hours, int) or isinstance(lookback_hours, bool):
