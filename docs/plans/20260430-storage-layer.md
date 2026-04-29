@@ -97,10 +97,10 @@ collect → **save to DB** → summarize → format → send
 
 **Backend lifecycle contract**: `create_storage()` factory calls `await backend.initialize()` before returning. Caller only needs to call `save_messages()` then `close()`. No separate `initialize()` call needed from outside the factory.
 
-- [ ] Define `StorageBackend` as a `typing.Protocol` with:
+- [x] Define `StorageBackend` as a `typing.Protocol` with:
   - `async def save_messages(self, messages: list[Message]) -> int`
   - `async def close(self) -> None`
-- [ ] Implement `SQLiteBackend`:
+- [x] Implement `SQLiteBackend`:
   - `__init__(self, path: str)` — stores path, `self._conn = None`
   - `async def initialize(self)` — creates parent dirs via `Path(self._path).parent.mkdir(parents=True, exist_ok=True)`, opens `aiosqlite` connection, runs CREATE TABLE IF NOT EXISTS + CREATE INDEX IF NOT EXISTS
   - `async def save_messages(messages: list[Message]) -> int` — `executemany` insert, commit, return `len(messages)`. Empty list → return 0 immediately.
@@ -122,7 +122,7 @@ collect → **save to DB** → summarize → format → send
         ON messages(channel_name, timestamp);
     ```
   - Timestamp stored as `msg.timestamp.isoformat()` (UTC-aware datetimes from collector)
-- [ ] Implement `PostgresBackend`:
+- [x] Implement `PostgresBackend`:
   - `__init__(self, url: str)` — stores url, `self._pool = None`
   - `async def initialize(self)` — creates `asyncpg` pool, runs CREATE TABLE IF NOT EXISTS + INDEX
   - `async def save_messages(...)` — `pool.executemany()` with Postgres params, return count
@@ -144,18 +144,18 @@ collect → **save to DB** → summarize → format → send
         ON messages(channel_name, timestamp);
     ```
   - Timestamp passed as `msg.timestamp` (datetime object with UTC tzinfo)
-- [ ] Implement `create_storage(config: StorageConfig) -> StorageBackend | None` factory:
+- [x] Implement `create_storage(config: StorageConfig) -> StorageBackend | None` factory:
   - Returns `None` if `config.enabled` is `False`
   - Instantiates `SQLiteBackend(config.path)` or `PostgresBackend(config.url)`
   - Calls `await backend.initialize()` before returning
   - Raises `ValueError` for unknown `config.backend` value (defensive, parser already validates)
-- [ ] Write tests in `tests/test_storage.py` (all async tests use `@pytest.mark.asyncio`):
+- [x] Write tests in `tests/test_storage.py` (all async tests use `@pytest.mark.asyncio`):
   - `SQLiteBackend`: `save_messages` returns correct count, two saves of same data both stored (append-only), empty list returns 0
   - `SQLiteBackend`: `close()` is safe to call twice (idempotent), safe when never initialized
   - `create_storage`: `enabled=False` → returns `None`
   - `create_storage`: `enabled=True, backend="sqlite"` → returns ready `SQLiteBackend` (can call `save_messages`)
   - `create_storage`: unknown backend string → `ValueError`
-- [ ] Run tests — must pass before Task 3
+- [x] Run tests — must pass before Task 3
 
 ### Task 3: Wire storage into _collect_messages()
 
