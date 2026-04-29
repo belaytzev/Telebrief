@@ -13,6 +13,7 @@ from src.formatter import DigestFormatter
 from src.grouper import DigestGrouper
 from src.sender import DigestSender
 from src.summarizer import ERROR_SUMMARY_PREFIX, Summarizer
+from src.utils import split_message
 
 _CHANNEL_URL_RE = re.compile(r"^https://t\.me/(?:c/\d+|[^/]{2,})$")
 
@@ -62,7 +63,8 @@ def _format_group_messages(
             continue
         fmt = formatter.format_group_message(group_name=name, points=points, hours=hours)
         if fmt:
-            result.append((name, fmt))
+            for part in split_message(fmt, max_length=4000):
+                result.append((name, part))
     return result
 
 

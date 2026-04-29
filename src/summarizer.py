@@ -13,6 +13,7 @@ from src.xml_escape import escape_xml_delimiters
 
 ERROR_SUMMARY_PREFIX = "Error processing channel"
 MAX_SUMMARY_CHARS = 3500
+_MINOR_OVERAGE_CHARS = 200  # truncate directly without retry for small overages
 
 # System prompt template with configurable output language
 SYSTEM_PROMPT_TEMPLATE = """
@@ -263,6 +264,18 @@ Messages (total: {actual_count}):
     ) -> str:
         """Request shorter summary if over limit, truncate as last resort."""
         if len(summary) <= MAX_SUMMARY_CHARS:
+            return summary
+
+        overage = len(summary) - MAX_SUMMARY_CHARS
+        if overage <= _MINOR_OVERAGE_CHARS:
+            summary = self._truncate_at_sentence_boundary(summary, MAX_SUMMARY_CHARS)
+            self.logger.warning(
+                "Summary for %s is %d chars (limit %d, overage %d), truncated at sentence boundary",
+                channel_name,
+                len(summary),
+                MAX_SUMMARY_CHARS,
+                overage,
+            )
             return summary
 
         self.logger.warning(
