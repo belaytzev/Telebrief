@@ -632,3 +632,33 @@ async def test_summarize_channel_no_retry_when_under_limit(
 
         assert result == short_output
         assert summarizer.provider.chat_completion.call_count == 1
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_summarize_channel_applies_prompt_extra(sample_config, mock_logger, sample_messages):
+    """prompt_extra is appended to system prompt for the matching channel only."""
+    sample_config.channels[0].prompt_extra = "Focus on backend roles only."
+    # second channel ("Private Group") has no prompt_extra
+
+    captured: list[list[dict]] = []
+
+    async def capture(messages, **_kwargs):
+        captured.append(messages)
+        return "ok"
+
+    with patch("src.ai_providers.AsyncOpenAI"):
+        summarizer = Summarizer(sample_config, mock_logger)
+        summarizer.provider.chat_completion = capture
+
+        await summarizer._summarize_channel("Test Channel", sample_messages)
+        await summarizer._summarize_channel("Private Group", sample_messages)
+
+    assert len(captured) == 2
+    test_system = captured[0][0]["content"]
+    private_system = captured[1][0]["content"]
+
+    assert "Focus on backend roles only." in test_system
+    assert "Channel-specific instructions" in test_system
+    assert "Focus on backend roles only." not in private_system
+    assert "Channel-specific instructions" not in private_system

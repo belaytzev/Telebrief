@@ -16,8 +16,10 @@ from dotenv import load_dotenv
 class ChannelConfig:
     """Configuration for a single Telegram channel/chat."""
 
-    id: str
+    id: str | int  # str for @username, int for numeric Telegram channel ID
     name: str
+    lookback_hours: int | None = None  # None = use global settings.lookback_hours
+    prompt_extra: str = ""  # appended to system prompt when summarizing this channel
 
 
 @dataclass
@@ -152,6 +154,76 @@ def _parse_digest_settings(
     return digest_mode, digest_groups, output_language
 
 
+def _parse_channel_entry(i: int, ch: object) -> ChannelConfig:
+    """Parse and validate a single channel entry from YAML.
+
+    Raises:
+        ValueError: If the entry has wrong type, missing required fields, or invalid values
+    """
+    if not isinstance(ch, dict):
+        raise ValueError(f"channels[{i}] must be a mapping, got {type(ch).__name__}")
+    for required in ("id", "name"):
+        if required not in ch:
+            raise ValueError(f"channels[{i}] missing required field '{required}'")
+    # id accepts str (username) or int (numeric Telegram ID); name must be a non-empty string
+    if not isinstance(ch["name"], str) or not ch["name"].strip():
+        raise ValueError(f"channels[{i}].name must be a non-empty string, got {ch['name']!r}")
+    if not isinstance(ch["id"], (str, int)) or isinstance(ch["id"], bool):
+        raise ValueError(f"channels[{i}].id must be a string or int, got {type(ch['id']).__name__}")
+    lookback_hours = ch.get("lookback_hours")
+    if lookback_hours is not None:
+        if not isinstance(lookback_hours, int) or isinstance(lookback_hours, bool):
+            raise ValueError(
+                f"channels[{i}].lookback_hours must be an int, "
+                f"got {type(lookback_hours).__name__}"
+            )
+        if lookback_hours <= 0:
+            raise ValueError(f"channels[{i}].lookback_hours must be positive, got {lookback_hours}")
+    prompt_extra = ch.get("prompt_extra", "")
+    if not isinstance(prompt_extra, str):
+        raise ValueError(
+            f"channels[{i}].prompt_extra must be a string, got {type(prompt_extra).__name__}"
+        )
+    return ChannelConfig(
+        id=ch["id"],
+        name=ch["name"],
+        lookback_hours=lookback_hours,
+        prompt_extra=prompt_extra,
+    )
+
+
+def _parse_channels(yaml_config: dict) -> List[ChannelConfig]:
+    """Parse and validate channel configs from YAML.
+
+    Raises:
+        ValueError: If channels list is empty, entries are invalid, or names are duplicated
+    """
+    if not isinstance(yaml_config, dict):
+        raise ValueError(
+            f"config.yaml must contain a top-level mapping, got {type(yaml_config).__name__}"
+        )
+    channels_value = yaml_config.get("channels", [])
+    if not isinstance(channels_value, list):
+        raise ValueError(
+            f"config.yaml field 'channels' must be a list, got {type(channels_value).__name__}"
+        )
+    channels = [_parse_channel_entry(i, ch) for i, ch in enumerate(channels_value)]
+
+    if not channels:
+        raise ValueError("No channels configured in config.yaml")
+
+    seen: set[str] = set()
+    duplicates: set[str] = set()
+    for c in channels:
+        if c.name in seen:
+            duplicates.add(c.name)
+        seen.add(c.name)
+    if duplicates:
+        raise ValueError(f"Duplicate channel names in config.yaml: {', '.join(sorted(duplicates))}")
+
+    return channels
+
+
 def _load_and_validate_env_vars(ai_provider: str) -> dict:
     """Load and validate required environment variables.
 
@@ -223,12 +295,7 @@ def load_config(config_path: str = "config.yaml") -> Config:
         yaml_config = yaml.safe_load(f)
 
     # Parse channels
-    channels = [
-        ChannelConfig(id=ch["id"], name=ch["name"]) for ch in yaml_config.get("channels", [])
-    ]
-
-    if not channels:
-        raise ValueError("No channels configured in config.yaml")
+    channels = _parse_channels(yaml_config)
 
     # Parse settings
     settings_dict = yaml_config.get("settings", {})

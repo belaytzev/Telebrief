@@ -103,6 +103,7 @@ class Summarizer:
         self.temperature = config.settings.temperature
         self.max_tokens = config.settings.max_tokens_per_summary
         self.output_language = config.settings.output_language
+        self._channels_by_name = {ch.name: ch for ch in config.channels}
 
     async def summarize_all(self, messages_by_channel: Dict[str, List[Message]]) -> Dict[str, Any]:
         """
@@ -212,6 +213,9 @@ Messages (total: {actual_count}):
 """
 
         system_prompt = SYSTEM_PROMPT_TEMPLATE.replace("{language}", self.output_language)
+        channel_cfg = self._channels_by_name.get(channel_name)
+        if channel_cfg and channel_cfg.prompt_extra:
+            system_prompt += f"\n\nChannel-specific instructions:\n{channel_cfg.prompt_extra}"
         chat_messages = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": prompt},
