@@ -154,46 +154,46 @@ def _parse_digest_settings(
     return digest_mode, digest_groups, output_language
 
 
+def _parse_channel_entry(i: int, ch: object) -> ChannelConfig:
+    """Parse and validate a single channel entry from YAML.
+
+    Raises:
+        ValueError: If the entry has wrong type, missing required fields, or invalid values
+    """
+    if not isinstance(ch, dict):
+        raise ValueError(f"channels[{i}] must be a mapping, got {type(ch).__name__}")
+    for required in ("id", "name"):
+        if required not in ch:
+            raise ValueError(f"channels[{i}] missing required field '{required}'")
+    lookback_hours = ch.get("lookback_hours")
+    if lookback_hours is not None:
+        if not isinstance(lookback_hours, int) or isinstance(lookback_hours, bool):
+            raise ValueError(
+                f"channels[{i}].lookback_hours must be an int, "
+                f"got {type(lookback_hours).__name__}"
+            )
+        if lookback_hours <= 0:
+            raise ValueError(f"channels[{i}].lookback_hours must be positive, got {lookback_hours}")
+    prompt_extra = ch.get("prompt_extra", "")
+    if not isinstance(prompt_extra, str):
+        raise ValueError(
+            f"channels[{i}].prompt_extra must be a string, got {type(prompt_extra).__name__}"
+        )
+    return ChannelConfig(
+        id=ch["id"],
+        name=ch["name"],
+        lookback_hours=lookback_hours,
+        prompt_extra=prompt_extra,
+    )
+
+
 def _parse_channels(yaml_config: dict) -> List[ChannelConfig]:
     """Parse and validate channel configs from YAML.
 
-    Returns:
-        List of ChannelConfig objects
-
     Raises:
-        ValueError: If channels list is empty, fields have wrong types, or names are duplicated
+        ValueError: If channels list is empty, entries are invalid, or names are duplicated
     """
-    channels = []
-    for i, ch in enumerate(yaml_config.get("channels", [])):
-        if not isinstance(ch, dict):
-            raise ValueError(f"channels[{i}] must be a mapping, got {type(ch).__name__}")
-        for required in ("id", "name"):
-            if required not in ch:
-                raise ValueError(f"channels[{i}] missing required field '{required}'")
-        lookback_hours = ch.get("lookback_hours")
-        if lookback_hours is not None:
-            if not isinstance(lookback_hours, int) or isinstance(lookback_hours, bool):
-                raise ValueError(
-                    f"channels[{i}].lookback_hours must be an int, "
-                    f"got {type(lookback_hours).__name__}"
-                )
-            if lookback_hours <= 0:
-                raise ValueError(
-                    f"channels[{i}].lookback_hours must be positive, got {lookback_hours}"
-                )
-        prompt_extra = ch.get("prompt_extra", "")
-        if not isinstance(prompt_extra, str):
-            raise ValueError(
-                f"channels[{i}].prompt_extra must be a string, got {type(prompt_extra).__name__}"
-            )
-        channels.append(
-            ChannelConfig(
-                id=ch["id"],
-                name=ch["name"],
-                lookback_hours=lookback_hours,
-                prompt_extra=prompt_extra,
-            )
-        )
+    channels = [_parse_channel_entry(i, ch) for i, ch in enumerate(yaml_config.get("channels", []))]
 
     if not channels:
         raise ValueError("No channels configured in config.yaml")
