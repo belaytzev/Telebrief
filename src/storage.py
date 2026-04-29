@@ -6,6 +6,8 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Protocol
 
 if TYPE_CHECKING:
+    import aiosqlite as _aiosqlite
+    import asyncpg as _asyncpg  # type: ignore[import-untyped]
     from src.collector import Message
     from src.config_loader import StorageConfig
 
@@ -66,7 +68,7 @@ class StorageBackend(Protocol):
 class SQLiteBackend:
     def __init__(self, path: str) -> None:
         self._path = path
-        self._conn = None
+        self._conn: _aiosqlite.Connection | None = None
 
     async def initialize(self) -> None:
         import aiosqlite
@@ -92,6 +94,7 @@ class SQLiteBackend:
             )
             for msg in messages
         ]
+        assert self._conn is not None
         await self._conn.executemany(_SQLITE_INSERT, rows)
         await self._conn.commit()
         return len(messages)
@@ -105,7 +108,7 @@ class SQLiteBackend:
 class PostgresBackend:  # pragma: no cover
     def __init__(self, url: str) -> None:
         self._url = url
-        self._pool = None
+        self._pool: _asyncpg.Pool | None = None
 
     async def initialize(self) -> None:
         import asyncpg  # pragma: no cover
@@ -130,6 +133,7 @@ class PostgresBackend:  # pragma: no cover
             )
             for msg in messages
         ]
+        assert self._pool is not None  # pragma: no cover
         async with self._pool.acquire() as conn:  # pragma: no cover
             await conn.executemany(_PG_INSERT, rows)  # pragma: no cover
         return len(messages)  # pragma: no cover
@@ -144,11 +148,11 @@ async def create_storage(config: StorageConfig) -> StorageBackend | None:
     if not config.enabled:
         return None
     if config.backend == "sqlite":
-        backend: StorageBackend = SQLiteBackend(config.path)
-        await backend.initialize()  # type: ignore[attr-defined]
-        return backend
-    if config.backend == "postgres":
-        backend = PostgresBackend(config.url)
-        await backend.initialize()  # type: ignore[attr-defined]
-        return backend
+        sqlite_backend = SQLiteBackend(config.path)
+        await sqlite_backend.initialize()
+        return sqlite_backend
+    if config.backend == "postgres":  # pragma: no cover
+        pg_backend = PostgresBackend(config.url)  # pragma: no cover
+        await pg_backend.initialize()  # pragma: no cover
+        return pg_backend  # pragma: no cover
     raise ValueError(f"Unknown storage backend: {config.backend!r}")

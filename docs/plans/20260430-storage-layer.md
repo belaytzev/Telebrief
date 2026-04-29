@@ -232,14 +232,14 @@ Wire at the `_collect_messages()` level — this is the single collection chokep
 
 ### Task 6: Verify acceptance criteria
 
-- [ ] `storage.enabled: false` (default) — existing behavior unchanged, no DB file created, all current tests pass
-- [ ] `storage.enabled: true, backend: sqlite` — `data/messages.db` created, `messages` table exists with index `idx_messages_channel_timestamp`
-- [ ] `storage.enabled: true, backend: postgres, url: ""` — `ValueError` from `load_config` at startup
-- [ ] Storage failure (mock `save_messages` to raise) — digest still completes, error logged
-- [ ] Run full test suite: `uv run pytest tests/ -v`
-- [ ] Run type check: `uv run mypy src/`
-- [ ] Run lint: `uv tool run ruff check src/ tests/`
-- [ ] Verify coverage still ≥ 49% (`uv run pytest --cov=src tests/`)
+- [x] `storage.enabled: false` (default) — existing behavior unchanged, no DB file created, all current tests pass
+- [x] `storage.enabled: true, backend: sqlite` — `data/messages.db` created, `messages` table exists with index `idx_messages_channel_timestamp`
+- [x] `storage.enabled: true, backend: postgres, url: ""` — `ValueError` from `load_config` at startup
+- [x] Storage failure (mock `save_messages` to raise) — digest still completes, error logged
+- [x] Run full test suite: `uv run pytest tests/ -v`
+- [x] Run type check: `uv run mypy src/`
+- [x] Run lint: `uv tool run ruff check src/ tests/`
+- [x] Verify coverage still ≥ 49% (`uv run pytest --cov=src tests/`)
 
 ### Task 7: [Final] Move plan and update docs
 
