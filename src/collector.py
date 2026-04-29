@@ -6,7 +6,7 @@ import asyncio
 import logging
 import os
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Dict, List
 
 from telethon import TelegramClient
@@ -15,7 +15,6 @@ from telethon.tl.types import Message as TelegramMessage
 
 from src.config_loader import ChannelConfig, Config
 from src.ui_strings import get_ui_strings
-from src.utils import get_lookback_time
 
 
 @dataclass
@@ -97,12 +96,13 @@ class MessageCollector:
         )
 
         all_messages = {}
+        now = datetime.now(timezone.utc)
 
         for channel_config in self.config.channels:
             channel_hours = (
                 hours if channel_config.lookback_hours is None else channel_config.lookback_hours
             )
-            lookback_time = get_lookback_time(channel_hours)
+            lookback_time = now - timedelta(hours=channel_hours)
             try:
                 messages = await self._fetch_channel_messages(channel_config, lookback_time)
                 all_messages[channel_config.name] = messages
