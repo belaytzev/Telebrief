@@ -154,6 +154,57 @@ def _parse_digest_settings(
     return digest_mode, digest_groups, output_language
 
 
+def _parse_channels(yaml_config: dict) -> List[ChannelConfig]:
+    """Parse and validate channel configs from YAML.
+
+    Returns:
+        List of ChannelConfig objects
+
+    Raises:
+        ValueError: If channels list is empty, fields have wrong types, or names are duplicated
+    """
+    channels = []
+    for i, ch in enumerate(yaml_config.get("channels", [])):
+        lookback_hours = ch.get("lookback_hours")
+        if lookback_hours is not None:
+            if not isinstance(lookback_hours, int) or isinstance(lookback_hours, bool):
+                raise ValueError(
+                    f"channels[{i}].lookback_hours must be an int, "
+                    f"got {type(lookback_hours).__name__}"
+                )
+            if lookback_hours <= 0:
+                raise ValueError(
+                    f"channels[{i}].lookback_hours must be positive, got {lookback_hours}"
+                )
+        prompt_extra = ch.get("prompt_extra", "")
+        if not isinstance(prompt_extra, str):
+            raise ValueError(
+                f"channels[{i}].prompt_extra must be a string, got {type(prompt_extra).__name__}"
+            )
+        channels.append(
+            ChannelConfig(
+                id=ch["id"],
+                name=ch["name"],
+                lookback_hours=lookback_hours,
+                prompt_extra=prompt_extra,
+            )
+        )
+
+    if not channels:
+        raise ValueError("No channels configured in config.yaml")
+
+    seen: set[str] = set()
+    duplicates: set[str] = set()
+    for c in channels:
+        if c.name in seen:
+            duplicates.add(c.name)
+        seen.add(c.name)
+    if duplicates:
+        raise ValueError(f"Duplicate channel names in config.yaml: {', '.join(sorted(duplicates))}")
+
+    return channels
+
+
 def _load_and_validate_env_vars(ai_provider: str) -> dict:
     """Load and validate required environment variables.
 
@@ -225,46 +276,7 @@ def load_config(config_path: str = "config.yaml") -> Config:
         yaml_config = yaml.safe_load(f)
 
     # Parse channels
-    channels = []
-    for i, ch in enumerate(yaml_config.get("channels", [])):
-        lookback_hours = ch.get("lookback_hours")
-        if lookback_hours is not None:
-            if not isinstance(lookback_hours, int) or isinstance(lookback_hours, bool):
-                raise ValueError(
-                    f"channels[{i}].lookback_hours must be an int, "
-                    f"got {type(lookback_hours).__name__}"
-                )
-            if lookback_hours <= 0:
-                raise ValueError(
-                    f"channels[{i}].lookback_hours must be positive, got {lookback_hours}"
-                )
-        prompt_extra = ch.get("prompt_extra", "")
-        if not isinstance(prompt_extra, str):
-            raise ValueError(
-                f"channels[{i}].prompt_extra must be a string, got {type(prompt_extra).__name__}"
-            )
-        channels.append(
-            ChannelConfig(
-                id=ch["id"],
-                name=ch["name"],
-                lookback_hours=lookback_hours,
-                prompt_extra=prompt_extra,
-            )
-        )
-
-    if not channels:
-        raise ValueError("No channels configured in config.yaml")
-
-    seen: set[str] = set()
-    duplicates: set[str] = set()
-    for c in channels:
-        if c.name in seen:
-            duplicates.add(c.name)
-        seen.add(c.name)
-    if duplicates:
-        raise ValueError(
-            f"Duplicate channel names in config.yaml: {', '.join(sorted(duplicates))}"
-        )
+    channels = _parse_channels(yaml_config)
 
     # Parse settings
     settings_dict = yaml_config.get("settings", {})

@@ -636,9 +636,7 @@ async def test_summarize_channel_no_retry_when_under_limit(
 
 @pytest.mark.unit
 @pytest.mark.asyncio
-async def test_summarize_channel_applies_prompt_extra(
-    sample_config, mock_logger, sample_messages
-):
+async def test_summarize_channel_applies_prompt_extra(sample_config, mock_logger, sample_messages):
     """prompt_extra is appended to system prompt for the matching channel only."""
     sample_config.channels[0].prompt_extra = "Focus on backend roles only."
     # second channel ("Private Group") has no prompt_extra
