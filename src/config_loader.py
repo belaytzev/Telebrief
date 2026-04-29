@@ -16,7 +16,7 @@ from dotenv import load_dotenv
 class ChannelConfig:
     """Configuration for a single Telegram channel/chat."""
 
-    id: str
+    id: str | int  # str for @username, int for numeric Telegram channel ID
     name: str
     lookback_hours: int | None = None  # None = use global settings.lookback_hours
     prompt_extra: str = ""  # appended to system prompt when summarizing this channel
