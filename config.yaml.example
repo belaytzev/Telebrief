@@ -93,3 +93,11 @@ settings:
                           #   (8000 - 2000 - 2000) * 2.5 = 10,000 chars
                           #   Safe recommendation: 8000
   api_timeout: 30  # Ollama may need 120-300s for local models (enforced minimum: 120s)
+
+# Storage — persist raw messages for history / external LLM workflows
+# Note: storage is append-only; overlapping lookback windows produce duplicate rows.
+# storage:
+#   enabled: false
+#   backend: sqlite          # "sqlite" (default, no extra setup) or "postgres"
+#   path: data/messages.db   # sqlite only — relative to project root; mount as volume in Docker
+#   url: ""                  # postgres: postgresql://user:pass@host:5432/db

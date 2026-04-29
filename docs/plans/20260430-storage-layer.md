@@ -194,13 +194,13 @@ Wire at the `_collect_messages()` level — this is the single collection chokep
 - Modify: `requirements.txt`
 - Modify: `config.yaml.example`
 
-- [ ] Add to `requirements.txt` (match existing `>=` pinning style):
+- [x] Add to `requirements.txt` (match existing `>=` pinning style):
   ```
   # Storage backends (aiosqlite for SQLite, asyncpg for Postgres)
   aiosqlite>=0.20.0
   asyncpg>=0.29.0
   ```
-- [ ] Add commented storage block to `config.yaml.example` after the `api_timeout` line:
+- [x] Add commented storage block to `config.yaml.example` after the `api_timeout` line:
   ```yaml
   # Storage — persist raw messages for history / external LLM workflows
   # Note: storage is append-only; overlapping lookback windows produce duplicate rows.
@@ -210,7 +210,7 @@ Wire at the `_collect_messages()` level — this is the single collection chokep
   #   path: data/messages.db   # sqlite only — relative to project root; mount as volume in Docker
   #   url: ""                  # postgres: postgresql://user:pass@host:5432/db
   ```
-- [ ] Run tests — must pass before Task 5
+- [x] Run tests — must pass before Task 5
 
 ### Task 5: Add Postgres tests (env-gated) and tighten coverage
 
