@@ -1,6 +1,6 @@
 """Pytest configuration and fixtures."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from unittest.mock import MagicMock
 
 import pytest
@@ -70,7 +70,7 @@ def sample_messages():
         Message(
             text="Test message 1",
             sender="User1",
-            timestamp=datetime(2025, 12, 14, 10, 0, 0),
+            timestamp=datetime(2025, 12, 14, 10, 0, 0, tzinfo=timezone.utc),
             link="https://t.me/test/1",
             channel_name="Test Channel",
             has_media=False,
@@ -79,7 +79,7 @@ def sample_messages():
         Message(
             text="Test message 2",
             sender="User2",
-            timestamp=datetime(2025, 12, 14, 11, 0, 0),
+            timestamp=datetime(2025, 12, 14, 11, 0, 0, tzinfo=timezone.utc),
             link="https://t.me/test/2",
             channel_name="Test Channel",
             has_media=True,
@@ -88,7 +88,7 @@ def sample_messages():
         Message(
             text="Test message 3",
             sender="User3",
-            timestamp=datetime(2025, 12, 14, 12, 0, 0),
+            timestamp=datetime(2025, 12, 14, 12, 0, 0, tzinfo=timezone.utc),
             link="https://t.me/test/3",
             channel_name="Test Channel",
             has_media=False,

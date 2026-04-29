@@ -375,7 +375,7 @@ def _make_collector_mock(sample_messages):
 @pytest.mark.asyncio
 async def test_collect_messages_storage_disabled(sample_config, mock_logger, sample_messages):
     """storage.enabled=False: create_storage returns None, save_messages never called."""
-    storage_cfg = StorageConfig(enabled=False)
+    sample_config.storage = StorageConfig(enabled=False)
     with (
         patch("src.core.MessageCollector") as mock_collector_class,
         patch("src.core.create_storage", new_callable=AsyncMock) as mock_create,
@@ -383,9 +383,9 @@ async def test_collect_messages_storage_disabled(sample_config, mock_logger, sam
         mock_collector_class.return_value = _make_collector_mock(sample_messages)
         mock_create.return_value = None
 
-        result = await _collect_messages(sample_config, mock_logger, 24, storage_cfg)
+        result = await _collect_messages(sample_config, mock_logger, 24)
 
-        mock_create.assert_called_once_with(storage_cfg)
+        mock_create.assert_called_once_with(sample_config.storage)
         assert result == {"Test Channel": sample_messages}
 
 
@@ -395,7 +395,7 @@ async def test_collect_messages_storage_enabled_saves_flat_list(
     sample_config, mock_logger, sample_messages
 ):
     """storage.enabled=True: save_messages called with all messages flattened."""
-    storage_cfg = StorageConfig(enabled=True, backend="sqlite", path=":memory:")
+    sample_config.storage = StorageConfig(enabled=True, backend="sqlite", path=":memory:")
     mock_backend = MagicMock()
     mock_backend.save_messages = AsyncMock(return_value=len(sample_messages))
     mock_backend.close = AsyncMock()
@@ -407,9 +407,9 @@ async def test_collect_messages_storage_enabled_saves_flat_list(
         mock_collector_class.return_value = _make_collector_mock(sample_messages)
         mock_create.return_value = mock_backend
 
-        result = await _collect_messages(sample_config, mock_logger, 24, storage_cfg)
+        result = await _collect_messages(sample_config, mock_logger, 24)
 
-        mock_create.assert_called_once_with(storage_cfg)
+        mock_create.assert_called_once_with(sample_config.storage)
         mock_backend.save_messages.assert_called_once_with(sample_messages)
         mock_backend.close.assert_called_once()
         assert result == {"Test Channel": sample_messages}
@@ -421,7 +421,7 @@ async def test_collect_messages_storage_error_logged_digest_continues(
     sample_config, mock_logger, sample_messages
 ):
     """save_messages raises: error logged, _collect_messages still returns messages."""
-    storage_cfg = StorageConfig(enabled=True, backend="sqlite", path=":memory:")
+    sample_config.storage = StorageConfig(enabled=True, backend="sqlite", path=":memory:")
     mock_backend = MagicMock()
     mock_backend.save_messages = AsyncMock(side_effect=RuntimeError("disk full"))
     mock_backend.close = AsyncMock()
@@ -433,10 +433,10 @@ async def test_collect_messages_storage_error_logged_digest_continues(
         mock_collector_class.return_value = _make_collector_mock(sample_messages)
         mock_create.return_value = mock_backend
 
-        result = await _collect_messages(sample_config, mock_logger, 24, storage_cfg)
+        result = await _collect_messages(sample_config, mock_logger, 24)
 
         mock_logger.error.assert_called_once()
-        assert "disk full" in mock_logger.error.call_args[0][0]
+        assert "RuntimeError" in mock_logger.error.call_args[0][0]
         assert result == {"Test Channel": sample_messages}
 
 
@@ -446,7 +446,7 @@ async def test_collect_messages_close_called_even_on_save_error(
     sample_config, mock_logger, sample_messages
 ):
     """close() called in finally even when save_messages raises."""
-    storage_cfg = StorageConfig(enabled=True, backend="sqlite", path=":memory:")
+    sample_config.storage = StorageConfig(enabled=True, backend="sqlite", path=":memory:")
     mock_backend = MagicMock()
     mock_backend.save_messages = AsyncMock(side_effect=RuntimeError("oops"))
     mock_backend.close = AsyncMock()
@@ -458,6 +458,95 @@ async def test_collect_messages_close_called_even_on_save_error(
         mock_collector_class.return_value = _make_collector_mock(sample_messages)
         mock_create.return_value = mock_backend
 
-        await _collect_messages(sample_config, mock_logger, 24, storage_cfg)
+        await _collect_messages(sample_config, mock_logger, 24)
 
         mock_backend.close.assert_called_once()
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_collect_messages_storage_init_failure_is_non_fatal(
+    sample_config, mock_logger, sample_messages
+):
+    """create_storage raises: error logged, _collect_messages still returns messages."""
+    sample_config.storage = StorageConfig(enabled=True, backend="sqlite", path=":memory:")
+    with (
+        patch("src.core.MessageCollector") as mock_collector_class,
+        patch("src.core.create_storage", new_callable=AsyncMock) as mock_create,
+    ):
+        mock_collector_class.return_value = _make_collector_mock(sample_messages)
+        mock_create.side_effect = RuntimeError("cannot open db")
+
+        result = await _collect_messages(sample_config, mock_logger, 24)
+
+        mock_logger.error.assert_called_once()
+        assert "RuntimeError" in mock_logger.error.call_args[0][0]
+        assert result == {"Test Channel": sample_messages}
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_generate_digest_calls_storage_when_enabled(
+    sample_config, mock_logger, sample_messages
+):
+    """generate_digest saves messages to storage when enabled."""
+    sample_config.storage = StorageConfig(enabled=True, backend="sqlite", path=":memory:")
+    mock_backend = MagicMock()
+    mock_backend.save_messages = AsyncMock(return_value=len(sample_messages))
+    mock_backend.close = AsyncMock()
+
+    with (
+        patch("src.core.MessageCollector") as mock_collector_class,
+        patch("src.core.Summarizer") as mock_summarizer_class,
+        patch("src.core.DigestFormatter") as mock_formatter_class,
+        patch("src.core.create_storage", new_callable=AsyncMock) as mock_create,
+    ):
+        mock_collector_class.return_value = _make_collector_mock(sample_messages)
+        mock_create.return_value = mock_backend
+
+        mock_summarizer = MagicMock()
+        mock_summarizer.summarize_all = AsyncMock(
+            return_value={"channel_summaries": {}, "overview": ""}
+        )
+        mock_summarizer_class.return_value = mock_summarizer
+
+        mock_formatter = MagicMock()
+        mock_formatter.create_digest = MagicMock(return_value="digest")
+        mock_formatter_class.return_value = mock_formatter
+
+        await generate_digest(sample_config, mock_logger, hours=24)
+
+        mock_create.assert_called_once_with(sample_config.storage)
+        mock_backend.save_messages.assert_called_once_with(sample_messages)
+        mock_backend.close.assert_called_once()
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_generate_digest_storage_disabled_does_not_save(
+    sample_config, mock_logger, sample_messages
+):
+    """generate_digest skips storage when disabled."""
+    sample_config.storage = StorageConfig(enabled=False)
+    with (
+        patch("src.core.MessageCollector") as mock_collector_class,
+        patch("src.core.Summarizer") as mock_summarizer_class,
+        patch("src.core.DigestFormatter") as mock_formatter_class,
+        patch("src.core.create_storage", new_callable=AsyncMock) as mock_create,
+    ):
+        mock_collector_class.return_value = _make_collector_mock(sample_messages)
+        mock_create.return_value = None
+
+        mock_summarizer = MagicMock()
+        mock_summarizer.summarize_all = AsyncMock(
+            return_value={"channel_summaries": {}, "overview": ""}
+        )
+        mock_summarizer_class.return_value = mock_summarizer
+
+        mock_formatter = MagicMock()
+        mock_formatter.create_digest = MagicMock(return_value="digest")
+        mock_formatter_class.return_value = mock_formatter
+
+        await generate_digest(sample_config, mock_logger, hours=24)
+
+        mock_create.assert_called_once_with(sample_config.storage)

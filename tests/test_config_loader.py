@@ -700,3 +700,20 @@ storage:
 """
     with pytest.raises(ValueError, match="storage.path must be a non-empty string"):
         load_config(_storage_config_file(tmp_path, block))
+
+
+@pytest.mark.unit
+def test_storage_config_url_not_string_raises(tmp_path, mock_env_vars):
+    block = """
+storage:
+  url: 12345
+"""
+    with pytest.raises(ValueError, match="storage.url must be a string"):
+        load_config(_storage_config_file(tmp_path, block))
+
+
+@pytest.mark.unit
+def test_storage_config_not_mapping_raises(tmp_path, mock_env_vars):
+    block = "storage: true"
+    with pytest.raises(ValueError, match="'storage' must be a mapping"):
+        load_config(_storage_config_file(tmp_path, block))

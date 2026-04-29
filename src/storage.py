@@ -75,11 +75,18 @@ class SQLiteBackend:
 
         Path(self._path).parent.mkdir(parents=True, exist_ok=True)
         self._conn = await aiosqlite.connect(self._path)
-        await self._conn.execute(_CREATE_SQLITE_TABLE)
-        await self._conn.execute(_CREATE_SQLITE_INDEX)
-        await self._conn.commit()
+        try:
+            await self._conn.execute(_CREATE_SQLITE_TABLE)
+            await self._conn.execute(_CREATE_SQLITE_INDEX)
+            await self._conn.commit()
+        except Exception:
+            await self._conn.close()
+            self._conn = None
+            raise
 
     async def save_messages(self, messages: list[Message]) -> int:
+        if self._conn is None:
+            raise RuntimeError("SQLiteBackend not initialized; call initialize() first")
         if not messages:
             return 0
         rows = [
@@ -94,15 +101,18 @@ class SQLiteBackend:
             )
             for msg in messages
         ]
-        assert self._conn is not None
-        await self._conn.executemany(_SQLITE_INSERT, rows)
-        await self._conn.commit()
+        try:
+            await self._conn.executemany(_SQLITE_INSERT, rows)
+            await self._conn.commit()
+        except Exception:
+            await self._conn.rollback()
+            raise
         return len(messages)
 
     async def close(self) -> None:
-        if self._conn is not None:
-            await self._conn.close()
-            self._conn = None
+        conn, self._conn = self._conn, None
+        if conn is not None:
+            await conn.close()
 
 
 class PostgresBackend:  # pragma: no cover
@@ -111,17 +121,24 @@ class PostgresBackend:  # pragma: no cover
         self._pool: _asyncpg.Pool | None = None
 
     async def initialize(self) -> None:
-        import asyncpg  # pragma: no cover
+        import asyncpg
 
-        self._pool = await asyncpg.create_pool(self._url)  # pragma: no cover
-        async with self._pool.acquire() as conn:  # pragma: no cover
-            await conn.execute(_CREATE_PG_TABLE)  # pragma: no cover
-            await conn.execute(_CREATE_PG_INDEX)  # pragma: no cover
+        self._pool = await asyncpg.create_pool(self._url)
+        try:
+            async with self._pool.acquire() as conn:
+                await conn.execute(_CREATE_PG_TABLE)
+                await conn.execute(_CREATE_PG_INDEX)
+        except Exception:
+            await self._pool.close()
+            self._pool = None
+            raise
 
-    async def save_messages(self, messages: list[Message]) -> int:  # pragma: no cover
-        if not messages:  # pragma: no cover
-            return 0  # pragma: no cover
-        rows = [  # pragma: no cover
+    async def save_messages(self, messages: list[Message]) -> int:
+        if self._pool is None:
+            raise RuntimeError("PostgresBackend not initialized; call initialize() first")
+        if not messages:
+            return 0
+        rows = [
             (
                 msg.channel_name,
                 msg.sender,
@@ -133,15 +150,15 @@ class PostgresBackend:  # pragma: no cover
             )
             for msg in messages
         ]
-        assert self._pool is not None  # pragma: no cover
-        async with self._pool.acquire() as conn:  # pragma: no cover
-            await conn.executemany(_PG_INSERT, rows)  # pragma: no cover
-        return len(messages)  # pragma: no cover
+        async with self._pool.acquire() as conn:
+            async with conn.transaction():
+                await conn.executemany(_PG_INSERT, rows)
+        return len(messages)
 
-    async def close(self) -> None:  # pragma: no cover
-        if self._pool is not None:  # pragma: no cover
-            await self._pool.close()  # pragma: no cover
-            self._pool = None  # pragma: no cover
+    async def close(self) -> None:
+        pool, self._pool = self._pool, None
+        if pool is not None:
+            await pool.close()
 
 
 async def create_storage(config: StorageConfig) -> StorageBackend | None:

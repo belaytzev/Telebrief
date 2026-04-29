@@ -37,7 +37,7 @@ class StorageConfig:
     enabled: bool = False
     backend: str = "sqlite"        # "sqlite" | "postgres"
     path: str = "data/messages.db"
-    url: str = ""                  # postgres only
+    url: str = field(default="", repr=False)  # postgres only; repr=False prevents credential exposure in logs
 
 
 @dataclass
@@ -226,13 +226,13 @@ def _parse_storage_config(yaml_config: dict) -> StorageConfig:
         raise ValueError(f"storage.backend must be 'sqlite' or 'postgres', got {backend!r}")
 
     path = raw.get("path", "data/messages.db")
-    if not isinstance(path, str) or not path:
+    if not isinstance(path, str) or not path.strip():
         raise ValueError("storage.path must be a non-empty string")
 
     url = raw.get("url", "")
     if not isinstance(url, str):
         raise ValueError(f"storage.url must be a string, got {type(url).__name__}")
-    if backend == "postgres" and enabled and not url:
+    if backend == "postgres" and enabled and not url.strip():
         raise ValueError("storage.url must be set when backend is 'postgres' and enabled is true")
 
     return StorageConfig(enabled=enabled, backend=backend, path=path, url=url)

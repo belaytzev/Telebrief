@@ -86,6 +86,13 @@ class TestSQLiteBackend:
         await backend.close()  # should not raise
 
     @pytest.mark.asyncio
+    async def test_save_messages_raises_when_not_initialized(self, tmp_path):
+        db = tmp_path / "test.db"
+        backend = SQLiteBackend(str(db))
+        with pytest.raises(RuntimeError, match="not initialized"):
+            await backend.save_messages([_make_message()])
+
+    @pytest.mark.asyncio
     async def test_creates_parent_dirs(self, tmp_path):
         db = tmp_path / "nested" / "deep" / "test.db"
         backend = SQLiteBackend(str(db))
@@ -129,6 +136,8 @@ class TestCreateStorage:
 
         monkeypatch.setenv("TELEGRAM_API_ID", "12345678")
         monkeypatch.setenv("TELEGRAM_API_HASH", "test_hash")
+        monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "123456789:ABC-DEF")
+        monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
 
         config_file = tmp_path / "config.yaml"
         config_file.write_text(
