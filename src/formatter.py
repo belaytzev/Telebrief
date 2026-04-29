@@ -349,16 +349,7 @@ class DigestFormatter:
             if hours == 24:
                 parts.append(f"{time_icon}{self._ui['last_hours'].format(hours=hours)}")
 
-        message = "\n".join(parts)
-
-        if len(message) > 4096:
-            self.logger.warning(
-                f"Group message for '{group_name}' exceeds 4096 chars ({len(message)}), truncating..."
-            )
-            truncated = message[:4000].rsplit("\n", 1)[0]
-            message = truncated + f"\n\n{self._ui['truncated']}"
-
-        return message
+        return "\n".join(parts)
 
     def format_group_summary_message(
         self, group_names: List[str], total_points: int, hours: int = 24

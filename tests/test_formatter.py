@@ -398,15 +398,14 @@ def test_format_group_message_output(english_config, mock_logger):
 
 
 @pytest.mark.unit
-def test_format_group_message_truncation(english_config, mock_logger):
-    """format_group_message truncates at 4096 chars."""
+def test_format_group_message_no_truncation(english_config, mock_logger):
+    """format_group_message returns full content; splitting is handled upstream in core.py."""
     formatter = DigestFormatter(english_config, mock_logger)
-    # Create enough points to exceed 4096 chars
     points = [GroupedPoint(point="x" * 200, source="Ch") for _ in range(30)]
     msg = formatter.format_group_message("News", points, hours=24)
 
-    assert len(msg) <= 4096  # must fit within Telegram's message limit
-    assert "truncated" in msg
+    # All points must be present — no content is dropped
+    assert msg.count("x" * 200) == 30
 
 
 @pytest.mark.unit
