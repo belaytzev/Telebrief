@@ -102,7 +102,7 @@ class SQLiteBackend:
             self._conn = None
 
 
-class PostgresBackend:
+class PostgresBackend:  # pragma: no cover
     def __init__(self, url: str) -> None:
         self._url = url
         self._pool = None

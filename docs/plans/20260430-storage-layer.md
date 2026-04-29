@@ -217,18 +217,18 @@ Wire at the `_collect_messages()` level — this is the single collection chokep
 **Files:**
 - Modify: `tests/test_storage.py`
 
-- [ ] Add `TestPostgresBackend` class at top of file with:
+- [x] Add `TestPostgresBackend` class at top of file with:
   ```python
   @pytest.mark.skipif(
       not os.environ.get("TELEBRIEF_TEST_PG_URL"),
       reason="TELEBRIEF_TEST_PG_URL not set"
   )
   ```
-- [ ] Mirror same 3 SQLiteBackend save tests using the env-var URL
-- [ ] Add `close()` idempotent / safe-when-uninitialized test for `PostgresBackend`
-- [ ] Add `create_storage` test: `backend="postgres"` with empty url + `enabled=True` → `ValueError` raised by `_parse_storage_config` (test via config loader, not factory directly)
-- [ ] If CI has no `TELEBRIEF_TEST_PG_URL`, add `# pragma: no cover` to `PostgresBackend.save_messages` body to prevent coverage drop below 49% threshold
-- [ ] Run tests — must pass before Task 6
+- [x] Mirror same 3 SQLiteBackend save tests using the env-var URL
+- [x] Add `close()` idempotent / safe-when-uninitialized test for `PostgresBackend`
+- [x] Add `create_storage` test: `backend="postgres"` with empty url + `enabled=True` → `ValueError` raised by `_parse_storage_config` (test via config loader, not factory directly)
+- [x] If CI has no `TELEBRIEF_TEST_PG_URL`, add `# pragma: no cover` to `PostgresBackend.save_messages` body to prevent coverage drop below 49% threshold
+- [x] Run tests — must pass before Task 6
 
 ### Task 6: Verify acceptance criteria
 
