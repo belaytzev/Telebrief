@@ -243,8 +243,8 @@ Wire at the `_collect_messages()` level — this is the single collection chokep
 
 ### Task 7: [Final] Move plan and update docs
 
-- [ ] Move this plan: `mkdir -p docs/plans/completed && mv docs/plans/20260430-storage-layer.md docs/plans/completed/`
-- [ ] Update `config.yaml.example` comment if anything changed during implementation
+- [x] Move this plan: `mkdir -p docs/plans/completed && mv docs/plans/20260430-storage-layer.md docs/plans/completed/`
+- [x] Update `config.yaml.example` comment if anything changed during implementation
 
 ---
 
