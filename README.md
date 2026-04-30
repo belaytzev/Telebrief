@@ -19,6 +19,7 @@
 - 🔒 **Private Channel Support** - Access your private chats and channels
 - 📑 **Digest Modes** - Group by channel (default) or by AI-detected topics like News, Events, Sport
 - 🎨 **Smart Formatting** - Markdown with emojis, bullet points, and clickable channel links
+- 📨 **Long Message Splitting** - Digests that exceed Telegram's 4096-character limit are automatically split into sequential messages instead of being truncated
 - 🔐 **Secure** - Single-user only, credentials stored safely
 - 🧹 **Auto-cleanup** - Automatically removes old digest messages
 
@@ -51,6 +52,15 @@ Before you begin, you'll need:
 
 Telebrief can be run in Docker for easy deployment. **No Python installation required on host!**
 
+The image is published to GitHub Container Registry on every release:
+
+```bash
+# Pull the latest image
+docker pull ghcr.io/belaytzev/telebrief:latest
+```
+
+Available tags: `latest`, `X.Y` (minor), `X.Y.Z` (patch).
+
 ```bash
 # 1. Create Telegram session (REQUIRED - one-time setup)
 ./create_session.sh
@@ -61,6 +71,8 @@ docker compose up -d
 # 3. View logs
 docker compose logs -f telebrief
 ```
+
+The `docker-compose.yml` uses the pre-built GHCR image by default, so no local build step is needed. If you want to build from source instead, replace the `image:` line with `build: .`.
 
 **Important**: You must create the Telegram session file BEFORE running Docker. The script uses Docker itself, so no additional dependencies needed.
 
@@ -133,6 +145,101 @@ digest_groups:
 Messages that don't match any defined group are placed into an automatic "Other" category.
 
 > All labels (header, statistics, bot commands) use the configured `output_language` — the examples above show the default Russian output.
+
+---
+
+## ⚙️ Per-Channel Configuration
+
+Each channel entry supports two optional overrides in addition to the required `id` and `name` fields.
+
+### `lookback_hours` — per-channel lookback window
+
+Override the global `settings.lookback_hours` for a specific channel. Useful when some channels post infrequently and need a wider collection window, or when you want a tighter window for high-volume channels.
+
+```yaml
+channels:
+  - id: "@breaking_news"
+    name: "Breaking News"
+    # no lookback_hours — uses the global settings.lookback_hours
+
+  - id: "@weekly_digest"
+    name: "Weekly Newsletter"
+    lookback_hours: 168   # look back 7 days for this channel only
+
+  - id: -1001234567890
+    name: "High Volume Channel"
+    lookback_hours: 6     # only last 6 hours for this channel
+```
+
+`lookback_hours` must be a positive integer. If omitted or set to `null`, the global value is used.
+
+### `prompt_extra` — per-channel AI instructions
+
+Append extra instructions to the AI system prompt when summarizing a specific channel. Use this to guide tone, focus, or format for channels that need special treatment.
+
+```yaml
+channels:
+  - id: "@cryptonews"
+    name: "Crypto News"
+    prompt_extra: "Focus only on price movements and regulatory news. Ignore opinion pieces."
+
+  - id: "@jobboard"
+    name: "Job Board"
+    prompt_extra: "Extract only senior engineering roles. Format as a list: Role — Company — Link."
+```
+
+`prompt_extra` is appended verbatim to the channel's summarization system prompt. Leave it empty (or omit the field) for standard behavior.
+
+---
+
+## 🗄️ Persistent Storage
+
+By default, Telebrief generates digests on demand without storing raw messages. You can enable a persistent storage layer that saves every collected message to a database for historical access or external LLM workflows.
+
+Storage is **disabled by default** and opt-in via `config.yaml`.
+
+### SQLite (default backend)
+
+No extra setup required. Messages are saved to a local SQLite file.
+
+```yaml
+storage:
+  enabled: true
+  backend: sqlite
+  path: data/messages.db   # relative to project root
+```
+
+When running in Docker, the `data/` directory is already mounted as a volume in `docker-compose.yml`, so the database persists across container restarts.
+
+### PostgreSQL (optional backend)
+
+Use PostgreSQL for multi-host deployments or when you need concurrent read access to the message store.
+
+```yaml
+storage:
+  enabled: true
+  backend: postgres
+  url: "postgresql://user:pass@host:5432/dbname"
+```
+
+`asyncpg` is included in the standard dependencies and is installed automatically by `uv sync`. No extra install step is needed.
+
+### Schema
+
+Both backends create the same logical schema on first run (table and index are created automatically — no manual migration needed):
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `channel_name` | text | Channel name from your config |
+| `sender` | text | Message author |
+| `text` | text | Message body |
+| `timestamp` | text / timestamptz | Message timestamp |
+| `link` | text | Telegram message link |
+| `has_media` | bool / integer | Whether the message has media |
+| `media_type` | text | Media type string |
+| `collected_at` | text / timestamptz | When the row was inserted |
+
+**Note**: Storage is append-only. Overlapping `lookback_hours` windows across runs will produce duplicate rows for messages collected in both windows.
 
 ---
 
