@@ -6,10 +6,18 @@ Loads settings from config.yaml and environment variables.
 import logging
 import os
 from dataclasses import dataclass, field
-from typing import List
+from typing import Any, List
 
 import yaml
 from dotenv import load_dotenv
+
+
+@dataclass
+class FilterSpec:
+    """Specification for a single message filter in a filter chain."""
+
+    class_path: str
+    config: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -20,6 +28,7 @@ class ChannelConfig:
     name: str
     lookback_hours: int | None = None  # None = use global settings.lookback_hours
     prompt_extra: str = ""  # appended to system prompt when summarizing this channel
+    filters: list[FilterSpec] | None = None  # None=use global, []=explicit no-op
 
 
 @dataclass
@@ -66,6 +75,7 @@ class Settings:
     output_language: str = "Russian"
     digest_mode: str = "channel"
     digest_groups: List[DigestGroupConfig] = field(default_factory=list)
+    filters: list[FilterSpec] = field(default_factory=list)
 
 
 @dataclass
@@ -167,6 +177,35 @@ def _parse_digest_settings(
     return digest_mode, digest_groups, output_language
 
 
+def _parse_filter_specs(raw_list: object, path_label: str) -> list[FilterSpec]:
+    """Parse and validate a list of filter specs from YAML.
+
+    Raises:
+        ValueError: If the list or any entry has wrong type or missing required fields.
+    """
+    if not isinstance(raw_list, list):
+        raise ValueError(f"'{path_label}' must be a list, got {type(raw_list).__name__}")
+    specs: list[FilterSpec] = []
+    for i, item in enumerate(raw_list):
+        if not isinstance(item, dict):
+            raise ValueError(f"{path_label}[{i}] must be a mapping, got {type(item).__name__}")
+        if "class_path" not in item:
+            raise ValueError(f"{path_label}[{i}] missing required field 'class_path'")
+        class_path = item["class_path"]
+        if not isinstance(class_path, str):
+            raise ValueError(
+                f"{path_label}[{i}].class_path must be a string, "
+                f"got {type(class_path).__name__}"
+            )
+        config = item.get("config", {})
+        if not isinstance(config, dict):
+            raise ValueError(
+                f"{path_label}[{i}].config must be a mapping, " f"got {type(config).__name__}"
+            )
+        specs.append(FilterSpec(class_path=class_path, config=config))
+    return specs
+
+
 def _parse_channel_entry(i: int, ch: object) -> ChannelConfig:
     """Parse and validate a single channel entry from YAML.
 
@@ -197,11 +236,16 @@ def _parse_channel_entry(i: int, ch: object) -> ChannelConfig:
         raise ValueError(
             f"channels[{i}].prompt_extra must be a string, got {type(prompt_extra).__name__}"
         )
+    raw_filters = ch.get("filters")
+    channel_filters: list[FilterSpec] | None = None
+    if raw_filters is not None:
+        channel_filters = _parse_filter_specs(raw_filters, f"channels[{i}].filters")
     return ChannelConfig(
         id=ch["id"],
         name=ch["name"],
         lookback_hours=lookback_hours,
         prompt_extra=prompt_extra,
+        filters=channel_filters,
     )
 
 
@@ -352,6 +396,8 @@ def load_config(config_path: str = "config.yaml") -> Config:
     settings_dict = yaml_config.get("settings", {})
     ai_provider, ai_model = _resolve_ai_settings(settings_dict)
     digest_mode, digest_groups, output_language = _parse_digest_settings(settings_dict)
+    raw_global_filters = settings_dict.get("filters") or []
+    global_filters = _parse_filter_specs(raw_global_filters, "settings.filters")
 
     settings = Settings(
         schedule_time=settings_dict.get("schedule_time", "08:00"),
@@ -374,6 +420,7 @@ def load_config(config_path: str = "config.yaml") -> Config:
         output_language=output_language,
         digest_mode=digest_mode,
         digest_groups=digest_groups,
+        filters=global_filters,
     )
 
     if settings.target_user_id == 0:

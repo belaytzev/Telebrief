@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 import pytest
 
-from src.config_loader import DigestGroupConfig, StorageConfig, load_config
+from src.config_loader import DigestGroupConfig, FilterSpec, StorageConfig, load_config
 
 
 @pytest.mark.unit
@@ -720,3 +720,162 @@ def test_storage_config_not_mapping_raises(tmp_path, mock_env_vars):
     block = "storage: true"
     with pytest.raises(ValueError, match="'storage' must be a mapping"):
         load_config(_storage_config_file(tmp_path, block))
+
+
+# ---------------------------------------------------------------------------
+# FilterSpec / filter chain parsing tests
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_filter_spec_defaults_to_empty_global(tmp_path, mock_env_vars):
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@test"\n    name: "Test"\nsettings:\n  target_user_id: 123456789\n'
+    )
+    config = load_config(str(p))
+    assert config.settings.filters == []
+
+
+@pytest.mark.unit
+def test_filter_spec_global_parsed(tmp_path, mock_env_vars):
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@test"\n    name: "Test"\n'
+        "settings:\n  target_user_id: 123456789\n"
+        "  filters:\n"
+        "    - class_path: src.extensions.filters.KeywordFilter\n"
+        "      config:\n"
+        "        include:\n          - job\n"
+        "        exclude:\n          - nsfw\n"
+    )
+    config = load_config(str(p))
+    assert len(config.settings.filters) == 1
+    spec = config.settings.filters[0]
+    assert spec == FilterSpec(
+        class_path="src.extensions.filters.KeywordFilter",
+        config={"include": ["job"], "exclude": ["nsfw"]},
+    )
+
+
+@pytest.mark.unit
+def test_filter_spec_config_defaults_to_empty_dict(tmp_path, mock_env_vars):
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@test"\n    name: "Test"\n'
+        "settings:\n  target_user_id: 123456789\n"
+        "  filters:\n"
+        "    - class_path: src.extensions.filters.MinLengthFilter\n"
+    )
+    config = load_config(str(p))
+    assert config.settings.filters[0].config == {}
+
+
+@pytest.mark.unit
+def test_filter_spec_channel_null_uses_global(tmp_path, mock_env_vars):
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@test"\n    name: "Test"\n    filters:\n'
+        "settings:\n  target_user_id: 123456789\n"
+    )
+    config = load_config(str(p))
+    assert config.channels[0].filters is None
+
+
+@pytest.mark.unit
+def test_filter_spec_channel_empty_list_explicit_noop(tmp_path, mock_env_vars):
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@test"\n    name: "Test"\n    filters: []\n'
+        "settings:\n  target_user_id: 123456789\n"
+    )
+    config = load_config(str(p))
+    assert config.channels[0].filters == []
+
+
+@pytest.mark.unit
+def test_filter_spec_channel_override(tmp_path, mock_env_vars):
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@test"\n    name: "Test"\n'
+        "    filters:\n"
+        "      - class_path: src.extensions.filters.KeywordFilter\n"
+        "        config:\n          include:\n            - python\n"
+        "settings:\n  target_user_id: 123456789\n"
+        "  filters:\n"
+        "    - class_path: src.extensions.filters.MinLengthFilter\n"
+        "      config:\n        min_chars: 10\n"
+    )
+    config = load_config(str(p))
+    assert len(config.settings.filters) == 1
+    assert config.settings.filters[0].class_path == "src.extensions.filters.MinLengthFilter"
+    assert len(config.channels[0].filters) == 1
+    assert config.channels[0].filters[0].class_path == "src.extensions.filters.KeywordFilter"
+
+
+@pytest.mark.unit
+def test_filter_spec_missing_class_path_raises(tmp_path, mock_env_vars):
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@test"\n    name: "Test"\n'
+        "settings:\n  target_user_id: 123456789\n"
+        "  filters:\n    - config:\n        min_chars: 10\n"
+    )
+    with pytest.raises(ValueError, match="missing required field 'class_path'"):
+        load_config(str(p))
+
+
+@pytest.mark.unit
+def test_filter_spec_non_string_class_path_raises(tmp_path, mock_env_vars):
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@test"\n    name: "Test"\n'
+        "settings:\n  target_user_id: 123456789\n"
+        "  filters:\n    - class_path: 42\n"
+    )
+    with pytest.raises(ValueError, match="class_path must be a string"):
+        load_config(str(p))
+
+
+@pytest.mark.unit
+def test_filter_spec_non_dict_config_raises(tmp_path, mock_env_vars):
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@test"\n    name: "Test"\n'
+        "settings:\n  target_user_id: 123456789\n"
+        "  filters:\n"
+        "    - class_path: src.extensions.filters.MinLengthFilter\n"
+        "      config: not a dict\n"
+    )
+    with pytest.raises(ValueError, match="config must be a mapping"):
+        load_config(str(p))
+
+
+@pytest.mark.unit
+def test_filter_spec_non_mapping_item_raises(tmp_path, mock_env_vars):
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@test"\n    name: "Test"\n'
+        "settings:\n  target_user_id: 123456789\n"
+        "  filters:\n    - src.extensions.filters.MinLengthFilter\n"
+    )
+    with pytest.raises(ValueError, match="must be a mapping"):
+        load_config(str(p))
+
+
+@pytest.mark.unit
+def test_filter_spec_channel_invalid_class_path_raises(tmp_path, mock_env_vars):
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@test"\n    name: "Test"\n'
+        "    filters:\n      - class_path: 99\n"
+        "settings:\n  target_user_id: 123456789\n"
+    )
+    with pytest.raises(ValueError, match="class_path must be a string"):
+        load_config(str(p))
+
+
+@pytest.mark.unit
+def test_sample_config_fixture_still_constructs(sample_config):
+    assert sample_config.settings.filters == []
+    assert sample_config.channels[0].filters is None
