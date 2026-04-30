@@ -1,6 +1,6 @@
 # ADR 0001: Extensibility Architecture — Filters, Prompts, Storage Read API, Plugin Loader
 
-**Status:** Accepted
+**Status:** Implemented
 
 **Date:** 2026-04-30
 
@@ -142,13 +142,15 @@ subscribe. Rejected because:
 
 All changes are phased across four PRs, each backwards-compatible:
 
-| Phase | Scope | PR |
-|-------|-------|----|
-| 1 | ADR + plugin loader + `MessageFilter` Protocol + builtins + config parsing | #28 |
-| 2 | Filter chain wired into `core.py` | #29 |
-| 3 | Prompt extraction + `PromptComposer` Protocol + `DefaultComposer` + group binding | #30 |
-| 4 | `query_messages` storage read API + documentation | #31 |
+| Phase | Scope | Shipped |
+|-------|-------|---------|
+| 1 | ADR + plugin loader + `MessageFilter` Protocol + builtins + config parsing | branch `extensibility-architecture` (Tasks 1–4) |
+| 2 | Filter chain wired into `core.py` | branch `extensibility-architecture` (Task 5) |
+| 3 | Prompt extraction + `PromptComposer` Protocol + `DefaultComposer` + group binding | branch `extensibility-architecture` (Tasks 6–9) |
+| 4 | `query_messages` storage read API + documentation | branch `extensibility-architecture` (Tasks 10–11) |
 
 Existing `config.yaml.example` runs unchanged throughout. New fields are opt-in.
 
-Note: PR numbers are illustrative; see GitHub milestone for actuals.
+All tasks shipped on branch `extensibility-architecture`. See plan
+`docs/plans/completed/20260430-extensibility-architecture-filters-prompts-storage.md`
+for the full task breakdown.
