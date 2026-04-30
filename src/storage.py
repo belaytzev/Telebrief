@@ -61,9 +61,9 @@ VALUES ($1, $2, $3, $4, $5, $6, $7)
 
 
 class StorageBackend(Protocol):
-    async def save_messages(self, messages: list[Message]) -> int: ...
+    async def save_messages(self, messages: list[Message]) -> int: ...  # noqa: E704
 
-    async def close(self) -> None: ...
+    async def close(self) -> None: ...  # noqa: E704
 
 
 class SQLiteBackend:

@@ -699,7 +699,7 @@ def test_storage_config_empty_path_raises(tmp_path, mock_env_vars):
 storage:
   path: ""
 """
-    with pytest.raises(ValueError, match="storage.path must be a non-empty string"):
+    with pytest.raises(ValueError, match="storage.path must be a non-empty string when backend is 'sqlite'"):
         load_config(_storage_config_file(tmp_path, block))
 
 

@@ -28,22 +28,28 @@ async def _save_to_storage(
     try:
         storage = await create_storage(sc)
     except Exception as e:
-        logger.error(f"Storage init failed ({type(e).__name__}), digest continues")
-        logger.debug(f"Storage init error detail: {e}")
+        logger.error(
+            f"Storage init failed ({type(e).__name__}), digest continues",
+            exc_info=True,
+        )
     if storage:
         try:
             flat = [msg for msgs in messages_by_channel.values() for msg in msgs]
             saved = await storage.save_messages(flat)
             logger.info(f"Stored {saved} messages ({sc.backend})")
         except Exception as e:
-            logger.error(f"Storage write failed ({type(e).__name__}), digest continues")
-            logger.debug(f"Storage write error detail: {e}")
+            logger.error(
+                f"Storage write failed ({type(e).__name__}), digest continues",
+                exc_info=True,
+            )
         finally:
             try:
                 await storage.close()
             except Exception as e:
-                logger.error(f"Storage close failed ({type(e).__name__})")
-                logger.debug(f"Storage close error detail: {e}")
+                logger.error(
+                    f"Storage close failed ({type(e).__name__})",
+                    exc_info=True,
+                )
 
 
 async def _collect_messages(config: Config, logger: logging.Logger, hours: int) -> dict:

@@ -228,8 +228,8 @@ def _parse_storage_config(yaml_config: dict) -> StorageConfig:
         raise ValueError(f"storage.backend must be 'sqlite' or 'postgres', got {backend!r}")
 
     path = raw.get("path", "data/messages.db")
-    if not isinstance(path, str) or not path.strip():
-        raise ValueError("storage.path must be a non-empty string")
+    if backend == "sqlite" and (not isinstance(path, str) or not path.strip()):
+        raise ValueError("storage.path must be a non-empty string when backend is 'sqlite'")
 
     url = raw.get("url", "")
     if not isinstance(url, str):
