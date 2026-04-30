@@ -1,11 +1,18 @@
 """Tests for summarizer module."""
 
 from datetime import datetime
+from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from src.summarizer import ERROR_SUMMARY_PREFIX, Summarizer, SYSTEM_PROMPT_TEMPLATE  # isort: skip
+from src.summarizer import (  # isort: skip
+    ERROR_SUMMARY_PREFIX,
+    Summarizer,
+    SYSTEM_PROMPT_TEMPLATE,
+    _DEFAULT_TEMPLATE_PATH,
+    _load_base_template,
+)
 from src.ai_providers import TokenBudgetExhaustedError  # isort: skip
 
 
@@ -662,3 +669,50 @@ async def test_summarize_channel_applies_prompt_extra(sample_config, mock_logger
     assert "Channel-specific instructions" in test_system
     assert "Focus on backend roles only." not in private_system
     assert "Channel-specific instructions" not in private_system
+
+
+# --- Task 6: Base template extraction tests ---
+
+
+@pytest.mark.unit
+def test_load_base_template_default_path_returns_nonempty():
+    """`_load_base_template` with the default path returns a non-empty string."""
+    content = _load_base_template(_DEFAULT_TEMPLATE_PATH)
+    assert isinstance(content, str)
+    assert len(content) > 0
+
+
+@pytest.mark.unit
+def test_load_base_template_contains_language_placeholder():
+    """Template loaded from file retains the {language} placeholder."""
+    content = _load_base_template(_DEFAULT_TEMPLATE_PATH)
+    assert "{language}" in content
+
+
+@pytest.mark.unit
+def test_load_base_template_custom_path(tmp_path: Path):
+    """`_load_base_template` reads content from an arbitrary path."""
+    custom = tmp_path / "custom.txt"
+    custom.write_text("Hello {language}!", encoding="utf-8")
+    assert _load_base_template(str(custom)) == "Hello {language}!"
+
+
+@pytest.mark.unit
+def test_load_base_template_missing_file_raises(tmp_path: Path):
+    """Missing template file raises FileNotFoundError (fail-fast, no silent fallback)."""
+    missing = tmp_path / "nonexistent.txt"
+    with pytest.raises(FileNotFoundError):
+        _load_base_template(str(missing))
+
+
+@pytest.mark.unit
+def test_system_prompt_template_loaded_from_file():
+    """Module-level SYSTEM_PROMPT_TEMPLATE equals explicit file load — not a hardcoded literal."""
+    fresh = _load_base_template(_DEFAULT_TEMPLATE_PATH)
+    assert SYSTEM_PROMPT_TEMPLATE == fresh
+
+
+@pytest.mark.unit
+def test_default_template_path_points_to_existing_file():
+    """_DEFAULT_TEMPLATE_PATH resolves to a file that exists on disk."""
+    assert Path(_DEFAULT_TEMPLATE_PATH).is_file()
