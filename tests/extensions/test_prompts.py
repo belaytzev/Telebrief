@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-import pytest
 
 from src.config_loader import ChannelConfig
 from src.extensions.prompts import DefaultComposer, PromptComposer
