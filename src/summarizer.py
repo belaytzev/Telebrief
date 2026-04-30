@@ -9,7 +9,9 @@ from typing import Any, Dict, List
 
 from src.ai_providers import AIProvider, TokenBudgetExhaustedError, create_provider
 from src.collector import Message
-from src.config_loader import Config
+from src.config_loader import Config, DigestGroupConfig, PromptsConfig
+from src.extensions.loader import load_class
+from src.extensions.prompts import DefaultComposer, PromptComposer
 from src.xml_escape import escape_xml_delimiters
 
 ERROR_SUMMARY_PREFIX = "Error processing channel"
@@ -51,6 +53,29 @@ class Summarizer:
         self.max_tokens = config.settings.max_tokens_per_summary
         self.output_language = config.settings.output_language
         self._channels_by_name = {ch.name: ch for ch in config.channels}
+
+        # Resolve template path; use absolute bundled default when config holds the default value
+        template_path = (
+            _DEFAULT_TEMPLATE_PATH
+            if config.prompts.base_template == PromptsConfig().base_template
+            else config.prompts.base_template
+        )
+        base_template = _load_base_template(template_path)
+
+        # Build channel-to-group lookup for prompt composition
+        groups_by_name: dict[str, DigestGroupConfig] = {
+            g.name: g for g in config.settings.digest_groups
+        }
+        self._channel_to_group: dict[str, DigestGroupConfig | None] = {
+            ch.name: groups_by_name.get(ch.group) if ch.group else None for ch in config.channels
+        }
+
+        # Instantiate composer (custom dotted-path or built-in DefaultComposer)
+        if config.prompts.composer:
+            composer_cls = load_class(config.prompts.composer)
+            self._composer: PromptComposer = composer_cls(base_template, self.output_language)
+        else:
+            self._composer = DefaultComposer(base_template, self.output_language)
 
     async def summarize_all(self, messages_by_channel: Dict[str, List[Message]]) -> Dict[str, Any]:
         """
@@ -159,10 +184,12 @@ Messages (total: {actual_count}):
 </channel_messages>
 """
 
-        system_prompt = SYSTEM_PROMPT_TEMPLATE.replace("{language}", self.output_language)
         channel_cfg = self._channels_by_name.get(channel_name)
-        if channel_cfg and channel_cfg.prompt_extra:
-            system_prompt += f"\n\nChannel-specific instructions:\n{channel_cfg.prompt_extra}"
+        group_cfg = self._channel_to_group.get(channel_name)
+        if channel_cfg is not None:
+            system_prompt = self._composer.compose(channel_cfg, group_cfg)
+        else:
+            system_prompt = SYSTEM_PROMPT_TEMPLATE.replace("{language}", self.output_language)
         chat_messages = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": prompt},
