@@ -8,7 +8,8 @@ from datetime import datetime, timezone
 from typing import Optional
 
 from src.collector import MessageCollector
-from src.config_loader import Config
+from src.config_loader import ChannelConfig, Config
+from src.extensions.loader import load_class
 from src.formatter import DigestFormatter
 from src.grouper import DigestGrouper
 from src.sender import DigestSender
@@ -52,6 +53,40 @@ async def _save_to_storage(
                 )
 
 
+async def _apply_filters(
+    channel_cfg: ChannelConfig,
+    messages: list,
+    config: Config,
+    logger: logging.Logger,
+) -> list:
+    """Apply the effective filter chain to messages for a given channel."""
+    effective_specs = (
+        channel_cfg.filters if channel_cfg.filters is not None else config.settings.filters
+    )
+    if not effective_specs:
+        return messages
+
+    for spec in effective_specs:
+        try:
+            cls = load_class(spec.class_path)
+            filt = cls(**spec.config)
+        except Exception as e:
+            logger.error(
+                f"Filter load/init failed ({spec.class_path}, {type(e).__name__}), skipping",
+                exc_info=True,
+            )
+            continue
+        try:
+            messages = await filt.filter(channel_cfg, messages)
+        except Exception as e:
+            logger.error(
+                f"Filter.filter() raised ({spec.class_path}, {type(e).__name__}), skipping",
+                exc_info=True,
+            )
+
+    return messages
+
+
 async def _collect_messages(config: Config, logger: logging.Logger, hours: int) -> dict:
     """Collect messages from Telegram channels."""
     logger.info("Collecting messages from Telegram")
@@ -63,6 +98,16 @@ async def _collect_messages(config: Config, logger: logging.Logger, hours: int) 
         await collector.disconnect()
     total = sum(len(msgs) for msgs in messages_by_channel.values())
     logger.info(f"Collected {total} messages from {len(messages_by_channel)} channels")
+
+    channel_map = {ch.name: ch for ch in config.channels}
+    filtered: dict = {}
+    for channel_name, msgs in messages_by_channel.items():
+        ch_cfg = channel_map.get(channel_name)
+        if ch_cfg is not None:
+            msgs = await _apply_filters(ch_cfg, msgs, config, logger)
+        filtered[channel_name] = msgs
+    messages_by_channel = filtered
+
     await _save_to_storage(config, messages_by_channel, logger)
     return messages_by_channel
 
