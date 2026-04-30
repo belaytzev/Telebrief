@@ -29,6 +29,7 @@ class ChannelConfig:
     lookback_hours: int | None = None  # None = use global settings.lookback_hours
     prompt_extra: str = ""  # appended to system prompt when summarizing this channel
     filters: list[FilterSpec] | None = None  # None=use global, []=explicit no-op
+    group: str | None = None  # must reference digest_groups[*].name, "Other", or None
 
 
 @dataclass
@@ -37,6 +38,15 @@ class DigestGroupConfig:
 
     name: str
     description: str
+    prompt_extra: str = ""  # appended to system prompt for channels in this group
+
+
+@dataclass
+class PromptsConfig:
+    """Configuration for prompt template and composer."""
+
+    base_template: str = "src/prompts/base_summary.txt"
+    composer: str = ""  # empty = DefaultComposer; otherwise dotted class path
 
 
 @dataclass
@@ -93,6 +103,7 @@ class Config:
     log_level: str
     anthropic_api_key: str = ""
     storage: StorageConfig = field(default_factory=StorageConfig)
+    prompts: PromptsConfig = field(default_factory=PromptsConfig)
 
 
 SUPPORTED_LANGUAGES = ("English", "Russian", "Spanish", "German", "French")
@@ -158,7 +169,19 @@ def _parse_digest_settings(
             )
         if not isinstance(g["name"], str) or not isinstance(g["description"], str):
             raise ValueError(f"digest_groups[{i}] 'name' and 'description' must be strings")
-        digest_groups.append(DigestGroupConfig(name=g["name"], description=g["description"]))
+        group_prompt_extra = g.get("prompt_extra", "")
+        if not isinstance(group_prompt_extra, str):
+            raise ValueError(
+                f"digest_groups[{i}].prompt_extra must be a string, "
+                f"got {type(group_prompt_extra).__name__}"
+            )
+        digest_groups.append(
+            DigestGroupConfig(
+                name=g["name"],
+                description=g["description"],
+                prompt_extra=group_prompt_extra,
+            )
+        )
 
     output_language = settings_dict.get("output_language", "Russian")
     if output_language not in SUPPORTED_LANGUAGES:
@@ -240,12 +263,16 @@ def _parse_channel_entry(i: int, ch: object) -> ChannelConfig:
     channel_filters: list[FilterSpec] | None = None
     if raw_filters is not None:
         channel_filters = _parse_filter_specs(raw_filters, f"channels[{i}].filters")
+    group = ch.get("group")
+    if group is not None and (not isinstance(group, str) or not group.strip()):
+        raise ValueError(f"channels[{i}].group must be a non-empty string or null, got {group!r}")
     return ChannelConfig(
         id=ch["id"],
         name=ch["name"],
         lookback_hours=lookback_hours,
         prompt_extra=prompt_extra,
         filters=channel_filters,
+        group=group,
     )
 
 
@@ -282,6 +309,61 @@ def _parse_storage_config(yaml_config: dict) -> StorageConfig:
         raise ValueError("storage.url must be set when backend is 'postgres' and enabled is true")
 
     return StorageConfig(enabled=enabled, backend=backend, path=path, url=url)
+
+
+def _parse_prompts_config(yaml_config: dict) -> PromptsConfig:
+    """Parse and validate the optional top-level prompts: block.
+
+    Raises:
+        ValueError: If any field has wrong type or invalid value.
+    """
+    raw = yaml_config.get("prompts")
+    if raw is None:
+        return PromptsConfig()
+    if not isinstance(raw, dict):
+        raise ValueError(f"'prompts' must be a mapping, got {type(raw).__name__}")
+
+    base_template = raw.get("base_template", "src/prompts/base_summary.txt")
+    if not isinstance(base_template, str) or not base_template.strip():
+        raise ValueError("prompts.base_template must be a non-empty string")
+
+    composer = raw.get("composer", "")
+    if not isinstance(composer, str):
+        raise ValueError(f"prompts.composer must be a string, got {type(composer).__name__}")
+
+    return PromptsConfig(base_template=base_template, composer=composer)
+
+
+def _validate_channel_groups(
+    channels: List[ChannelConfig],
+    digest_groups: list[DigestGroupConfig],
+    output_language: str,
+) -> None:
+    """Cross-validate that channels[*].group references a known group name.
+
+    Valid values: any digest_groups[*].name, the literal "Other", or the
+    localized group_other string for the current output_language.
+
+    Raises:
+        ValueError: listing all channels with invalid group references.
+    """
+    from src.ui_strings import get_ui_strings
+
+    ui = get_ui_strings(output_language)
+    localized_other = ui.get("group_other", "Other")
+    valid_names = {g.name for g in digest_groups} | {"Other", localized_other}
+
+    bad: list[str] = []
+    for ch in channels:
+        if ch.group is not None and ch.group not in valid_names:
+            bad.append(f"channel {ch.name!r}: group {ch.group!r}")
+
+    if bad:
+        raise ValueError(
+            "Unknown group references in channels config:\n"
+            + "\n".join(f"  {b}" for b in bad)
+            + f"\nValid groups: {', '.join(sorted(valid_names))}"
+        )
 
 
 def _parse_channels(yaml_config: dict) -> List[ChannelConfig]:
@@ -392,6 +474,9 @@ def load_config(config_path: str = "config.yaml") -> Config:
     # Parse storage config
     storage_config = _parse_storage_config(yaml_config)
 
+    # Parse prompts config
+    prompts_config = _parse_prompts_config(yaml_config)
+
     # Parse settings
     settings_dict = yaml_config.get("settings", {})
     ai_provider, ai_model = _resolve_ai_settings(settings_dict)
@@ -429,12 +514,16 @@ def load_config(config_path: str = "config.yaml") -> Config:
             "Get your Telegram user ID from @userinfobot"
         )
 
+    # Cross-validate channel group references against known digest_groups
+    _validate_channel_groups(channels, digest_groups, output_language)
+
     env_vars = _load_and_validate_env_vars(ai_provider)
 
     return Config(
         channels=channels,
         settings=settings,
         storage=storage_config,
+        prompts=prompts_config,
         **env_vars,
     )
 

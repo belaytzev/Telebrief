@@ -5,7 +5,13 @@ from unittest.mock import patch
 
 import pytest
 
-from src.config_loader import DigestGroupConfig, FilterSpec, StorageConfig, load_config
+from src.config_loader import (
+    DigestGroupConfig,
+    FilterSpec,
+    PromptsConfig,
+    StorageConfig,
+    load_config,
+)
 
 
 @pytest.mark.unit
@@ -879,3 +885,234 @@ def test_filter_spec_channel_invalid_class_path_raises(tmp_path, mock_env_vars):
 def test_sample_config_fixture_still_constructs(sample_config):
     assert sample_config.settings.filters == []
     assert sample_config.channels[0].filters is None
+
+
+# ---------------------------------------------------------------------------
+# Group binding and PromptsConfig tests (Task 8)
+# ---------------------------------------------------------------------------
+
+
+def _group_config_file(tmp_path, channels_block: str, settings_block: str, extra: str = "") -> str:
+    content = f"""
+channels:
+{channels_block}
+
+settings:
+  target_user_id: 123456789
+{settings_block}
+{extra}
+"""
+    p = tmp_path / "config.yaml"
+    p.write_text(content)
+    return str(p)
+
+
+@pytest.mark.unit
+def test_digest_group_prompt_extra_parsed(tmp_path, mock_env_vars):
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@test"\n    name: "Test"\n'
+        "settings:\n  target_user_id: 123456789\n"
+        "  digest_groups:\n"
+        "    - name: Jobs\n"
+        "      description: Job offers\n"
+        "      prompt_extra: Focus on remote roles.\n"
+    )
+    config = load_config(str(p))
+    assert config.settings.digest_groups[0].prompt_extra == "Focus on remote roles."
+
+
+@pytest.mark.unit
+def test_digest_group_prompt_extra_defaults_empty(tmp_path, mock_env_vars):
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@test"\n    name: "Test"\n'
+        "settings:\n  target_user_id: 123456789\n"
+        "  digest_groups:\n"
+        "    - name: Jobs\n"
+        "      description: Job offers\n"
+    )
+    config = load_config(str(p))
+    assert config.settings.digest_groups[0].prompt_extra == ""
+
+
+@pytest.mark.unit
+def test_digest_group_prompt_extra_non_string_raises(tmp_path, mock_env_vars):
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@test"\n    name: "Test"\n'
+        "settings:\n  target_user_id: 123456789\n"
+        "  digest_groups:\n"
+        "    - name: Jobs\n"
+        "      description: Job offers\n"
+        "      prompt_extra: 42\n"
+    )
+    with pytest.raises(ValueError, match="prompt_extra must be a string"):
+        load_config(str(p))
+
+
+@pytest.mark.unit
+def test_channel_group_field_parsed(tmp_path, mock_env_vars):
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@jobs"\n    name: "Jobs"\n    group: MyGroup\n'
+        "settings:\n  target_user_id: 123456789\n"
+        "  digest_groups:\n"
+        "    - name: MyGroup\n"
+        "      description: My group\n"
+    )
+    config = load_config(str(p))
+    assert config.channels[0].group == "MyGroup"
+
+
+@pytest.mark.unit
+def test_channel_group_none_by_default(tmp_path, mock_env_vars):
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@test"\n    name: "Test"\n' "settings:\n  target_user_id: 123456789\n"
+    )
+    config = load_config(str(p))
+    assert config.channels[0].group is None
+
+
+@pytest.mark.unit
+def test_channel_group_other_accepted(tmp_path, mock_env_vars):
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@test"\n    name: "Test"\n    group: Other\n'
+        "settings:\n  target_user_id: 123456789\n"
+    )
+    config = load_config(str(p))
+    assert config.channels[0].group == "Other"
+
+
+@pytest.mark.unit
+def test_channel_group_localized_other_accepted(tmp_path, mock_env_vars):
+    # Russian localized "Other" is "Другое"
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@test"\n    name: "Test"\n    group: "Другое"\n'
+        "settings:\n  target_user_id: 123456789\n  output_language: Russian\n"
+    )
+    config = load_config(str(p))
+    assert config.channels[0].group == "Другое"
+
+
+@pytest.mark.unit
+def test_channel_unknown_group_raises(tmp_path, mock_env_vars):
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@test"\n    name: "Test"\n    group: NonExistent\n'
+        "settings:\n  target_user_id: 123456789\n"
+    )
+    with pytest.raises(ValueError, match="Unknown group references"):
+        load_config(str(p))
+
+
+@pytest.mark.unit
+def test_channel_unknown_group_error_lists_bad_channel(tmp_path, mock_env_vars):
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@test"\n    name: "MyChan"\n    group: BadGroup\n'
+        "settings:\n  target_user_id: 123456789\n"
+    )
+    with pytest.raises(ValueError) as exc_info:
+        load_config(str(p))
+    assert "MyChan" in str(exc_info.value)
+    assert "BadGroup" in str(exc_info.value)
+
+
+@pytest.mark.unit
+def test_channel_group_null_yaml_is_none(tmp_path, mock_env_vars):
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@test"\n    name: "Test"\n    group:\n'
+        "settings:\n  target_user_id: 123456789\n"
+    )
+    config = load_config(str(p))
+    assert config.channels[0].group is None
+
+
+# ---------------------------------------------------------------------------
+# PromptsConfig tests
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_prompts_config_missing_block_defaults(tmp_path, mock_env_vars):
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@test"\n    name: "Test"\n' "settings:\n  target_user_id: 123456789\n"
+    )
+    config = load_config(str(p))
+    assert config.prompts == PromptsConfig()
+    assert config.prompts.base_template == "src/prompts/base_summary.txt"
+    assert config.prompts.composer == ""
+
+
+@pytest.mark.unit
+def test_prompts_config_explicit_values(tmp_path, mock_env_vars):
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@test"\n    name: "Test"\n'
+        "settings:\n  target_user_id: 123456789\n"
+        "prompts:\n"
+        "  base_template: custom/my_template.txt\n"
+        "  composer: myapp.prompts.CustomComposer\n"
+    )
+    config = load_config(str(p))
+    assert config.prompts.base_template == "custom/my_template.txt"
+    assert config.prompts.composer == "myapp.prompts.CustomComposer"
+
+
+@pytest.mark.unit
+def test_prompts_config_not_mapping_raises(tmp_path, mock_env_vars):
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@test"\n    name: "Test"\n'
+        "settings:\n  target_user_id: 123456789\n"
+        "prompts: true\n"
+    )
+    with pytest.raises(ValueError, match="'prompts' must be a mapping"):
+        load_config(str(p))
+
+
+@pytest.mark.unit
+def test_prompts_config_empty_base_template_raises(tmp_path, mock_env_vars):
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@test"\n    name: "Test"\n'
+        "settings:\n  target_user_id: 123456789\n"
+        "prompts:\n  base_template: ''\n"
+    )
+    with pytest.raises(ValueError, match="base_template must be a non-empty string"):
+        load_config(str(p))
+
+
+@pytest.mark.unit
+def test_prompts_config_composer_not_string_raises(tmp_path, mock_env_vars):
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@test"\n    name: "Test"\n'
+        "settings:\n  target_user_id: 123456789\n"
+        "prompts:\n  composer: 42\n"
+    )
+    with pytest.raises(ValueError, match="prompts.composer must be a string"):
+        load_config(str(p))
+
+
+@pytest.mark.unit
+def test_digest_group_config_equality_with_prompt_extra(tmp_path, mock_env_vars):
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@test"\n    name: "Test"\n'
+        "settings:\n  target_user_id: 123456789\n"
+        "  digest_groups:\n"
+        "    - name: Events\n"
+        "      description: Conferences\n"
+        "      prompt_extra: Be concise.\n"
+    )
+    config = load_config(str(p))
+    assert config.settings.digest_groups[0] == DigestGroupConfig(
+        name="Events", description="Conferences", prompt_extra="Be concise."
+    )
