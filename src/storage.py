@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Protocol
+from typing import TYPE_CHECKING, Any, Protocol
 
 if TYPE_CHECKING:
     import aiosqlite as _aiosqlite
-    import asyncpg as _asyncpg  # type: ignore[import-untyped]
+
     from src.collector import Message
     from src.config_loader import StorageConfig
 
@@ -62,6 +62,7 @@ VALUES ($1, $2, $3, $4, $5, $6, $7)
 
 class StorageBackend(Protocol):
     async def save_messages(self, messages: list[Message]) -> int: ...
+
     async def close(self) -> None: ...
 
 
@@ -118,7 +119,7 @@ class SQLiteBackend:
 class PostgresBackend:  # pragma: no cover
     def __init__(self, url: str) -> None:
         self._url = url
-        self._pool: _asyncpg.Pool | None = None
+        self._pool: Any = None
 
     async def initialize(self) -> None:
         import asyncpg
