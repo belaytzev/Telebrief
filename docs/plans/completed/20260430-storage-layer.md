@@ -11,13 +11,19 @@ Issue #22 acceptance criteria:
 - Keep current in-memory flow unchanged when storage is disabled
 
 Current flow (unchanged when `storage.enabled: false`):
+
 ```
+
 collect → summarize → format → send
+
 ```
 
 New flow (when enabled):
+
 ```
+
 collect → **save to DB** → summarize → format → send
+
 ```
 
 **Deduplication contract**: Storage is **append-only** — same message collected in overlapping lookback windows will produce duplicate rows. This is intentional: simplest schema, no hidden logic. Documented in `config.yaml.example`.
@@ -66,6 +72,7 @@ collect → **save to DB** → summarize → format → send
 - Modify: `src/config_loader.py`
 
 - [x] Add `StorageConfig` dataclass after `DigestGroupConfig`:
+
   ```python
   @dataclass
   class StorageConfig:
@@ -73,7 +80,9 @@ collect → **save to DB** → summarize → format → send
       backend: str = "sqlite"       # "sqlite" | "postgres"
       path: str = "data/messages.db"
       url: str = ""                 # postgres only
+
   ```
+
 - [x] Add `_parse_storage_config(yaml_config: dict) -> StorageConfig` helper that:
   - Reads optional top-level `storage:` block (missing = all defaults)
   - Validates each field with `isinstance` checks matching `_parse_channel_entry` style
@@ -106,6 +115,7 @@ collect → **save to DB** → summarize → format → send
   - `async def save_messages(messages: list[Message]) -> int` — `executemany` insert, commit, return `len(messages)`. Empty list → return 0 immediately.
   - `async def close(self)` — closes connection if open; safe to call if never initialized
   - SQLite schema:
+
     ```sql
     CREATE TABLE IF NOT EXISTS messages (
         id           INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -120,7 +130,9 @@ collect → **save to DB** → summarize → format → send
     );
     CREATE INDEX IF NOT EXISTS idx_messages_channel_timestamp
         ON messages(channel_name, timestamp);
+
     ```
+
   - Timestamp stored as `msg.timestamp.isoformat()` (UTC-aware datetimes from collector)
 - [x] Implement `PostgresBackend`:
   - `__init__(self, url: str)` — stores url, `self._pool = None`
@@ -128,6 +140,7 @@ collect → **save to DB** → summarize → format → send
   - `async def save_messages(...)` — `pool.executemany()` with Postgres params, return count
   - `async def close(self)` — closes pool if open; safe to call if never initialized
   - Postgres schema (same columns, dialect differences):
+
     ```sql
     CREATE TABLE IF NOT EXISTS messages (
         id           BIGSERIAL PRIMARY KEY,
@@ -142,7 +155,9 @@ collect → **save to DB** → summarize → format → send
     );
     CREATE INDEX IF NOT EXISTS idx_messages_channel_timestamp
         ON messages(channel_name, timestamp);
+
     ```
+
   - Timestamp passed as `msg.timestamp` (datetime object with UTC tzinfo)
 - [x] Implement `create_storage(config: StorageConfig) -> StorageBackend | None` factory:
   - Returns `None` if `config.enabled` is `False`
@@ -167,6 +182,7 @@ Wire at the `_collect_messages()` level — this is the single collection chokep
 - [x] Import `create_storage` and `StorageConfig` from `src.storage` (or only `create_storage` if `StorageConfig` not needed directly)
 - [x] Modify `_collect_messages()` signature to accept `storage_config: StorageConfig` (passed from `config.storage`)
 - [x] After `await collector.disconnect()` (inside the `finally`), add storage block:
+
   ```python
   storage = await create_storage(storage_config)
   if storage:
@@ -178,7 +194,9 @@ Wire at the `_collect_messages()` level — this is the single collection chokep
           logger.error(f"Storage write failed, digest continues: {e}")
       finally:
           await storage.close()
+
   ```
+
   Storage failures are logged but **do not abort digest generation**.
 - [x] Update all callers of `_collect_messages()` to pass `config.storage`
 - [x] Write tests for `_collect_messages` wiring (use `AsyncMock`/`MagicMock`):
@@ -195,12 +213,17 @@ Wire at the `_collect_messages()` level — this is the single collection chokep
 - Modify: `config.yaml.example`
 
 - [x] Add to `requirements.txt` (match existing `>=` pinning style):
+
   ```
+
   # Storage backends (aiosqlite for SQLite, asyncpg for Postgres)
   aiosqlite>=0.20.0
   asyncpg>=0.29.0
+
   ```
+
 - [x] Add commented storage block to `config.yaml.example` after the `api_timeout` line:
+
   ```yaml
   # Storage — persist raw messages for history / external LLM workflows
   # Note: storage is append-only; overlapping lookback windows produce duplicate rows.
@@ -209,7 +232,9 @@ Wire at the `_collect_messages()` level — this is the single collection chokep
   #   backend: sqlite          # "sqlite" (default, no extra setup) or "postgres"
   #   path: data/messages.db   # sqlite only — relative to project root; mount as volume in Docker
   #   url: ""                  # postgres: postgresql://user:pass@host:5432/db
+
   ```
+
 - [x] Run tests — must pass before Task 5
 
 ### Task 5: Add Postgres tests (env-gated) and tighten coverage
@@ -218,12 +243,15 @@ Wire at the `_collect_messages()` level — this is the single collection chokep
 - Modify: `tests/test_storage.py`
 
 - [x] Add `TestPostgresBackend` class at top of file with:
+
   ```python
   @pytest.mark.skipif(
       not os.environ.get("TELEBRIEF_TEST_PG_URL"),
       reason="TELEBRIEF_TEST_PG_URL not set"
   )
+
   ```
+
 - [x] Mirror same 3 SQLiteBackend save tests using the env-var URL
 - [x] Add `close()` idempotent / safe-when-uninitialized test for `PostgresBackend`
 - [x] Add `create_storage` test: `backend="postgres"` with empty url + `enabled=True` → `ValueError` raised by `_parse_storage_config` (test via config loader, not factory directly)
@@ -251,6 +279,7 @@ Wire at the `_collect_messages()` level — this is the single collection chokep
 ## Technical Details
 
 **Message dataclass** (from `src/collector.py`):
+
 ```python
 @dataclass
 class Message:
@@ -261,31 +290,39 @@ class Message:
     channel_name: str
     has_media: bool
     media_type: str
+
 ```
 
 **SQLite insert row tuple**:
+
 ```python
 (msg.channel_name, msg.sender, msg.text,
  msg.timestamp.isoformat(), msg.link,
  int(msg.has_media), msg.media_type)
+
 ```
 
 **Postgres insert row tuple**:
+
 ```python
 (msg.channel_name, msg.sender, msg.text,
  msg.timestamp, msg.link,           # datetime passed directly → TIMESTAMPTZ
  msg.has_media, msg.media_type)
+
 ```
 
 **Timezone contract**: Collector imports `timezone` and uses `datetime.now(timezone.utc)` / `timezone.utc` → all `Message.timestamp` values are UTC-aware. SQLite stores as ISO 8601 string with UTC offset; Postgres stores as TIMESTAMPTZ.
 
 **Config loading flow** (follows existing `load_config` pattern):
+
 ```python
 storage_config = _parse_storage_config(yaml_config)
 return Config(..., storage=storage_config)
+
 ```
 
 **`_collect_messages` updated signature**:
+
 ```python
 async def _collect_messages(
     config: Config, logger: logging.Logger, hours: int
@@ -302,19 +339,24 @@ async def _collect_messages(
         finally:
             await storage.close()
     return messages_by_channel
+
 ```
 
 ## Post-Completion
 
 **Manual smoke test**:
 - Enable storage in `config.yaml`, run one digest cycle, confirm DB file exists and contains rows:
+
   ```bash
   sqlite3 data/messages.db "SELECT count(*), channel_name FROM messages GROUP BY channel_name;"
+
   ```
 
 **Docker**:
 - Mount `data/` as a volume so `messages.db` persists across container restarts:
+
   ```yaml
   volumes:
     - ./data:/app/data
+
   ```

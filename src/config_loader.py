@@ -35,9 +35,11 @@ class StorageConfig:
     """Configuration for the persistent message storage backend."""
 
     enabled: bool = False
-    backend: str = "sqlite"        # "sqlite" | "postgres"
+    backend: str = "sqlite"  # "sqlite" | "postgres"
     path: str = "data/messages.db"
-    url: str = field(default="", repr=False)  # postgres only; repr=False prevents credential exposure in logs
+    url: str = field(
+        default="", repr=False
+    )  # postgres only; repr=False prevents credential exposure in logs
 
 
 @dataclass

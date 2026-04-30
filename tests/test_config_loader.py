@@ -594,6 +594,7 @@ settings:
 # StorageConfig tests
 # ---------------------------------------------------------------------------
 
+
 def _storage_config_file(tmp_path, storage_block: str) -> str:
     content = f"""
 channels:
