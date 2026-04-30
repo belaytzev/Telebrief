@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Protocol
 
@@ -59,11 +60,27 @@ INSERT INTO messages (channel_name, sender, text, timestamp, link, has_media, me
 VALUES ($1, $2, $3, $4, $5, $6, $7)
 """
 
+_SQLITE_QUERY_BASE = (
+    "SELECT channel_name, sender, text, timestamp, link, has_media, media_type" " FROM messages"
+)
+
+_PG_QUERY_BASE = (
+    "SELECT channel_name, sender, text, timestamp, link, has_media, media_type" " FROM messages"
+)
+
 
 class StorageBackend(Protocol):
     async def save_messages(self, messages: list[Message]) -> int: ...  # noqa: E704
 
     async def close(self) -> None: ...  # noqa: E704
+
+    async def query_messages(  # noqa: E704
+        self,
+        channel: str | None = None,
+        since: datetime | None = None,
+        until: datetime | None = None,
+        limit: int = 1000,
+    ) -> list[Message]: ...
 
 
 class SQLiteBackend:
@@ -110,6 +127,56 @@ class SQLiteBackend:
             raise
         return len(messages)
 
+    async def query_messages(
+        self,
+        channel: str | None = None,
+        since: datetime | None = None,
+        until: datetime | None = None,
+        limit: int = 1000,
+    ) -> list[Message]:
+        from src.collector import Message as Msg
+
+        if self._conn is None:
+            raise RuntimeError("SQLiteBackend not initialized; call initialize() first")
+
+        conditions: list[str] = []
+        params: list[Any] = []
+
+        if channel is not None:
+            conditions.append("channel_name = ?")
+            params.append(channel)
+        if since is not None:
+            conditions.append("timestamp >= ?")
+            params.append(since.isoformat())
+        if until is not None:
+            conditions.append("timestamp < ?")
+            params.append(until.isoformat())
+
+        sql = _SQLITE_QUERY_BASE
+        if conditions:
+            sql += " WHERE " + " AND ".join(conditions)
+        sql += " ORDER BY timestamp DESC LIMIT ?"
+        params.append(limit)
+
+        rows: list[Message] = []
+        async with self._conn.execute(sql, params) as cur:
+            async for row in cur:
+                ts = datetime.fromisoformat(row[3])
+                if ts.tzinfo is None:
+                    ts = ts.replace(tzinfo=timezone.utc)
+                rows.append(
+                    Msg(
+                        channel_name=row[0],
+                        sender=row[1],
+                        text=row[2],
+                        timestamp=ts,
+                        link=row[4],
+                        has_media=bool(row[5]),
+                        media_type=row[6],
+                    )
+                )
+        return rows
+
     async def close(self) -> None:
         conn, self._conn = self._conn, None
         if conn is not None:
@@ -155,6 +222,64 @@ class PostgresBackend:  # pragma: no cover
             async with conn.transaction():
                 await conn.executemany(_PG_INSERT, rows)
         return len(messages)
+
+    async def query_messages(  # pragma: no cover
+        self,
+        channel: str | None = None,
+        since: datetime | None = None,
+        until: datetime | None = None,
+        limit: int = 1000,
+    ) -> list[Message]:  # pragma: no cover
+        from src.collector import Message as Msg  # pragma: no cover
+
+        if self._pool is None:  # pragma: no cover
+            raise RuntimeError(  # pragma: no cover
+                "PostgresBackend not initialized; call initialize() first"
+            )
+
+        conditions: list[str] = []  # pragma: no cover
+        args: list[Any] = []  # pragma: no cover
+        idx = 1  # pragma: no cover
+
+        if channel is not None:  # pragma: no cover
+            conditions.append(f"channel_name = ${idx}")  # pragma: no cover
+            args.append(channel)  # pragma: no cover
+            idx += 1  # pragma: no cover
+        if since is not None:  # pragma: no cover
+            conditions.append(f"timestamp >= ${idx}")  # pragma: no cover
+            args.append(since)  # pragma: no cover
+            idx += 1  # pragma: no cover
+        if until is not None:  # pragma: no cover
+            conditions.append(f"timestamp < ${idx}")  # pragma: no cover
+            args.append(until)  # pragma: no cover
+            idx += 1  # pragma: no cover
+
+        sql = _PG_QUERY_BASE  # pragma: no cover
+        if conditions:  # pragma: no cover
+            sql += " WHERE " + " AND ".join(conditions)  # pragma: no cover
+        sql += f" ORDER BY timestamp DESC LIMIT ${idx}"  # pragma: no cover
+        args.append(limit)  # pragma: no cover
+
+        async with self._pool.acquire() as conn:  # pragma: no cover
+            records = await conn.fetch(sql, *args)  # pragma: no cover
+
+        result: list[Message] = []  # pragma: no cover
+        for r in records:  # pragma: no cover
+            ts: datetime = r["timestamp"]  # pragma: no cover
+            if ts.tzinfo is None:  # pragma: no cover
+                ts = ts.replace(tzinfo=timezone.utc)  # pragma: no cover
+            result.append(  # pragma: no cover
+                Msg(
+                    channel_name=r["channel_name"],
+                    sender=r["sender"],
+                    text=r["text"],
+                    timestamp=ts,
+                    link=r["link"],
+                    has_media=bool(r["has_media"]),
+                    media_type=r["media_type"],
+                )
+            )
+        return result  # pragma: no cover
 
     async def close(self) -> None:
         pool, self._pool = self._pool, None
