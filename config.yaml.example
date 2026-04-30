@@ -71,13 +71,6 @@ settings:
   #     config:
   #       min_chars: 30
 
-  # Prompt customization
-  # base_template: path to the system prompt template file ({language} is substituted at runtime)
-  # composer: dotted path to a custom PromptComposer class; empty = built-in DefaultComposer
-  # prompts:
-  #   base_template: src/prompts/base_summary.txt
-  #   composer: ""
-
   # Output
   output_language: "Russian"  # Language for AI summaries (e.g., "English", "Russian", "Spanish")
   use_emojis: true
@@ -117,6 +110,13 @@ settings:
                           #   (8000 - 2000 - 2000) * 2.5 = 10,000 chars
                           #   Safe recommendation: 8000
   api_timeout: 30  # Ollama may need 120-300s for local models (enforced minimum: 120s)
+
+# Prompt customization — top-level block (sibling of settings:, not nested inside it)
+# base_template: path to the system prompt template file ({language} is substituted at runtime)
+# composer: dotted path to a custom PromptComposer class; empty = built-in DefaultComposer
+# prompts:
+#   base_template: src/prompts/base_summary.txt
+#   composer: ""
 
 # Storage — persist raw messages for history / external LLM workflows
 # Note: storage is append-only; overlapping lookback windows produce duplicate rows.

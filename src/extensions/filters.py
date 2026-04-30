@@ -44,6 +44,8 @@ class RegexFilter:
     name = "regex"
 
     def __init__(self, pattern: str, mode: Literal["include", "exclude"] = "include") -> None:
+        if mode not in ("include", "exclude"):
+            raise ValueError(f"RegexFilter mode must be 'include' or 'exclude', got {mode!r}")
         self._re = re.compile(pattern)
         self._mode = mode
 
@@ -64,6 +66,8 @@ class MinLengthFilter:
     name = "min_length"
 
     def __init__(self, min_chars: int) -> None:
+        if min_chars < 0:
+            raise ValueError(f"min_chars must be >= 0, got {min_chars}")
         self._min_chars = min_chars
 
     async def filter(self, channel: ChannelConfig, messages: list[Message]) -> list[Message]:

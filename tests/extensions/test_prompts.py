@@ -44,13 +44,12 @@ def test_language_substituted():
     assert "{language}" not in result
 
 
-def test_language_substituted_only_in_base():
+def test_language_substituted_in_all_parts():
     c = DefaultComposer(BASE, LANG)
     channel = _channel(prompt_extra="Extra for {language}.")
     result = c.compose(channel, None)
-    # base substituted, channel extra appended verbatim
-    assert result.startswith("You are an assistant. Write in English.")
-    assert "Extra for {language}." in result
+    assert "{language}" not in result
+    assert "Extra for English." in result
 
 
 # --- Base + channel ---
@@ -113,14 +112,6 @@ def test_empty_channel_extra_skipped():
     result = c.compose(_channel(prompt_extra=""), None)
     assert result == "You are an assistant. Write in English."
     assert "\n\n" not in result
-
-
-def test_group_without_prompt_extra_attr():
-    c = DefaultComposer(BASE, LANG)
-    # group object with no prompt_extra attribute at all
-    group = SimpleNamespace(name="G", description="d")
-    result = c.compose(_channel(), group)
-    assert result == "You are an assistant. Write in English."
 
 
 # --- Multiple language placeholders ---

@@ -60,11 +60,7 @@ INSERT INTO messages (channel_name, sender, text, timestamp, link, has_media, me
 VALUES ($1, $2, $3, $4, $5, $6, $7)
 """
 
-_SQLITE_QUERY_BASE = (
-    "SELECT channel_name, sender, text, timestamp, link, has_media, media_type" " FROM messages"
-)
-
-_PG_QUERY_BASE = (
+_QUERY_BASE = (
     "SELECT channel_name, sender, text, timestamp, link, has_media, media_type" " FROM messages"
 )
 
@@ -74,13 +70,13 @@ class StorageBackend(Protocol):
 
     async def close(self) -> None: ...  # noqa: E704
 
-    async def query_messages(  # noqa: E704
+    async def query_messages(
         self,
         channel: str | None = None,
         since: datetime | None = None,
         until: datetime | None = None,
         limit: int = 1000,
-    ) -> list[Message]: ...
+    ) -> list[Message]: ...  # noqa: E704
 
 
 class SQLiteBackend:
@@ -139,6 +135,10 @@ class SQLiteBackend:
         if self._conn is None:
             raise RuntimeError("SQLiteBackend not initialized; call initialize() first")
 
+        for name, dt in (("since", since), ("until", until)):
+            if dt is not None and dt.tzinfo is None:
+                raise ValueError(f"query_messages: {name!r} must be timezone-aware")
+
         conditions: list[str] = []
         params: list[Any] = []
 
@@ -152,7 +152,7 @@ class SQLiteBackend:
             conditions.append("timestamp < ?")
             params.append(until.isoformat())
 
-        sql = _SQLITE_QUERY_BASE
+        sql = _QUERY_BASE
         if conditions:
             sql += " WHERE " + " AND ".join(conditions)
         sql += " ORDER BY timestamp DESC LIMIT ?"
@@ -237,6 +237,10 @@ class PostgresBackend:  # pragma: no cover
                 "PostgresBackend not initialized; call initialize() first"
             )
 
+        for name, dt in (("since", since), ("until", until)):  # pragma: no cover
+            if dt is not None and dt.tzinfo is None:  # pragma: no cover
+                raise ValueError(f"query_messages: {name!r} must be timezone-aware")  # pragma: no cover
+
         conditions: list[str] = []  # pragma: no cover
         args: list[Any] = []  # pragma: no cover
         idx = 1  # pragma: no cover
@@ -254,7 +258,7 @@ class PostgresBackend:  # pragma: no cover
             args.append(until)  # pragma: no cover
             idx += 1  # pragma: no cover
 
-        sql = _PG_QUERY_BASE  # pragma: no cover
+        sql = _QUERY_BASE  # pragma: no cover
         if conditions:  # pragma: no cover
             sql += " WHERE " + " AND ".join(conditions)  # pragma: no cover
         sql += f" ORDER BY timestamp DESC LIMIT ${idx}"  # pragma: no cover

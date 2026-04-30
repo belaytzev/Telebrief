@@ -2,6 +2,7 @@
 Core digest generation function.
 """
 
+import inspect
 import logging
 import re
 from datetime import datetime, timezone
@@ -15,6 +16,7 @@ from src.grouper import DigestGrouper
 from src.sender import DigestSender
 from src.storage import create_storage
 from src.summarizer import ERROR_SUMMARY_PREFIX, Summarizer
+from src.ui_strings import get_ui_strings
 from src.utils import split_message
 
 _CHANNEL_URL_RE = re.compile(r"^https://t\.me/(?:c/\d+|[^/]{2,})$")
@@ -76,11 +78,29 @@ async def _apply_filters(
                 exc_info=True,
             )
             continue
+        if not hasattr(filt, "filter"):
+            logger.error(
+                f"Filter {spec.class_path!r} missing filter() method, skipping",
+            )
+            continue
+        if not inspect.iscoroutinefunction(filt.filter):
+            logger.error(
+                f"Filter {spec.class_path!r} filter() is not async — add 'async' keyword, skipping",
+            )
+            continue
         try:
-            messages = await filt.filter(channel_cfg, messages)
+            result = await filt.filter(channel_cfg, messages)
+            if not isinstance(result, list):
+                logger.error(
+                    f"Filter {getattr(filt, 'name', spec.class_path)!r} filter() returned"
+                    f" {type(result).__name__} (expected list), skipping",
+                )
+            else:
+                messages = result
         except Exception as e:
             logger.error(
-                f"Filter.filter() raised ({spec.class_path}, {type(e).__name__}), skipping",
+                f"Filter {getattr(filt, 'name', spec.class_path)!r} filter() raised"
+                f" {type(e).__name__} ({spec.class_path}), skipping",
                 exc_info=True,
             )
 
@@ -105,6 +125,8 @@ async def _collect_messages(config: Config, logger: logging.Logger, hours: int) 
         ch_cfg = channel_map.get(channel_name)
         if ch_cfg is not None:
             msgs = await _apply_filters(ch_cfg, msgs, config, logger)
+        else:
+            logger.warning(f"Channel {channel_name!r} not in config; skipping filters")
         filtered[channel_name] = msgs
     messages_by_channel = filtered
 
@@ -151,7 +173,11 @@ def _format_group_messages(
 def _order_groups(grouped: dict, config: "Config") -> list[str]:
     """Order group names: config-defined order first, then remaining, 'Other' last."""
     config_order = [g.name for g in config.settings.digest_groups]
-    remaining = sorted(grouped.keys() - set(config_order))
+    other_name = get_ui_strings(config.settings.output_language).get("group_other", "Other")
+    not_config_ordered = grouped.keys() - set(config_order)
+    remaining = sorted(k for k in not_config_ordered if k != other_name)
+    if other_name in not_config_ordered:
+        remaining.append(other_name)
     return [n for n in config_order if n in grouped] + remaining
 
 

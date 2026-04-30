@@ -839,7 +839,7 @@ def test_filter_spec_non_string_class_path_raises(tmp_path, mock_env_vars):
         "settings:\n  target_user_id: 123456789\n"
         "  filters:\n    - class_path: 42\n"
     )
-    with pytest.raises(ValueError, match="class_path must be a string"):
+    with pytest.raises(ValueError, match="class_path must be a non-empty string"):
         load_config(str(p))
 
 
@@ -877,7 +877,7 @@ def test_filter_spec_channel_invalid_class_path_raises(tmp_path, mock_env_vars):
         "    filters:\n      - class_path: 99\n"
         "settings:\n  target_user_id: 123456789\n"
     )
-    with pytest.raises(ValueError, match="class_path must be a string"):
+    with pytest.raises(ValueError, match="class_path must be a non-empty string"):
         load_config(str(p))
 
 

@@ -183,3 +183,10 @@ async def test_min_length_zero_keeps_all():
     msgs = [_make_message(""), _make_message("x"), _make_message("long message")]
     result = await f.filter(_channel(), msgs)
     assert len(result) == 3
+
+
+def test_regex_filter_invalid_pattern_raises():
+    import re
+
+    with pytest.raises(re.error):
+        RegexFilter(pattern="[unclosed")

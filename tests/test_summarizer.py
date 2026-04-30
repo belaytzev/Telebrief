@@ -771,8 +771,7 @@ async def test_channel_without_group_uses_base_and_channel_prompt_extra(
 
     system_prompt = captured[0][0]["content"]
     assert "Only backend." in system_prompt
-    assert SYSTEM_PROMPT_TEMPLATE.replace("{language}", "Russian").split("{language}")[0] or True
-    # base template content present
+    assert SYSTEM_PROMPT_TEMPLATE.replace("{language}", "Russian") in system_prompt
     assert "{language}" not in system_prompt
 
 

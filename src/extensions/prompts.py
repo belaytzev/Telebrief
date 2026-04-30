@@ -21,11 +21,14 @@ class DefaultComposer:
         self._language = language
 
     def compose(self, channel: ChannelConfig, group: DigestGroupConfig | None) -> str:
-        parts = [self._base.replace("{language}", self._language)]
+        def sub(text: str) -> str:
+            return text.replace("{language}", self._language)
+
+        parts = [sub(self._base)]
         if group is not None:
-            group_extra = getattr(group, "prompt_extra", "")
+            group_extra = group.prompt_extra
             if group_extra:
-                parts.append(group_extra)
+                parts.append(sub(group_extra))
         if channel.prompt_extra:
-            parts.append(channel.prompt_extra)
+            parts.append(sub(channel.prompt_extra))
         return "\n\n".join(parts)

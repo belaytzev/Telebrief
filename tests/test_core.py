@@ -524,6 +524,28 @@ async def test_generate_digest_calls_storage_when_enabled(
 
 @pytest.mark.unit
 @pytest.mark.asyncio
+async def test_save_to_storage_close_failure_is_non_fatal(
+    sample_config, mock_logger, sample_messages
+):
+    """storage.close() raises: error logged, no exception propagated."""
+    from src.core import _save_to_storage
+
+    sample_config.storage = StorageConfig(enabled=True, backend="sqlite", path=":memory:")
+    mock_backend = MagicMock()
+    mock_backend.save_messages = AsyncMock(return_value=len(sample_messages))
+    mock_backend.close = AsyncMock(side_effect=RuntimeError("close boom"))
+
+    with patch("src.core.create_storage", new_callable=AsyncMock) as mock_create:
+        mock_create.return_value = mock_backend
+        await _save_to_storage(sample_config, {"Test Channel": sample_messages}, mock_logger)
+
+    mock_logger.error.assert_called()
+    error_calls = [str(c) for c in mock_logger.error.call_args_list]
+    assert any("close" in c.lower() for c in error_calls)
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
 async def test_generate_digest_storage_disabled_does_not_save(
     sample_config, mock_logger, sample_messages
 ):
@@ -558,6 +580,20 @@ async def test_generate_digest_storage_disabled_does_not_save(
 
 def _make_filter_spec(class_path: str, **cfg) -> FilterSpec:
     return FilterSpec(class_path=class_path, config=dict(cfg))
+
+
+class _BrokenFilter:
+    name = "broken"
+
+    async def filter(self, channel, messages):
+        raise RuntimeError("kaboom")
+
+
+class _PassFilter:
+    name = "pass"
+
+    async def filter(self, channel, messages):
+        return messages[:1]
 
 
 @pytest.mark.unit
@@ -688,23 +724,6 @@ async def test_apply_filters_filter_exception_skips_that_filter_preserves_list(
     sample_config, mock_logger, sample_messages
 ):
     """filter() raises -> error logged, that step skipped, next filter still runs."""
-    import tests.test_core as _this_module
-
-    class _BrokenFilter:
-        name = "broken"
-
-        async def filter(self, channel, messages):
-            raise RuntimeError("kaboom")
-
-    class _PassFilter:
-        name = "pass"
-
-        async def filter(self, channel, messages):
-            return messages[:1]
-
-    _this_module._BrokenFilter = _BrokenFilter
-    _this_module._PassFilter = _PassFilter
-
     sample_config.settings.filters = [
         _make_filter_spec("tests.test_core._BrokenFilter"),
         _make_filter_spec("tests.test_core._PassFilter"),

@@ -9,7 +9,7 @@ from typing import Any, Dict, List
 
 from src.ai_providers import AIProvider, TokenBudgetExhaustedError, create_provider
 from src.collector import Message
-from src.config_loader import Config, DigestGroupConfig, PromptsConfig
+from src.config_loader import ChannelConfig, Config, DigestGroupConfig
 from src.extensions.loader import load_class
 from src.extensions.prompts import DefaultComposer, PromptComposer
 from src.xml_escape import escape_xml_delimiters
@@ -20,7 +20,13 @@ _MINOR_OVERAGE_CHARS = 200  # truncate directly without retry for small overages
 
 
 def _load_base_template(path: str) -> str:
-    return Path(path).read_text(encoding="utf-8")
+    p = Path(path)
+    if not p.exists():
+        raise FileNotFoundError(
+            f"Prompt template not found: {path!r}. "
+            "Use an absolute path or a path relative to the working directory."
+        )
+    return p.read_text(encoding="utf-8")
 
 
 _DEFAULT_TEMPLATE_PATH = str(Path(__file__).parent / "prompts" / "base_summary.txt")
@@ -54,10 +60,10 @@ class Summarizer:
         self.output_language = config.settings.output_language
         self._channels_by_name = {ch.name: ch for ch in config.channels}
 
-        # Resolve template path; use absolute bundled default when config holds the default value
+        # Resolve template path; use absolute bundled default when config holds the sentinel value
         template_path = (
             _DEFAULT_TEMPLATE_PATH
-            if config.prompts.base_template == PromptsConfig().base_template
+            if config.prompts.base_template == "src/prompts/base_summary.txt"
             else config.prompts.base_template
         )
         base_template = _load_base_template(template_path)
@@ -73,7 +79,21 @@ class Summarizer:
         # Instantiate composer (custom dotted-path or built-in DefaultComposer)
         if config.prompts.composer:
             composer_cls = load_class(config.prompts.composer)
-            self._composer: PromptComposer = composer_cls(base_template, self.output_language)
+            try:
+                self._composer: PromptComposer = composer_cls(base_template, self.output_language)
+            except TypeError as exc:
+                raise TypeError(
+                    f"Custom PromptComposer {config.prompts.composer!r} must accept "
+                    "(base_template: str, language: str) as constructor arguments. "
+                    f"Original error: {exc}"
+                ) from exc
+            if not isinstance(self._composer, PromptComposer) or not callable(
+                getattr(self._composer, "compose", None)
+            ):
+                raise TypeError(
+                    f"Custom composer {config.prompts.composer!r} does not implement "
+                    "PromptComposer (missing or non-callable .compose() method)"
+                )
         else:
             self._composer = DefaultComposer(base_template, self.output_language)
 
@@ -189,7 +209,10 @@ Messages (total: {actual_count}):
         if channel_cfg is not None:
             system_prompt = self._composer.compose(channel_cfg, group_cfg)
         else:
-            system_prompt = SYSTEM_PROMPT_TEMPLATE.replace("{language}", self.output_language)
+            self.logger.warning(f"Channel {channel_name!r} not in config; using default prompt")
+            system_prompt = self._composer.compose(
+                ChannelConfig(id=channel_name, name=channel_name), None
+            )
         chat_messages = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": prompt},

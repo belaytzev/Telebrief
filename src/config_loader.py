@@ -215,17 +215,17 @@ def _parse_filter_specs(raw_list: object, path_label: str) -> list[FilterSpec]:
         if "class_path" not in item:
             raise ValueError(f"{path_label}[{i}] missing required field 'class_path'")
         class_path = item["class_path"]
-        if not isinstance(class_path, str):
+        if not isinstance(class_path, str) or not class_path.strip():
             raise ValueError(
-                f"{path_label}[{i}].class_path must be a string, "
-                f"got {type(class_path).__name__}"
+                f"{path_label}[{i}].class_path must be a non-empty string, "
+                f"got {class_path!r}"
             )
         config = item.get("config", {})
         if not isinstance(config, dict):
             raise ValueError(
                 f"{path_label}[{i}].config must be a mapping, " f"got {type(config).__name__}"
             )
-        specs.append(FilterSpec(class_path=class_path, config=config))
+        specs.append(FilterSpec(class_path=class_path.strip(), config=config))
     return specs
 
 
@@ -272,7 +272,7 @@ def _parse_channel_entry(i: int, ch: object) -> ChannelConfig:
         lookback_hours=lookback_hours,
         prompt_extra=prompt_extra,
         filters=channel_filters,
-        group=group,
+        group=group.strip() if group is not None else None,
     )
 
 
@@ -330,6 +330,8 @@ def _parse_prompts_config(yaml_config: dict) -> PromptsConfig:
     composer = raw.get("composer", "")
     if not isinstance(composer, str):
         raise ValueError(f"prompts.composer must be a string, got {type(composer).__name__}")
+    if composer and not composer.strip():
+        raise ValueError("prompts.composer must be a non-empty dotted path or empty string")
 
     return PromptsConfig(base_template=base_template, composer=composer)
 
@@ -481,8 +483,11 @@ def load_config(config_path: str = "config.yaml") -> Config:
     settings_dict = yaml_config.get("settings", {})
     ai_provider, ai_model = _resolve_ai_settings(settings_dict)
     digest_mode, digest_groups, output_language = _parse_digest_settings(settings_dict)
-    raw_global_filters = settings_dict.get("filters") or []
-    global_filters = _parse_filter_specs(raw_global_filters, "settings.filters")
+    raw_global_filters = settings_dict.get("filters")
+    global_filters = _parse_filter_specs(
+        raw_global_filters if raw_global_filters is not None else [],
+        "settings.filters",
+    )
 
     settings = Settings(
         schedule_time=settings_dict.get("schedule_time", "08:00"),

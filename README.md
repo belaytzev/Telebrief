@@ -334,6 +334,21 @@ base template (with {language} substituted)
 
 To use a custom composer, implement the `PromptComposer` Protocol and set `composer` to its dotted path:
 
+```python
+from src.config_loader import ChannelConfig, DigestGroupConfig
+from src.extensions.prompts import PromptComposer
+
+class MyComposer:
+    def __init__(self, base_template: str, language: str) -> None:
+        self._base = base_template
+        self._language = language
+
+    def compose(self, channel: ChannelConfig, group: DigestGroupConfig | None) -> str:
+        return f"{self._base}\nRespond in {self._language}."
+```
+
+> **Note:** The constructor must accept `(base_template: str, language: str)` as its first two positional arguments. A mismatched signature raises a `TypeError` at startup with a descriptive message.
+
 ```yaml
 prompts:
   composer: mypackage.mymodule.MyComposer
@@ -368,7 +383,7 @@ from src.storage import SQLiteBackend
 from datetime import datetime, timezone
 
 backend = SQLiteBackend("data/messages.db")
-await backend.connect()
+await backend.initialize()
 
 messages = await backend.query_messages(
     channel="@techcrunch",
