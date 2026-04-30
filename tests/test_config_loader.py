@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 import pytest
 
-from src.config_loader import DigestGroupConfig, load_config
+from src.config_loader import DigestGroupConfig, StorageConfig, load_config
 
 
 @pytest.mark.unit
@@ -588,3 +588,135 @@ settings:
 
     with pytest.raises(ValueError, match="Duplicate channel names.*Same Name"):
         load_config(str(config_file))
+
+
+# ---------------------------------------------------------------------------
+# StorageConfig tests
+# ---------------------------------------------------------------------------
+
+
+def _storage_config_file(tmp_path, storage_block: str) -> str:
+    content = f"""
+channels:
+  - id: "@test"
+    name: "Test"
+
+settings:
+  target_user_id: 123456789
+
+{storage_block}
+"""
+    p = tmp_path / "config.yaml"
+    p.write_text(content)
+    return str(p)
+
+
+@pytest.mark.unit
+def test_storage_config_missing_block_defaults(tmp_path, mock_env_vars):
+    config = load_config(_storage_config_file(tmp_path, ""))
+    assert config.storage == StorageConfig()
+    assert config.storage.enabled is False
+    assert config.storage.backend == "sqlite"
+    assert config.storage.path == "data/messages.db"
+    assert config.storage.url == ""
+
+
+@pytest.mark.unit
+def test_storage_config_sqlite_explicit(tmp_path, mock_env_vars):
+    block = """
+storage:
+  enabled: true
+  backend: sqlite
+  path: /tmp/test.db
+"""
+    config = load_config(_storage_config_file(tmp_path, block))
+    assert config.storage.enabled is True
+    assert config.storage.backend == "sqlite"
+    assert config.storage.path == "/tmp/test.db"
+
+
+@pytest.mark.unit
+def test_storage_config_postgres_with_url(tmp_path, mock_env_vars):
+    block = """
+storage:
+  enabled: true
+  backend: postgres
+  url: "postgresql://user:pass@localhost:5432/db"
+"""
+    config = load_config(_storage_config_file(tmp_path, block))
+    assert config.storage.enabled is True
+    assert config.storage.backend == "postgres"
+    assert config.storage.url == "postgresql://user:pass@localhost:5432/db"
+
+
+@pytest.mark.unit
+def test_storage_config_postgres_enabled_empty_url_raises(tmp_path, mock_env_vars):
+    block = """
+storage:
+  enabled: true
+  backend: postgres
+  url: ""
+"""
+    with pytest.raises(ValueError, match="storage.url must be set"):
+        load_config(_storage_config_file(tmp_path, block))
+
+
+@pytest.mark.unit
+def test_storage_config_postgres_disabled_empty_url_ok(tmp_path, mock_env_vars):
+    block = """
+storage:
+  enabled: false
+  backend: postgres
+  url: ""
+"""
+    config = load_config(_storage_config_file(tmp_path, block))
+    assert config.storage.enabled is False
+
+
+@pytest.mark.unit
+def test_storage_config_invalid_backend_raises(tmp_path, mock_env_vars):
+    block = """
+storage:
+  backend: mysql
+"""
+    with pytest.raises(ValueError, match="storage.backend must be"):
+        load_config(_storage_config_file(tmp_path, block))
+
+
+@pytest.mark.unit
+def test_storage_config_enabled_not_bool_raises(tmp_path, mock_env_vars):
+    block = """
+storage:
+  enabled: "yes"
+"""
+    with pytest.raises(ValueError, match="storage.enabled must be a bool"):
+        load_config(_storage_config_file(tmp_path, block))
+
+
+@pytest.mark.unit
+def test_storage_config_empty_path_raises(tmp_path, mock_env_vars):
+    block = """
+storage:
+  path: ""
+"""
+    with pytest.raises(
+        ValueError, match="storage.path must be a non-empty string when backend is 'sqlite'"
+    ):
+        load_config(_storage_config_file(tmp_path, block))
+
+
+@pytest.mark.unit
+def test_storage_config_url_not_string_raises(tmp_path, mock_env_vars):
+    block = """
+storage:
+  url: 12345
+"""
+    with pytest.raises(ValueError, match="storage.url must be a string"):
+        load_config(_storage_config_file(tmp_path, block))
+
+
+@pytest.mark.unit
+def test_storage_config_not_mapping_raises(tmp_path, mock_env_vars):
+    block = "storage: true"
+    with pytest.raises(ValueError, match="'storage' must be a mapping"):
+        load_config(_storage_config_file(tmp_path, block))

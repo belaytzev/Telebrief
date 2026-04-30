@@ -12,10 +12,44 @@ from src.config_loader import Config
 from src.formatter import DigestFormatter
 from src.grouper import DigestGrouper
 from src.sender import DigestSender
+from src.storage import create_storage
 from src.summarizer import ERROR_SUMMARY_PREFIX, Summarizer
 from src.utils import split_message
 
 _CHANNEL_URL_RE = re.compile(r"^https://t\.me/(?:c/\d+|[^/]{2,})$")
+
+
+async def _save_to_storage(
+    config: Config, messages_by_channel: dict, logger: logging.Logger
+) -> None:
+    """Persist collected messages to the configured storage backend, if enabled."""
+    sc = config.storage
+    storage = None
+    try:
+        storage = await create_storage(sc)
+    except Exception as e:
+        logger.error(
+            f"Storage init failed ({type(e).__name__}), digest continues",
+            exc_info=True,
+        )
+    if storage:
+        try:
+            flat = [msg for msgs in messages_by_channel.values() for msg in msgs]
+            saved = await storage.save_messages(flat)
+            logger.info(f"Stored {saved} messages ({sc.backend})")
+        except Exception as e:
+            logger.error(
+                f"Storage write failed ({type(e).__name__}), digest continues",
+                exc_info=True,
+            )
+        finally:
+            try:
+                await storage.close()
+            except Exception as e:
+                logger.error(
+                    f"Storage close failed ({type(e).__name__})",
+                    exc_info=True,
+                )
 
 
 async def _collect_messages(config: Config, logger: logging.Logger, hours: int) -> dict:
@@ -29,6 +63,7 @@ async def _collect_messages(config: Config, logger: logging.Logger, hours: int) 
         await collector.disconnect()
     total = sum(len(msgs) for msgs in messages_by_channel.values())
     logger.info(f"Collected {total} messages from {len(messages_by_channel)} channels")
+    await _save_to_storage(config, messages_by_channel, logger)
     return messages_by_channel
 
 
@@ -115,16 +150,7 @@ async def generate_digest(config: Config, logger: logging.Logger, hours: int = 2
     try:
         # Step 1: Collect messages
         logger.info("STEP 1: Collecting messages from Telegram")
-        collector = MessageCollector(config, logger)
-
-        await collector.connect()
-        try:
-            messages_by_channel = await collector.fetch_messages(hours=hours)
-        finally:
-            await collector.disconnect()
-
-        total_messages = sum(len(msgs) for msgs in messages_by_channel.values())
-        logger.info(f"Collected {total_messages} messages from {len(messages_by_channel)} channels")
+        messages_by_channel = await _collect_messages(config, logger, hours)
 
         # Step 2: Generate summaries
         logger.info("STEP 2: Generating AI summaries")
