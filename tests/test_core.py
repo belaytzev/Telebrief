@@ -4,8 +4,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from src.config_loader import StorageConfig
+from src.config_loader import ChannelConfig, FilterSpec, StorageConfig
 from src.core import (
+    _apply_filters,
     _collect_messages,
     generate_and_send_channel_digests,
     generate_and_send_digest,
@@ -523,6 +524,28 @@ async def test_generate_digest_calls_storage_when_enabled(
 
 @pytest.mark.unit
 @pytest.mark.asyncio
+async def test_save_to_storage_close_failure_is_non_fatal(
+    sample_config, mock_logger, sample_messages
+):
+    """storage.close() raises: error logged, no exception propagated."""
+    from src.core import _save_to_storage
+
+    sample_config.storage = StorageConfig(enabled=True, backend="sqlite", path=":memory:")
+    mock_backend = MagicMock()
+    mock_backend.save_messages = AsyncMock(return_value=len(sample_messages))
+    mock_backend.close = AsyncMock(side_effect=RuntimeError("close boom"))
+
+    with patch("src.core.create_storage", new_callable=AsyncMock) as mock_create:
+        mock_create.return_value = mock_backend
+        await _save_to_storage(sample_config, {"Test Channel": sample_messages}, mock_logger)
+
+    mock_logger.error.assert_called()
+    error_calls = [str(c) for c in mock_logger.error.call_args_list]
+    assert any("close" in c.lower() for c in error_calls)
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
 async def test_generate_digest_storage_disabled_does_not_save(
     sample_config, mock_logger, sample_messages
 ):
@@ -550,3 +573,213 @@ async def test_generate_digest_storage_disabled_does_not_save(
         await generate_digest(sample_config, mock_logger, hours=24)
 
         mock_create.assert_called_once_with(sample_config.storage)
+
+
+# --- _apply_filters tests ---
+
+
+def _make_filter_spec(class_path: str, **cfg) -> FilterSpec:
+    return FilterSpec(class_path=class_path, config=dict(cfg))
+
+
+class _BrokenFilter:
+    name = "broken"
+
+    async def filter(self, channel, messages):
+        raise RuntimeError("kaboom")
+
+
+class _PassFilter:
+    name = "pass"
+
+    async def filter(self, channel, messages):
+        return messages[:1]
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_apply_filters_empty_global_specs_returns_unchanged(
+    sample_config, mock_logger, sample_messages
+):
+    """No global filters configured -> messages unchanged."""
+    sample_config.settings.filters = []
+    ch_cfg = ChannelConfig(id="@test", name="Test Channel")
+    result = await _apply_filters(ch_cfg, sample_messages, sample_config, mock_logger)
+    assert result == sample_messages
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_apply_filters_channel_none_uses_global(sample_config, mock_logger, sample_messages):
+    """channel.filters=None falls back to global filter list."""
+    sample_config.settings.filters = [
+        _make_filter_spec("src.extensions.filters.KeywordFilter", include=["message 1"])
+    ]
+    ch_cfg = ChannelConfig(id="@test", name="Test Channel", filters=None)
+    result = await _apply_filters(ch_cfg, sample_messages, sample_config, mock_logger)
+    assert len(result) == 1
+    assert result[0].text == "Test message 1"
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_apply_filters_channel_empty_list_overrides_global(
+    sample_config, mock_logger, sample_messages
+):
+    """channel.filters=[] is explicit no-op even when global has filters."""
+    sample_config.settings.filters = [
+        _make_filter_spec("src.extensions.filters.MinLengthFilter", min_chars=9999)
+    ]
+    ch_cfg = ChannelConfig(id="@test", name="Test Channel", filters=[])
+    result = await _apply_filters(ch_cfg, sample_messages, sample_config, mock_logger)
+    assert result == sample_messages
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_apply_filters_channel_list_overrides_global(
+    sample_config, mock_logger, sample_messages
+):
+    """channel.filters with entries overrides global entirely."""
+    sample_config.settings.filters = [
+        _make_filter_spec("src.extensions.filters.MinLengthFilter", min_chars=9999)
+    ]
+    ch_cfg = ChannelConfig(
+        id="@test",
+        name="Test Channel",
+        filters=[_make_filter_spec("src.extensions.filters.MinLengthFilter", min_chars=1)],
+    )
+    result = await _apply_filters(ch_cfg, sample_messages, sample_config, mock_logger)
+    assert result == sample_messages
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_apply_filters_chain_ordering(sample_config, mock_logger):
+    """Filters apply in order: output of first feeds second."""
+    from datetime import datetime, timezone
+
+    from src.collector import Message
+
+    msgs = [
+        Message(
+            "hello world job", "u", datetime(2025, 1, 1, tzinfo=timezone.utc), "#", "ch", False, ""
+        ),
+        Message(
+            "hello world", "u", datetime(2025, 1, 1, tzinfo=timezone.utc), "#", "ch", False, ""
+        ),
+        Message(
+            "job offer at company",
+            "u",
+            datetime(2025, 1, 1, tzinfo=timezone.utc),
+            "#",
+            "ch",
+            False,
+            "",
+        ),
+    ]
+    sample_config.settings.filters = [
+        _make_filter_spec("src.extensions.filters.KeywordFilter", include=["job"]),
+        _make_filter_spec("src.extensions.filters.KeywordFilter", exclude=["company"]),
+    ]
+    ch_cfg = ChannelConfig(id="@test", name="ch")
+    result = await _apply_filters(ch_cfg, msgs, sample_config, mock_logger)
+    assert len(result) == 1
+    assert result[0].text == "hello world job"
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_apply_filters_unresolvable_class_path_logged_and_skipped(
+    sample_config, mock_logger, sample_messages
+):
+    """Unresolvable class_path: error logged, filter skipped, messages preserved."""
+    sample_config.settings.filters = [
+        _make_filter_spec("nonexistent.module.BadFilter"),
+    ]
+    ch_cfg = ChannelConfig(id="@test", name="Test Channel")
+    result = await _apply_filters(ch_cfg, sample_messages, sample_config, mock_logger)
+    mock_logger.error.assert_called_once()
+    assert "nonexistent.module.BadFilter" in mock_logger.error.call_args[0][0]
+    assert result == sample_messages
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_apply_filters_init_error_logged_and_skipped(
+    sample_config, mock_logger, sample_messages
+):
+    """Filter instantiation error: logged, filter skipped, messages preserved."""
+    sample_config.settings.filters = [
+        _make_filter_spec("src.extensions.filters.MinLengthFilter", min_chars="not_an_int"),
+    ]
+    ch_cfg = ChannelConfig(id="@test", name="Test Channel")
+    result = await _apply_filters(ch_cfg, sample_messages, sample_config, mock_logger)
+    mock_logger.error.assert_called_once()
+    assert result == sample_messages
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_apply_filters_filter_exception_skips_that_filter_preserves_list(
+    sample_config, mock_logger, sample_messages
+):
+    """filter() raises -> error logged, that step skipped, next filter still runs."""
+    sample_config.settings.filters = [
+        _make_filter_spec("tests.test_core._BrokenFilter"),
+        _make_filter_spec("tests.test_core._PassFilter"),
+    ]
+    ch_cfg = ChannelConfig(id="@test", name="Test Channel")
+    result = await _apply_filters(ch_cfg, sample_messages, sample_config, mock_logger)
+    assert len(result) == 1
+    mock_logger.error.assert_called_once()
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_collect_messages_applies_filters_before_storage(
+    sample_config, mock_logger, sample_messages
+):
+    """_collect_messages applies filters; only filtered messages reach storage."""
+    sample_config.settings.filters = [
+        _make_filter_spec("src.extensions.filters.MinLengthFilter", min_chars=99999)
+    ]
+    sample_config.storage = StorageConfig(enabled=True, backend="sqlite", path=":memory:")
+    mock_backend = MagicMock()
+    mock_backend.save_messages = AsyncMock(return_value=0)
+    mock_backend.close = AsyncMock()
+
+    with (
+        patch("src.core.MessageCollector") as mock_collector_class,
+        patch("src.core.create_storage", new_callable=AsyncMock) as mock_create,
+    ):
+        mock_collector_class.return_value = _make_collector_mock(sample_messages)
+        mock_create.return_value = mock_backend
+
+        result = await _collect_messages(sample_config, mock_logger, 24)
+
+    assert result == {"Test Channel": []}
+    mock_backend.save_messages.assert_called_once_with([])
+
+
+@pytest.mark.unit
+def test_order_groups_pushes_literal_other_last_when_locale_differs(sample_config):
+    """Literal "Other" must sort last even when output_language localizes the bucket name."""
+    from src.core import _order_groups
+
+    sample_config.settings.output_language = "Russian"
+    grouped = {"News": [], "Other": [], "Sport": []}
+    order = _order_groups(grouped, sample_config)
+    assert order[-1] == "Other"
+    assert set(order) == {"News", "Other", "Sport"}
+
+
+@pytest.mark.unit
+def test_order_groups_pushes_literal_other_case_insensitive(sample_config):
+    """Case variants of "Other" (e.g. "OTHER", "other") all push to the end."""
+    from src.core import _order_groups
+
+    sample_config.settings.output_language = "English"
+    grouped = {"News": [], "OTHER": [], "Sport": []}
+    order = _order_groups(grouped, sample_config)
+    assert order[-1] == "OTHER"

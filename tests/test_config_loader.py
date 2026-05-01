@@ -5,7 +5,13 @@ from unittest.mock import patch
 
 import pytest
 
-from src.config_loader import DigestGroupConfig, StorageConfig, load_config
+from src.config_loader import (
+    DigestGroupConfig,
+    FilterSpec,
+    PromptsConfig,
+    StorageConfig,
+    load_config,
+)
 
 
 @pytest.mark.unit
@@ -720,3 +726,454 @@ def test_storage_config_not_mapping_raises(tmp_path, mock_env_vars):
     block = "storage: true"
     with pytest.raises(ValueError, match="'storage' must be a mapping"):
         load_config(_storage_config_file(tmp_path, block))
+
+
+# ---------------------------------------------------------------------------
+# FilterSpec / filter chain parsing tests
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_filter_spec_defaults_to_empty_global(tmp_path, mock_env_vars):
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@test"\n    name: "Test"\nsettings:\n  target_user_id: 123456789\n'
+    )
+    config = load_config(str(p))
+    assert config.settings.filters == []
+
+
+@pytest.mark.unit
+def test_filter_spec_global_parsed(tmp_path, mock_env_vars):
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@test"\n    name: "Test"\n'
+        "settings:\n  target_user_id: 123456789\n"
+        "  filters:\n"
+        "    - class_path: src.extensions.filters.KeywordFilter\n"
+        "      config:\n"
+        "        include:\n          - job\n"
+        "        exclude:\n          - nsfw\n"
+    )
+    config = load_config(str(p))
+    assert len(config.settings.filters) == 1
+    spec = config.settings.filters[0]
+    assert spec == FilterSpec(
+        class_path="src.extensions.filters.KeywordFilter",
+        config={"include": ["job"], "exclude": ["nsfw"]},
+    )
+
+
+@pytest.mark.unit
+def test_filter_spec_config_defaults_to_empty_dict(tmp_path, mock_env_vars):
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@test"\n    name: "Test"\n'
+        "settings:\n  target_user_id: 123456789\n"
+        "  filters:\n"
+        "    - class_path: src.extensions.filters.MinLengthFilter\n"
+    )
+    config = load_config(str(p))
+    assert config.settings.filters[0].config == {}
+
+
+@pytest.mark.unit
+def test_filter_spec_channel_null_uses_global(tmp_path, mock_env_vars):
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@test"\n    name: "Test"\n    filters:\n'
+        "settings:\n  target_user_id: 123456789\n"
+    )
+    config = load_config(str(p))
+    assert config.channels[0].filters is None
+
+
+@pytest.mark.unit
+def test_filter_spec_channel_empty_list_explicit_noop(tmp_path, mock_env_vars):
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@test"\n    name: "Test"\n    filters: []\n'
+        "settings:\n  target_user_id: 123456789\n"
+    )
+    config = load_config(str(p))
+    assert config.channels[0].filters == []
+
+
+@pytest.mark.unit
+def test_filter_spec_channel_override(tmp_path, mock_env_vars):
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@test"\n    name: "Test"\n'
+        "    filters:\n"
+        "      - class_path: src.extensions.filters.KeywordFilter\n"
+        "        config:\n          include:\n            - python\n"
+        "settings:\n  target_user_id: 123456789\n"
+        "  filters:\n"
+        "    - class_path: src.extensions.filters.MinLengthFilter\n"
+        "      config:\n        min_chars: 10\n"
+    )
+    config = load_config(str(p))
+    assert len(config.settings.filters) == 1
+    assert config.settings.filters[0].class_path == "src.extensions.filters.MinLengthFilter"
+    assert len(config.channels[0].filters) == 1
+    assert config.channels[0].filters[0].class_path == "src.extensions.filters.KeywordFilter"
+
+
+@pytest.mark.unit
+def test_filter_spec_missing_class_path_raises(tmp_path, mock_env_vars):
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@test"\n    name: "Test"\n'
+        "settings:\n  target_user_id: 123456789\n"
+        "  filters:\n    - config:\n        min_chars: 10\n"
+    )
+    with pytest.raises(ValueError, match="missing required field 'class_path'"):
+        load_config(str(p))
+
+
+@pytest.mark.unit
+def test_filter_spec_non_string_class_path_raises(tmp_path, mock_env_vars):
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@test"\n    name: "Test"\n'
+        "settings:\n  target_user_id: 123456789\n"
+        "  filters:\n    - class_path: 42\n"
+    )
+    with pytest.raises(ValueError, match="class_path must be a non-empty string"):
+        load_config(str(p))
+
+
+@pytest.mark.unit
+def test_filter_spec_non_dict_config_raises(tmp_path, mock_env_vars):
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@test"\n    name: "Test"\n'
+        "settings:\n  target_user_id: 123456789\n"
+        "  filters:\n"
+        "    - class_path: src.extensions.filters.MinLengthFilter\n"
+        "      config: not a dict\n"
+    )
+    with pytest.raises(ValueError, match="config must be a mapping"):
+        load_config(str(p))
+
+
+@pytest.mark.unit
+def test_filter_spec_non_mapping_item_raises(tmp_path, mock_env_vars):
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@test"\n    name: "Test"\n'
+        "settings:\n  target_user_id: 123456789\n"
+        "  filters:\n    - src.extensions.filters.MinLengthFilter\n"
+    )
+    with pytest.raises(ValueError, match="must be a mapping"):
+        load_config(str(p))
+
+
+@pytest.mark.unit
+def test_filter_spec_channel_invalid_class_path_raises(tmp_path, mock_env_vars):
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@test"\n    name: "Test"\n'
+        "    filters:\n      - class_path: 99\n"
+        "settings:\n  target_user_id: 123456789\n"
+    )
+    with pytest.raises(ValueError, match="class_path must be a non-empty string"):
+        load_config(str(p))
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "bad_path",
+    ["NoDots", "trailing.", ".leading", "two..dots", "has space.Cls", "1bad.Cls"],
+)
+def test_filter_spec_invalid_dotted_path_raises(tmp_path, mock_env_vars, bad_path):
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@test"\n    name: "Test"\n'
+        "settings:\n  target_user_id: 123456789\n"
+        f"  filters:\n    - class_path: {bad_path!r}\n"
+    )
+    with pytest.raises(ValueError, match="must be a dotted path"):
+        load_config(str(p))
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "bad_composer",
+    ["NoDots", "trailing.", ".leading", "two..dots", "has space.Cls", "1bad.Cls"],
+)
+def test_prompts_composer_invalid_dotted_path_raises(tmp_path, mock_env_vars, bad_composer):
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@test"\n    name: "Test"\n'
+        "settings:\n  target_user_id: 123456789\n"
+        "prompts:\n"
+        f"  composer: {bad_composer!r}\n"
+    )
+    with pytest.raises(ValueError, match="prompts.composer must be a dotted path"):
+        load_config(str(p))
+
+
+@pytest.mark.unit
+def test_prompts_composer_empty_string_allowed(tmp_path, mock_env_vars):
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@test"\n    name: "Test"\n'
+        "settings:\n  target_user_id: 123456789\n"
+        "prompts:\n"
+        "  composer: ''\n"
+    )
+    config = load_config(str(p))
+    assert config.prompts.composer == ""
+
+
+@pytest.mark.unit
+def test_prompts_config_strips_whitespace(tmp_path, mock_env_vars):
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@test"\n    name: "Test"\n'
+        "settings:\n  target_user_id: 123456789\n"
+        "prompts:\n"
+        "  base_template: '  src/prompts/base_summary.txt  '\n"
+        "  composer: '  src.extensions.prompts.DefaultComposer  '\n"
+    )
+    config = load_config(str(p))
+    assert config.prompts.base_template == "src/prompts/base_summary.txt"
+    assert config.prompts.composer == "src.extensions.prompts.DefaultComposer"
+
+
+@pytest.mark.unit
+def test_sample_config_fixture_still_constructs(sample_config):
+    assert sample_config.settings.filters == []
+    assert sample_config.channels[0].filters is None
+
+
+# ---------------------------------------------------------------------------
+# Group binding and PromptsConfig tests (Task 8)
+# ---------------------------------------------------------------------------
+
+
+def _group_config_file(tmp_path, channels_block: str, settings_block: str, extra: str = "") -> str:
+    content = f"""
+channels:
+{channels_block}
+
+settings:
+  target_user_id: 123456789
+{settings_block}
+{extra}
+"""
+    p = tmp_path / "config.yaml"
+    p.write_text(content)
+    return str(p)
+
+
+@pytest.mark.unit
+def test_digest_group_prompt_extra_parsed(tmp_path, mock_env_vars):
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@test"\n    name: "Test"\n'
+        "settings:\n  target_user_id: 123456789\n"
+        "  digest_groups:\n"
+        "    - name: Jobs\n"
+        "      description: Job offers\n"
+        "      prompt_extra: Focus on remote roles.\n"
+    )
+    config = load_config(str(p))
+    assert config.settings.digest_groups[0].prompt_extra == "Focus on remote roles."
+
+
+@pytest.mark.unit
+def test_digest_group_prompt_extra_defaults_empty(tmp_path, mock_env_vars):
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@test"\n    name: "Test"\n'
+        "settings:\n  target_user_id: 123456789\n"
+        "  digest_groups:\n"
+        "    - name: Jobs\n"
+        "      description: Job offers\n"
+    )
+    config = load_config(str(p))
+    assert config.settings.digest_groups[0].prompt_extra == ""
+
+
+@pytest.mark.unit
+def test_digest_group_prompt_extra_non_string_raises(tmp_path, mock_env_vars):
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@test"\n    name: "Test"\n'
+        "settings:\n  target_user_id: 123456789\n"
+        "  digest_groups:\n"
+        "    - name: Jobs\n"
+        "      description: Job offers\n"
+        "      prompt_extra: 42\n"
+    )
+    with pytest.raises(ValueError, match="prompt_extra must be a string"):
+        load_config(str(p))
+
+
+@pytest.mark.unit
+def test_channel_group_field_parsed(tmp_path, mock_env_vars):
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@jobs"\n    name: "Jobs"\n    group: MyGroup\n'
+        "settings:\n  target_user_id: 123456789\n"
+        "  digest_groups:\n"
+        "    - name: MyGroup\n"
+        "      description: My group\n"
+    )
+    config = load_config(str(p))
+    assert config.channels[0].group == "MyGroup"
+
+
+@pytest.mark.unit
+def test_channel_group_none_by_default(tmp_path, mock_env_vars):
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@test"\n    name: "Test"\n' "settings:\n  target_user_id: 123456789\n"
+    )
+    config = load_config(str(p))
+    assert config.channels[0].group is None
+
+
+@pytest.mark.unit
+def test_channel_group_other_accepted(tmp_path, mock_env_vars):
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@test"\n    name: "Test"\n    group: Other\n'
+        "settings:\n  target_user_id: 123456789\n"
+    )
+    config = load_config(str(p))
+    assert config.channels[0].group == "Other"
+
+
+@pytest.mark.unit
+def test_channel_group_localized_other_accepted(tmp_path, mock_env_vars):
+    # Russian localized "Other" is "Другое"
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@test"\n    name: "Test"\n    group: "Другое"\n'
+        "settings:\n  target_user_id: 123456789\n  output_language: Russian\n"
+    )
+    config = load_config(str(p))
+    assert config.channels[0].group == "Другое"
+
+
+@pytest.mark.unit
+def test_channel_unknown_group_raises(tmp_path, mock_env_vars):
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@test"\n    name: "Test"\n    group: NonExistent\n'
+        "settings:\n  target_user_id: 123456789\n"
+    )
+    with pytest.raises(ValueError, match="Unknown group references"):
+        load_config(str(p))
+
+
+@pytest.mark.unit
+def test_channel_unknown_group_error_lists_bad_channel(tmp_path, mock_env_vars):
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@test"\n    name: "MyChan"\n    group: BadGroup\n'
+        "settings:\n  target_user_id: 123456789\n"
+    )
+    with pytest.raises(ValueError) as exc_info:
+        load_config(str(p))
+    assert "MyChan" in str(exc_info.value)
+    assert "BadGroup" in str(exc_info.value)
+
+
+@pytest.mark.unit
+def test_channel_group_null_yaml_is_none(tmp_path, mock_env_vars):
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@test"\n    name: "Test"\n    group:\n'
+        "settings:\n  target_user_id: 123456789\n"
+    )
+    config = load_config(str(p))
+    assert config.channels[0].group is None
+
+
+# ---------------------------------------------------------------------------
+# PromptsConfig tests
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_prompts_config_missing_block_defaults(tmp_path, mock_env_vars):
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@test"\n    name: "Test"\n' "settings:\n  target_user_id: 123456789\n"
+    )
+    config = load_config(str(p))
+    assert config.prompts == PromptsConfig()
+    assert config.prompts.base_template == "src/prompts/base_summary.txt"
+    assert config.prompts.composer == ""
+
+
+@pytest.mark.unit
+def test_prompts_config_explicit_values(tmp_path, mock_env_vars):
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@test"\n    name: "Test"\n'
+        "settings:\n  target_user_id: 123456789\n"
+        "prompts:\n"
+        "  base_template: custom/my_template.txt\n"
+        "  composer: myapp.prompts.CustomComposer\n"
+    )
+    config = load_config(str(p))
+    assert config.prompts.base_template == "custom/my_template.txt"
+    assert config.prompts.composer == "myapp.prompts.CustomComposer"
+
+
+@pytest.mark.unit
+def test_prompts_config_not_mapping_raises(tmp_path, mock_env_vars):
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@test"\n    name: "Test"\n'
+        "settings:\n  target_user_id: 123456789\n"
+        "prompts: true\n"
+    )
+    with pytest.raises(ValueError, match="'prompts' must be a mapping"):
+        load_config(str(p))
+
+
+@pytest.mark.unit
+def test_prompts_config_empty_base_template_raises(tmp_path, mock_env_vars):
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@test"\n    name: "Test"\n'
+        "settings:\n  target_user_id: 123456789\n"
+        "prompts:\n  base_template: ''\n"
+    )
+    with pytest.raises(ValueError, match="base_template must be a non-empty string"):
+        load_config(str(p))
+
+
+@pytest.mark.unit
+def test_prompts_config_composer_not_string_raises(tmp_path, mock_env_vars):
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@test"\n    name: "Test"\n'
+        "settings:\n  target_user_id: 123456789\n"
+        "prompts:\n  composer: 42\n"
+    )
+    with pytest.raises(ValueError, match="prompts.composer must be a string"):
+        load_config(str(p))
+
+
+@pytest.mark.unit
+def test_digest_group_config_equality_with_prompt_extra(tmp_path, mock_env_vars):
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@test"\n    name: "Test"\n'
+        "settings:\n  target_user_id: 123456789\n"
+        "  digest_groups:\n"
+        "    - name: Events\n"
+        "      description: Conferences\n"
+        "      prompt_extra: Be concise.\n"
+    )
+    config = load_config(str(p))
+    assert config.settings.digest_groups[0] == DigestGroupConfig(
+        name="Events", description="Conferences", prompt_extra="Be concise."
+    )

@@ -1,11 +1,18 @@
 """Tests for summarizer module."""
 
 from datetime import datetime
+from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from src.summarizer import ERROR_SUMMARY_PREFIX, Summarizer, SYSTEM_PROMPT_TEMPLATE  # isort: skip
+from src.summarizer import (  # isort: skip
+    ERROR_SUMMARY_PREFIX,
+    Summarizer,
+    SYSTEM_PROMPT_TEMPLATE,
+    _DEFAULT_TEMPLATE_PATH,
+    _load_base_template,
+)
 from src.ai_providers import TokenBudgetExhaustedError  # isort: skip
 
 
@@ -659,6 +666,141 @@ async def test_summarize_channel_applies_prompt_extra(sample_config, mock_logger
     private_system = captured[1][0]["content"]
 
     assert "Focus on backend roles only." in test_system
-    assert "Channel-specific instructions" in test_system
     assert "Focus on backend roles only." not in private_system
-    assert "Channel-specific instructions" not in private_system
+
+
+# --- Task 6: Base template extraction tests ---
+
+
+@pytest.mark.unit
+def test_load_base_template_default_path_returns_nonempty():
+    """`_load_base_template` with the default path returns a non-empty string."""
+    content = _load_base_template(_DEFAULT_TEMPLATE_PATH)
+    assert isinstance(content, str)
+    assert len(content) > 0
+
+
+@pytest.mark.unit
+def test_load_base_template_contains_language_placeholder():
+    """Template loaded from file retains the {language} placeholder."""
+    content = _load_base_template(_DEFAULT_TEMPLATE_PATH)
+    assert "{language}" in content
+
+
+@pytest.mark.unit
+def test_load_base_template_custom_path(tmp_path: Path):
+    """`_load_base_template` reads content from an arbitrary path."""
+    custom = tmp_path / "custom.txt"
+    custom.write_text("Hello {language}!", encoding="utf-8")
+    assert _load_base_template(str(custom)) == "Hello {language}!"
+
+
+@pytest.mark.unit
+def test_load_base_template_missing_file_raises(tmp_path: Path):
+    """Missing template file raises FileNotFoundError (fail-fast, no silent fallback)."""
+    missing = tmp_path / "nonexistent.txt"
+    with pytest.raises(FileNotFoundError):
+        _load_base_template(str(missing))
+
+
+@pytest.mark.unit
+def test_system_prompt_template_loaded_from_file():
+    """Module-level SYSTEM_PROMPT_TEMPLATE equals explicit file load — not a hardcoded literal."""
+    fresh = _load_base_template(_DEFAULT_TEMPLATE_PATH)
+    assert SYSTEM_PROMPT_TEMPLATE == fresh
+
+
+@pytest.mark.unit
+def test_default_template_path_points_to_existing_file():
+    """_DEFAULT_TEMPLATE_PATH resolves to a file that exists on disk."""
+    assert Path(_DEFAULT_TEMPLATE_PATH).is_file()
+
+
+# --- Task 9: Composer wiring tests ---
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_summarizer_uses_composer_output(sample_config, mock_logger, sample_messages):
+    """Summarizer passes composer output as system prompt, not the raw template."""
+    from unittest.mock import MagicMock
+
+    from src.extensions.prompts import PromptComposer
+
+    sentinel = "COMPOSER_OUTPUT_SENTINEL_XYZ"
+    mock_composer = MagicMock(spec=PromptComposer)
+    mock_composer.compose.return_value = sentinel
+
+    with patch("src.ai_providers.AsyncOpenAI"):
+        summarizer = Summarizer(sample_config, mock_logger)
+        summarizer._composer = mock_composer
+
+        captured: list = []
+
+        async def capture(**kwargs):
+            captured.append(kwargs.get("messages", []))
+            return "ok"
+
+        summarizer.provider.chat_completion = capture
+        await summarizer._summarize_channel("Test Channel", sample_messages)
+
+    assert len(captured) == 1
+    assert captured[0][0]["content"] == sentinel
+    mock_composer.compose.assert_called_once()
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_channel_without_group_uses_base_and_channel_prompt_extra(
+    sample_config, mock_logger, sample_messages
+):
+    """Channel with no group: composer returns base + channel.prompt_extra only."""
+    sample_config.channels[0].prompt_extra = "Only backend."
+    sample_config.channels[0].group = None
+
+    captured: list = []
+
+    async def capture(**kwargs):
+        captured.append(kwargs.get("messages", []))
+        return "ok"
+
+    with patch("src.ai_providers.AsyncOpenAI"):
+        summarizer = Summarizer(sample_config, mock_logger)
+        summarizer.provider.chat_completion = capture
+        await summarizer._summarize_channel("Test Channel", sample_messages)
+
+    system_prompt = captured[0][0]["content"]
+    assert "Only backend." in system_prompt
+    assert SYSTEM_PROMPT_TEMPLATE.replace("{language}", "Russian") in system_prompt
+    assert "{language}" not in system_prompt
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_channel_with_group_uses_base_group_and_channel_prompt_extra(
+    sample_config, mock_logger, sample_messages
+):
+    """Channel with group: composer returns base + group.prompt_extra + channel.prompt_extra."""
+    from src.config_loader import DigestGroupConfig
+
+    group = DigestGroupConfig(name="Jobs", description="Job listings", prompt_extra="Group hint.")
+    sample_config.settings.digest_groups = [group]
+    sample_config.channels[0].group = "Jobs"
+    sample_config.channels[0].prompt_extra = "Channel hint."
+
+    captured: list = []
+
+    async def capture(**kwargs):
+        captured.append(kwargs.get("messages", []))
+        return "ok"
+
+    with patch("src.ai_providers.AsyncOpenAI"):
+        summarizer = Summarizer(sample_config, mock_logger)
+        summarizer.provider.chat_completion = capture
+        await summarizer._summarize_channel("Test Channel", sample_messages)
+
+    system_prompt = captured[0][0]["content"]
+    assert "Group hint." in system_prompt
+    assert "Channel hint." in system_prompt
+    # group before channel in composition order
+    assert system_prompt.index("Group hint.") < system_prompt.index("Channel hint.")

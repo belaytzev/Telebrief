@@ -2,6 +2,10 @@
 channels:
   - id: "@channelname"
     name: "Example Channel"
+    # group: Jobs              # optional — bind to a digest_groups entry (or "Other")
+    # prompt_extra: ""         # optional — append extra instructions to this channel's AI prompt
+    # lookback_hours: null     # optional — override global lookback_hours for this channel
+    # filters: null            # optional — null=use global filters, []=no filters, list=override
   # Add your channels here
   # Format for public channels: "@channelname" (string with quotes)
   # Format for private channels/groups: -1001234567890 (integer, NO quotes!)
@@ -49,10 +53,23 @@ settings:
   # digest_groups:
   #   - name: "Events"
   #     description: "Conferences, meetups, releases, launches, announcements"
+  #     prompt_extra: ""       # optional — append extra instructions to all channels in this group
   #   - name: "News"
   #     description: "Politics, economy, world affairs, breaking news"
   #   - name: "Sport"
   #     description: "Sports results, transfers, tournaments, matches"
+
+  # Filter chain — drop messages before they reach storage and the AI
+  # Runs after collection; filtered messages are never stored or summarized.
+  # Built-in filters: KeywordFilter, RegexFilter, MinLengthFilter
+  # filters:
+  #   - class_path: src.extensions.filters.KeywordFilter
+  #     config:
+  #       include: ["job", "hiring", "remote"]
+  #       exclude: ["nsfw"]
+  #   - class_path: src.extensions.filters.MinLengthFilter
+  #     config:
+  #       min_chars: 30
 
   # Output
   output_language: "Russian"  # Language for AI summaries (e.g., "English", "Russian", "Spanish")
@@ -93,6 +110,13 @@ settings:
                           #   (8000 - 2000 - 2000) * 2.5 = 10,000 chars
                           #   Safe recommendation: 8000
   api_timeout: 30  # Ollama may need 120-300s for local models (enforced minimum: 120s)
+
+# Prompt customization — top-level block (sibling of settings:, not nested inside it)
+# base_template: path to the system prompt template file ({language} is substituted at runtime)
+# composer: dotted path to a custom PromptComposer class; empty = built-in DefaultComposer
+# prompts:
+#   base_template: src/prompts/base_summary.txt
+#   composer: ""
 
 # Storage — persist raw messages for history / external LLM workflows
 # Note: storage is append-only; overlapping lookback windows produce duplicate rows.

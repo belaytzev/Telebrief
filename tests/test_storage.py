@@ -11,11 +11,15 @@ from src.config_loader import StorageConfig
 from src.storage import PostgresBackend, SQLiteBackend, create_storage
 
 
-def _make_message(text: str = "hello", channel: str = "chan") -> Message:
+def _make_message(
+    text: str = "hello",
+    channel: str = "chan",
+    timestamp: datetime | None = None,
+) -> Message:
     return Message(
         text=text,
         sender="Alice",
-        timestamp=datetime(2025, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
+        timestamp=timestamp or datetime(2025, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
         link="https://t.me/chan/1",
         channel_name=channel,
         has_media=False,
@@ -99,6 +103,185 @@ class TestSQLiteBackend:
         await backend.initialize()
         await backend.close()
         assert db.exists()
+
+    @pytest.mark.asyncio
+    async def test_query_empty_db_returns_empty(self, tmp_path):
+        backend = SQLiteBackend(str(tmp_path / "q.db"))
+        await backend.initialize()
+        try:
+            result = await backend.query_messages()
+            assert result == []
+        finally:
+            await backend.close()
+
+    @pytest.mark.asyncio
+    async def test_query_raises_when_not_initialized(self, tmp_path):
+        backend = SQLiteBackend(str(tmp_path / "q.db"))
+        with pytest.raises(RuntimeError, match="not initialized"):
+            await backend.query_messages()
+
+    @pytest.mark.asyncio
+    async def test_query_roundtrip(self, tmp_path):
+        backend = SQLiteBackend(str(tmp_path / "q.db"))
+        await backend.initialize()
+        try:
+            msg = _make_message("hello", "testchan")
+            await backend.save_messages([msg])
+            result = await backend.query_messages()
+            assert len(result) == 1
+            assert result[0].text == "hello"
+            assert result[0].channel_name == "testchan"
+            assert result[0].timestamp == msg.timestamp
+        finally:
+            await backend.close()
+
+    @pytest.mark.asyncio
+    async def test_query_channel_filter(self, tmp_path):
+        backend = SQLiteBackend(str(tmp_path / "q.db"))
+        await backend.initialize()
+        try:
+            await backend.save_messages(
+                [
+                    _make_message("a", "chan1"),
+                    _make_message("b", "chan2"),
+                ]
+            )
+            result = await backend.query_messages(channel_name="chan1")
+            assert len(result) == 1
+            assert result[0].text == "a"
+        finally:
+            await backend.close()
+
+    @pytest.mark.asyncio
+    async def test_query_since_filter(self, tmp_path):
+        backend = SQLiteBackend(str(tmp_path / "q.db"))
+        await backend.initialize()
+        try:
+            early = datetime(2025, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
+            late = datetime(2025, 1, 2, 0, 0, 0, tzinfo=timezone.utc)
+            await backend.save_messages(
+                [
+                    _make_message("old", timestamp=early),
+                    _make_message("new", timestamp=late),
+                ]
+            )
+            cutoff = datetime(2025, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+            result = await backend.query_messages(since=cutoff)
+            assert len(result) == 1
+            assert result[0].text == "new"
+        finally:
+            await backend.close()
+
+    @pytest.mark.asyncio
+    async def test_query_until_filter(self, tmp_path):
+        backend = SQLiteBackend(str(tmp_path / "q.db"))
+        await backend.initialize()
+        try:
+            early = datetime(2025, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
+            late = datetime(2025, 1, 2, 0, 0, 0, tzinfo=timezone.utc)
+            await backend.save_messages(
+                [
+                    _make_message("old", timestamp=early),
+                    _make_message("new", timestamp=late),
+                ]
+            )
+            cutoff = datetime(2025, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+            result = await backend.query_messages(until=cutoff)
+            assert len(result) == 1
+            assert result[0].text == "old"
+        finally:
+            await backend.close()
+
+    @pytest.mark.asyncio
+    async def test_query_since_until_combo(self, tmp_path):
+        backend = SQLiteBackend(str(tmp_path / "q.db"))
+        await backend.initialize()
+        try:
+            t1 = datetime(2025, 1, 1, tzinfo=timezone.utc)
+            t2 = datetime(2025, 1, 2, tzinfo=timezone.utc)
+            t3 = datetime(2025, 1, 3, tzinfo=timezone.utc)
+            await backend.save_messages(
+                [
+                    _make_message("a", timestamp=t1),
+                    _make_message("b", timestamp=t2),
+                    _make_message("c", timestamp=t3),
+                ]
+            )
+            result = await backend.query_messages(
+                since=datetime(2025, 1, 1, 12, tzinfo=timezone.utc),
+                until=datetime(2025, 1, 2, 12, tzinfo=timezone.utc),
+            )
+            assert len(result) == 1
+            assert result[0].text == "b"
+        finally:
+            await backend.close()
+
+    @pytest.mark.asyncio
+    async def test_query_limit_enforcement(self, tmp_path):
+        backend = SQLiteBackend(str(tmp_path / "q.db"))
+        await backend.initialize()
+        try:
+            msgs = [_make_message(str(i)) for i in range(10)]
+            await backend.save_messages(msgs)
+            result = await backend.query_messages(limit=3)
+            assert len(result) == 3
+        finally:
+            await backend.close()
+
+    @pytest.mark.asyncio
+    async def test_query_ordering_desc(self, tmp_path):
+        backend = SQLiteBackend(str(tmp_path / "q.db"))
+        await backend.initialize()
+        try:
+            t1 = datetime(2025, 1, 1, tzinfo=timezone.utc)
+            t2 = datetime(2025, 1, 2, tzinfo=timezone.utc)
+            t3 = datetime(2025, 1, 3, tzinfo=timezone.utc)
+            await backend.save_messages(
+                [
+                    _make_message("a", timestamp=t1),
+                    _make_message("b", timestamp=t2),
+                    _make_message("c", timestamp=t3),
+                ]
+            )
+            result = await backend.query_messages()
+            assert [r.text for r in result] == ["c", "b", "a"]
+        finally:
+            await backend.close()
+
+    @pytest.mark.asyncio
+    async def test_query_returns_message_dataclass(self, tmp_path):
+        backend = SQLiteBackend(str(tmp_path / "q.db"))
+        await backend.initialize()
+        try:
+            await backend.save_messages([_make_message()])
+            result = await backend.query_messages()
+            assert isinstance(result[0], Message)
+            assert result[0].has_media is False
+            assert result[0].media_type == ""
+        finally:
+            await backend.close()
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("bad_limit", [0, -1, -1000])
+    async def test_query_rejects_non_positive_limit(self, tmp_path, bad_limit):
+        backend = SQLiteBackend(str(tmp_path / "q.db"))
+        await backend.initialize()
+        try:
+            with pytest.raises(ValueError, match="'limit' must be an int >= 1"):
+                await backend.query_messages(limit=bad_limit)
+        finally:
+            await backend.close()
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("bad_limit", ["10", 1.5, True, None])
+    async def test_query_rejects_non_int_limit(self, tmp_path, bad_limit):
+        backend = SQLiteBackend(str(tmp_path / "q.db"))
+        await backend.initialize()
+        try:
+            with pytest.raises(ValueError, match="'limit' must be an int >= 1"):
+                await backend.query_messages(limit=bad_limit)
+        finally:
+            await backend.close()
 
 
 # ---------------------------------------------------------------------------
@@ -221,3 +404,28 @@ class TestPostgresBackend:
     async def test_close_safe_when_never_initialized(self):
         backend = PostgresBackend(_PG_URL)
         await backend.close()  # should not raise
+
+    @pytest.mark.asyncio
+    async def test_query_empty_returns_empty(self):
+        ch = self._make_channel()
+        backend = PostgresBackend(_PG_URL)
+        await backend.initialize()
+        try:
+            result = await backend.query_messages(channel_name=ch)
+            assert result == []
+        finally:
+            await backend.close()
+
+    @pytest.mark.asyncio
+    async def test_query_roundtrip(self):
+        ch = self._make_channel()
+        backend = PostgresBackend(_PG_URL)
+        await backend.initialize()
+        try:
+            await backend.save_messages([_make_message("pg_hello", ch)])
+            result = await backend.query_messages(channel_name=ch)
+            assert len(result) == 1
+            assert result[0].text == "pg_hello"
+            assert isinstance(result[0], Message)
+        finally:
+            await backend.close()

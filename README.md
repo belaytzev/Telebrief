@@ -243,6 +243,160 @@ Both backends create the same logical schema on first run (table and index are c
 
 ---
 
+## 🔌 Extensibility
+
+Telebrief exposes four hook surfaces that let you customise behaviour via `config.yaml` without modifying core logic. All new fields are optional — existing configs run unchanged.
+
+### Filters
+
+A filter chain runs after message collection and before storage and summarization. Dropped messages never reach the AI or the database.
+
+Built-in filters live in `src/extensions/filters.py`:
+
+| Filter | Purpose |
+|--------|---------|
+| `KeywordFilter` | Keep/drop messages by keyword substring (case-insensitive) |
+| `RegexFilter` | Keep or drop messages matching a regex pattern |
+| `MinLengthFilter` | Drop messages shorter than a character threshold |
+
+Configure a global filter chain under `settings.filters`. Each entry needs a `class_path` (dotted import path) and an optional `config` dict passed as keyword arguments to the constructor:
+
+```yaml
+settings:
+  filters:
+    - class_path: src.extensions.filters.KeywordFilter
+      config:
+        include: ["job", "hiring", "remote"]
+        exclude: ["nsfw"]
+    - class_path: src.extensions.filters.MinLengthFilter
+      config:
+        min_chars: 30
+```
+
+Override the global chain for a single channel by adding `filters:` under that channel entry. Set `filters: []` to disable filtering for that channel entirely, or provide a different list to replace the global chain for that channel only:
+
+```yaml
+channels:
+  - id: "@jobboard"
+    name: "Job Board"
+    filters:
+      - class_path: src.extensions.filters.RegexFilter
+        config:
+          pattern: "senior|staff|principal"
+          mode: "include"
+```
+
+Write your own filter by implementing the `MessageFilter` Protocol:
+
+```python
+from __future__ import annotations
+from src.extensions.filters import MessageFilter
+from src.config_loader import ChannelConfig
+from src.collector import Message
+
+class MyFilter:
+    name = "my_filter"
+
+    def __init__(self, custom_param: str = "") -> None:
+        self.custom_param = custom_param
+
+    async def filter(self, channel: ChannelConfig, messages: list[Message]) -> list[Message]:
+        return [m for m in messages if self.custom_param in (m.text or "")]
+```
+
+Then reference it in `config.yaml`:
+
+```yaml
+settings:
+  filters:
+    - class_path: mypackage.mymodule.MyFilter
+      config:
+        custom_param: "important"
+```
+
+### Prompts
+
+The base prompt template lives in `src/prompts/base_summary.txt`. You can point to a custom template file or plug in a custom `PromptComposer` class.
+
+```yaml
+prompts:
+  base_template: src/prompts/base_summary.txt  # path to template file
+  composer: ""                                  # empty = built-in DefaultComposer
+```
+
+The built-in `DefaultComposer` assembles the final system prompt in this order (empty parts are skipped):
+
+```text
+base template (with {language} substituted)
+  + group.prompt_extra  (if channel belongs to a group with prompt_extra set)
+  + channel.prompt_extra  (if non-empty)
+```
+
+To use a custom composer, implement the `PromptComposer` Protocol and set `composer` to its dotted path:
+
+```python
+from src.config_loader import ChannelConfig, DigestGroupConfig
+from src.extensions.prompts import PromptComposer
+
+class MyComposer:
+    def __init__(self, base_template: str, language: str) -> None:
+        self._base = base_template
+        self._language = language
+
+    def compose(self, channel: ChannelConfig, group: DigestGroupConfig | None) -> str:
+        return f"{self._base}\nRespond in {self._language}."
+```
+
+> **Note:** The constructor must accept `(base_template: str, language: str)` as its first two positional arguments. A mismatched signature raises a `TypeError` at startup with a descriptive message.
+
+```yaml
+prompts:
+  composer: mypackage.mymodule.MyComposer
+```
+
+### Group binding
+
+Channels can be bound to a `digest_groups` entry. The group's `prompt_extra` is then injected into every channel in that group, before the channel's own `prompt_extra`.
+
+```yaml
+settings:
+  digest_groups:
+    - name: "Jobs"
+      description: "Job listings and hiring announcements"
+      prompt_extra: "Extract only role title, company, and link. Format as a list."
+
+channels:
+  - id: "@techleads_jobs"
+    name: "Tech Jobs"
+    group: Jobs          # must match a digest_groups name or "Other"
+    prompt_extra: "Focus on senior and staff-level positions only."
+```
+
+Channels without a `group` field (or `group: null`) use the base template and their own `prompt_extra` only.
+
+### Storage queries
+
+When storage is enabled (`storage.enabled: true`), the `StorageBackend` exposes a `query_messages` read API for external tooling:
+
+```python
+from src.storage import SQLiteBackend
+from datetime import datetime, timezone
+
+backend = SQLiteBackend("data/messages.db")
+await backend.initialize()
+
+messages = await backend.query_messages(
+    channel_name="TechCrunch",  # the configured channels[*].name (NOT the @id)
+    since=datetime(2026, 4, 1, tzinfo=timezone.utc),
+    until=datetime(2026, 4, 30, tzinfo=timezone.utc),
+    limit=500,
+)
+```
+
+All parameters are optional. `channel_name` matches the human-readable `channels[*].name` value from `config.yaml` (this is the value persisted to the `channel_name` column at collection time); omit it to query across all channels. Renaming a channel in config will change the value stored for new rows — historical rows keep the old name. Results are ordered by timestamp descending and capped at `limit` (default 1000, must be ≥ 1).
+
+---
+
 ## 🛠️ Development & Testing
 
 This project uses [uv](https://docs.astral.sh/uv/) for package management.

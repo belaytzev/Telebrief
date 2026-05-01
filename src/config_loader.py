@@ -6,10 +6,18 @@ Loads settings from config.yaml and environment variables.
 import logging
 import os
 from dataclasses import dataclass, field
-from typing import List
+from typing import Any, List
 
 import yaml
 from dotenv import load_dotenv
+
+
+@dataclass
+class FilterSpec:
+    """Specification for a single message filter in a filter chain."""
+
+    class_path: str
+    config: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -20,6 +28,8 @@ class ChannelConfig:
     name: str
     lookback_hours: int | None = None  # None = use global settings.lookback_hours
     prompt_extra: str = ""  # appended to system prompt when summarizing this channel
+    filters: list[FilterSpec] | None = None  # None=use global, []=explicit no-op
+    group: str | None = None  # must reference digest_groups[*].name, "Other", or None
 
 
 @dataclass
@@ -28,6 +38,15 @@ class DigestGroupConfig:
 
     name: str
     description: str
+    prompt_extra: str = ""  # appended to system prompt for channels in this group
+
+
+@dataclass
+class PromptsConfig:
+    """Configuration for prompt template and composer."""
+
+    base_template: str = "src/prompts/base_summary.txt"
+    composer: str = ""  # empty = DefaultComposer; otherwise dotted class path
 
 
 @dataclass
@@ -66,6 +85,7 @@ class Settings:
     output_language: str = "Russian"
     digest_mode: str = "channel"
     digest_groups: List[DigestGroupConfig] = field(default_factory=list)
+    filters: list[FilterSpec] = field(default_factory=list)
 
 
 @dataclass
@@ -83,6 +103,7 @@ class Config:
     log_level: str
     anthropic_api_key: str = ""
     storage: StorageConfig = field(default_factory=StorageConfig)
+    prompts: PromptsConfig = field(default_factory=PromptsConfig)
 
 
 SUPPORTED_LANGUAGES = ("English", "Russian", "Spanish", "German", "French")
@@ -148,7 +169,19 @@ def _parse_digest_settings(
             )
         if not isinstance(g["name"], str) or not isinstance(g["description"], str):
             raise ValueError(f"digest_groups[{i}] 'name' and 'description' must be strings")
-        digest_groups.append(DigestGroupConfig(name=g["name"], description=g["description"]))
+        group_prompt_extra = g.get("prompt_extra", "")
+        if not isinstance(group_prompt_extra, str):
+            raise ValueError(
+                f"digest_groups[{i}].prompt_extra must be a string, "
+                f"got {type(group_prompt_extra).__name__}"
+            )
+        digest_groups.append(
+            DigestGroupConfig(
+                name=g["name"],
+                description=g["description"],
+                prompt_extra=group_prompt_extra,
+            )
+        )
 
     output_language = settings_dict.get("output_language", "Russian")
     if output_language not in SUPPORTED_LANGUAGES:
@@ -167,6 +200,79 @@ def _parse_digest_settings(
     return digest_mode, digest_groups, output_language
 
 
+def _validate_dotted_path(value: str, label: str) -> str:
+    """Validate a YAML-string dotted path (e.g. 'pkg.module.ClassName').
+
+    Returns the stripped value. Raises ValueError if the value is not a non-empty
+    string or does not parse as ≥2 dot-separated identifier segments.
+    """
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{label} must be a non-empty string, got {value!r}")
+    stripped = value.strip()
+    segments = stripped.split(".")
+    if len(segments) < 2 or not all(seg.isidentifier() for seg in segments):
+        raise ValueError(
+            f"{label} must be a dotted path (e.g. 'pkg.module.ClassName'), got {value!r}"
+        )
+    return stripped
+
+
+def _parse_filter_specs(raw_list: object, path_label: str) -> list[FilterSpec]:
+    """Parse and validate a list of filter specs from YAML.
+
+    Raises:
+        ValueError: If the list or any entry has wrong type or missing required fields.
+    """
+    if not isinstance(raw_list, list):
+        raise ValueError(f"'{path_label}' must be a list, got {type(raw_list).__name__}")
+    specs: list[FilterSpec] = []
+    for i, item in enumerate(raw_list):
+        if not isinstance(item, dict):
+            raise ValueError(f"{path_label}[{i}] must be a mapping, got {type(item).__name__}")
+        if "class_path" not in item:
+            raise ValueError(f"{path_label}[{i}] missing required field 'class_path'")
+        class_path = _validate_dotted_path(item["class_path"], f"{path_label}[{i}].class_path")
+        config = item.get("config", {})
+        if not isinstance(config, dict):
+            raise ValueError(
+                f"{path_label}[{i}].config must be a mapping, " f"got {type(config).__name__}"
+            )
+        specs.append(FilterSpec(class_path=class_path, config=config))
+    return specs
+
+
+def _validate_channel_lookback(i: int, ch: dict) -> int | None:
+    lookback_hours = ch.get("lookback_hours")
+    if lookback_hours is None:
+        return None
+    if not isinstance(lookback_hours, int) or isinstance(lookback_hours, bool):
+        raise ValueError(
+            f"channels[{i}].lookback_hours must be an int, " f"got {type(lookback_hours).__name__}"
+        )
+    if lookback_hours <= 0:
+        raise ValueError(f"channels[{i}].lookback_hours must be positive, got {lookback_hours}")
+    return lookback_hours
+
+
+def _validate_channel_group(i: int, ch: dict) -> str | None:
+    group = ch.get("group")
+    if group is None:
+        return None
+    if not isinstance(group, str) or not group.strip():
+        raise ValueError(f"channels[{i}].group must be a non-empty string or null, got {group!r}")
+    return group.strip()
+
+
+def _validate_channel_id_name(i: int, ch: dict) -> None:
+    for required in ("id", "name"):
+        if required not in ch:
+            raise ValueError(f"channels[{i}] missing required field '{required}'")
+    if not isinstance(ch["name"], str) or not ch["name"].strip():
+        raise ValueError(f"channels[{i}].name must be a non-empty string, got {ch['name']!r}")
+    if not isinstance(ch["id"], (str, int)) or isinstance(ch["id"], bool):
+        raise ValueError(f"channels[{i}].id must be a string or int, got {type(ch['id']).__name__}")
+
+
 def _parse_channel_entry(i: int, ch: object) -> ChannelConfig:
     """Parse and validate a single channel entry from YAML.
 
@@ -175,33 +281,24 @@ def _parse_channel_entry(i: int, ch: object) -> ChannelConfig:
     """
     if not isinstance(ch, dict):
         raise ValueError(f"channels[{i}] must be a mapping, got {type(ch).__name__}")
-    for required in ("id", "name"):
-        if required not in ch:
-            raise ValueError(f"channels[{i}] missing required field '{required}'")
-    # id accepts str (username) or int (numeric Telegram ID); name must be a non-empty string
-    if not isinstance(ch["name"], str) or not ch["name"].strip():
-        raise ValueError(f"channels[{i}].name must be a non-empty string, got {ch['name']!r}")
-    if not isinstance(ch["id"], (str, int)) or isinstance(ch["id"], bool):
-        raise ValueError(f"channels[{i}].id must be a string or int, got {type(ch['id']).__name__}")
-    lookback_hours = ch.get("lookback_hours")
-    if lookback_hours is not None:
-        if not isinstance(lookback_hours, int) or isinstance(lookback_hours, bool):
-            raise ValueError(
-                f"channels[{i}].lookback_hours must be an int, "
-                f"got {type(lookback_hours).__name__}"
-            )
-        if lookback_hours <= 0:
-            raise ValueError(f"channels[{i}].lookback_hours must be positive, got {lookback_hours}")
+    _validate_channel_id_name(i, ch)
+    lookback_hours = _validate_channel_lookback(i, ch)
     prompt_extra = ch.get("prompt_extra", "")
     if not isinstance(prompt_extra, str):
         raise ValueError(
             f"channels[{i}].prompt_extra must be a string, got {type(prompt_extra).__name__}"
         )
+    raw_filters = ch.get("filters")
+    channel_filters: list[FilterSpec] | None = None
+    if raw_filters is not None:
+        channel_filters = _parse_filter_specs(raw_filters, f"channels[{i}].filters")
     return ChannelConfig(
         id=ch["id"],
         name=ch["name"],
         lookback_hours=lookback_hours,
         prompt_extra=prompt_extra,
+        filters=channel_filters,
+        group=_validate_channel_group(i, ch),
     )
 
 
@@ -238,6 +335,66 @@ def _parse_storage_config(yaml_config: dict) -> StorageConfig:
         raise ValueError("storage.url must be set when backend is 'postgres' and enabled is true")
 
     return StorageConfig(enabled=enabled, backend=backend, path=path, url=url)
+
+
+def _parse_prompts_config(yaml_config: dict) -> PromptsConfig:
+    """Parse and validate the optional top-level prompts: block.
+
+    Raises:
+        ValueError: If any field has wrong type or invalid value.
+    """
+    raw = yaml_config.get("prompts")
+    if raw is None:
+        return PromptsConfig()
+    if not isinstance(raw, dict):
+        raise ValueError(f"'prompts' must be a mapping, got {type(raw).__name__}")
+
+    base_template = raw.get("base_template", "src/prompts/base_summary.txt")
+    if not isinstance(base_template, str) or not base_template.strip():
+        raise ValueError("prompts.base_template must be a non-empty string")
+    base_template = base_template.strip()
+
+    composer = raw.get("composer", "")
+    if not isinstance(composer, str):
+        raise ValueError(f"prompts.composer must be a string, got {type(composer).__name__}")
+    if composer.strip():
+        composer = _validate_dotted_path(composer, "prompts.composer")
+    else:
+        composer = ""
+
+    return PromptsConfig(base_template=base_template, composer=composer)
+
+
+def _validate_channel_groups(
+    channels: List[ChannelConfig],
+    digest_groups: list[DigestGroupConfig],
+    output_language: str,
+) -> None:
+    """Cross-validate that channels[*].group references a known group name.
+
+    Valid values: any digest_groups[*].name, the literal "Other", or the
+    localized group_other string for the current output_language.
+
+    Raises:
+        ValueError: listing all channels with invalid group references.
+    """
+    from src.ui_strings import get_ui_strings
+
+    ui = get_ui_strings(output_language)
+    localized_other = ui.get("group_other", "Other")
+    valid_names = {g.name for g in digest_groups} | {"Other", localized_other}
+
+    bad: list[str] = []
+    for ch in channels:
+        if ch.group is not None and ch.group not in valid_names:
+            bad.append(f"channel {ch.name!r}: group {ch.group!r}")
+
+    if bad:
+        raise ValueError(
+            "Unknown group references in channels config:\n"
+            + "\n".join(f"  {b}" for b in bad)
+            + f"\nValid groups: {', '.join(sorted(valid_names))}"
+        )
 
 
 def _parse_channels(yaml_config: dict) -> List[ChannelConfig]:
@@ -348,10 +505,18 @@ def load_config(config_path: str = "config.yaml") -> Config:
     # Parse storage config
     storage_config = _parse_storage_config(yaml_config)
 
+    # Parse prompts config
+    prompts_config = _parse_prompts_config(yaml_config)
+
     # Parse settings
     settings_dict = yaml_config.get("settings", {})
     ai_provider, ai_model = _resolve_ai_settings(settings_dict)
     digest_mode, digest_groups, output_language = _parse_digest_settings(settings_dict)
+    raw_global_filters = settings_dict.get("filters")
+    global_filters = _parse_filter_specs(
+        raw_global_filters if raw_global_filters is not None else [],
+        "settings.filters",
+    )
 
     settings = Settings(
         schedule_time=settings_dict.get("schedule_time", "08:00"),
@@ -374,6 +539,7 @@ def load_config(config_path: str = "config.yaml") -> Config:
         output_language=output_language,
         digest_mode=digest_mode,
         digest_groups=digest_groups,
+        filters=global_filters,
     )
 
     if settings.target_user_id == 0:
@@ -382,12 +548,16 @@ def load_config(config_path: str = "config.yaml") -> Config:
             "Get your Telegram user ID from @userinfobot"
         )
 
+    # Cross-validate channel group references against known digest_groups
+    _validate_channel_groups(channels, digest_groups, output_language)
+
     env_vars = _load_and_validate_env_vars(ai_provider)
 
     return Config(
         channels=channels,
         settings=settings,
         storage=storage_config,
+        prompts=prompts_config,
         **env_vars,
     )
 
