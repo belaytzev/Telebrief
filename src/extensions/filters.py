@@ -12,9 +12,9 @@ if TYPE_CHECKING:
 class MessageFilter(Protocol):
     name: str
 
-    async def filter(
+    async def filter(  # noqa: E704
         self, channel: ChannelConfig, messages: list[Message]
-    ) -> list[Message]: ...  # noqa: E704
+    ) -> list[Message]: ...
 
 
 class KeywordFilter:

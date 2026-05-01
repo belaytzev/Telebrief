@@ -8,9 +8,9 @@ if TYPE_CHECKING:
 
 @runtime_checkable
 class PromptComposer(Protocol):
-    def compose(
+    def compose(  # noqa: E704
         self, channel: ChannelConfig, group: DigestGroupConfig | None
-    ) -> str: ...  # noqa: E704
+    ) -> str: ...
 
 
 class DefaultComposer:

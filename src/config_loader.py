@@ -217,8 +217,7 @@ def _parse_filter_specs(raw_list: object, path_label: str) -> list[FilterSpec]:
         class_path = item["class_path"]
         if not isinstance(class_path, str) or not class_path.strip():
             raise ValueError(
-                f"{path_label}[{i}].class_path must be a non-empty string, "
-                f"got {class_path!r}"
+                f"{path_label}[{i}].class_path must be a non-empty string, " f"got {class_path!r}"
             )
         config = item.get("config", {})
         if not isinstance(config, dict):
@@ -229,6 +228,38 @@ def _parse_filter_specs(raw_list: object, path_label: str) -> list[FilterSpec]:
     return specs
 
 
+def _validate_channel_lookback(i: int, ch: dict) -> int | None:
+    lookback_hours = ch.get("lookback_hours")
+    if lookback_hours is None:
+        return None
+    if not isinstance(lookback_hours, int) or isinstance(lookback_hours, bool):
+        raise ValueError(
+            f"channels[{i}].lookback_hours must be an int, " f"got {type(lookback_hours).__name__}"
+        )
+    if lookback_hours <= 0:
+        raise ValueError(f"channels[{i}].lookback_hours must be positive, got {lookback_hours}")
+    return lookback_hours
+
+
+def _validate_channel_group(i: int, ch: dict) -> str | None:
+    group = ch.get("group")
+    if group is None:
+        return None
+    if not isinstance(group, str) or not group.strip():
+        raise ValueError(f"channels[{i}].group must be a non-empty string or null, got {group!r}")
+    return group.strip()
+
+
+def _validate_channel_id_name(i: int, ch: dict) -> None:
+    for required in ("id", "name"):
+        if required not in ch:
+            raise ValueError(f"channels[{i}] missing required field '{required}'")
+    if not isinstance(ch["name"], str) or not ch["name"].strip():
+        raise ValueError(f"channels[{i}].name must be a non-empty string, got {ch['name']!r}")
+    if not isinstance(ch["id"], (str, int)) or isinstance(ch["id"], bool):
+        raise ValueError(f"channels[{i}].id must be a string or int, got {type(ch['id']).__name__}")
+
+
 def _parse_channel_entry(i: int, ch: object) -> ChannelConfig:
     """Parse and validate a single channel entry from YAML.
 
@@ -237,23 +268,8 @@ def _parse_channel_entry(i: int, ch: object) -> ChannelConfig:
     """
     if not isinstance(ch, dict):
         raise ValueError(f"channels[{i}] must be a mapping, got {type(ch).__name__}")
-    for required in ("id", "name"):
-        if required not in ch:
-            raise ValueError(f"channels[{i}] missing required field '{required}'")
-    # id accepts str (username) or int (numeric Telegram ID); name must be a non-empty string
-    if not isinstance(ch["name"], str) or not ch["name"].strip():
-        raise ValueError(f"channels[{i}].name must be a non-empty string, got {ch['name']!r}")
-    if not isinstance(ch["id"], (str, int)) or isinstance(ch["id"], bool):
-        raise ValueError(f"channels[{i}].id must be a string or int, got {type(ch['id']).__name__}")
-    lookback_hours = ch.get("lookback_hours")
-    if lookback_hours is not None:
-        if not isinstance(lookback_hours, int) or isinstance(lookback_hours, bool):
-            raise ValueError(
-                f"channels[{i}].lookback_hours must be an int, "
-                f"got {type(lookback_hours).__name__}"
-            )
-        if lookback_hours <= 0:
-            raise ValueError(f"channels[{i}].lookback_hours must be positive, got {lookback_hours}")
+    _validate_channel_id_name(i, ch)
+    lookback_hours = _validate_channel_lookback(i, ch)
     prompt_extra = ch.get("prompt_extra", "")
     if not isinstance(prompt_extra, str):
         raise ValueError(
@@ -263,16 +279,13 @@ def _parse_channel_entry(i: int, ch: object) -> ChannelConfig:
     channel_filters: list[FilterSpec] | None = None
     if raw_filters is not None:
         channel_filters = _parse_filter_specs(raw_filters, f"channels[{i}].filters")
-    group = ch.get("group")
-    if group is not None and (not isinstance(group, str) or not group.strip()):
-        raise ValueError(f"channels[{i}].group must be a non-empty string or null, got {group!r}")
     return ChannelConfig(
         id=ch["id"],
         name=ch["name"],
         lookback_hours=lookback_hours,
         prompt_extra=prompt_extra,
         filters=channel_filters,
-        group=group.strip() if group is not None else None,
+        group=_validate_channel_group(i, ch),
     )
 
 

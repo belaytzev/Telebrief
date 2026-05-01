@@ -658,6 +658,7 @@ async def test_apply_filters_channel_list_overrides_global(
 async def test_apply_filters_chain_ordering(sample_config, mock_logger):
     """Filters apply in order: output of first feeds second."""
     from datetime import datetime, timezone
+
     from src.collector import Message
 
     msgs = [

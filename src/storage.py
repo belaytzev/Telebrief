@@ -70,13 +70,13 @@ class StorageBackend(Protocol):
 
     async def close(self) -> None: ...  # noqa: E704
 
-    async def query_messages(
+    async def query_messages(  # noqa: E704
         self,
         channel: str | None = None,
         since: datetime | None = None,
         until: datetime | None = None,
         limit: int = 1000,
-    ) -> list[Message]: ...  # noqa: E704
+    ) -> list[Message]: ...
 
 
 class SQLiteBackend:
@@ -239,7 +239,9 @@ class PostgresBackend:  # pragma: no cover
 
         for name, dt in (("since", since), ("until", until)):  # pragma: no cover
             if dt is not None and dt.tzinfo is None:  # pragma: no cover
-                raise ValueError(f"query_messages: {name!r} must be timezone-aware")  # pragma: no cover
+                raise ValueError(
+                    f"query_messages: {name!r} must be timezone-aware"
+                )  # pragma: no cover
 
         conditions: list[str] = []  # pragma: no cover
         args: list[Any] = []  # pragma: no cover
