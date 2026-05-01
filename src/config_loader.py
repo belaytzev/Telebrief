@@ -219,6 +219,13 @@ def _parse_filter_specs(raw_list: object, path_label: str) -> list[FilterSpec]:
             raise ValueError(
                 f"{path_label}[{i}].class_path must be a non-empty string, " f"got {class_path!r}"
             )
+        stripped_path = class_path.strip()
+        segments = stripped_path.split(".")
+        if len(segments) < 2 or not all(seg.isidentifier() for seg in segments):
+            raise ValueError(
+                f"{path_label}[{i}].class_path must be a dotted path "
+                f"(e.g. 'pkg.module.ClassName'), got {class_path!r}"
+            )
         config = item.get("config", {})
         if not isinstance(config, dict):
             raise ValueError(
@@ -339,12 +346,14 @@ def _parse_prompts_config(yaml_config: dict) -> PromptsConfig:
     base_template = raw.get("base_template", "src/prompts/base_summary.txt")
     if not isinstance(base_template, str) or not base_template.strip():
         raise ValueError("prompts.base_template must be a non-empty string")
+    base_template = base_template.strip()
 
     composer = raw.get("composer", "")
     if not isinstance(composer, str):
         raise ValueError(f"prompts.composer must be a string, got {type(composer).__name__}")
     if composer and not composer.strip():
         raise ValueError("prompts.composer must be a non-empty dotted path or empty string")
+    composer = composer.strip()
 
     return PromptsConfig(base_template=base_template, composer=composer)
 

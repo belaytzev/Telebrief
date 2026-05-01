@@ -261,6 +261,28 @@ class TestSQLiteBackend:
         finally:
             await backend.close()
 
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("bad_limit", [0, -1, -1000])
+    async def test_query_rejects_non_positive_limit(self, tmp_path, bad_limit):
+        backend = SQLiteBackend(str(tmp_path / "q.db"))
+        await backend.initialize()
+        try:
+            with pytest.raises(ValueError, match="'limit' must be an int >= 1"):
+                await backend.query_messages(limit=bad_limit)
+        finally:
+            await backend.close()
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("bad_limit", ["10", 1.5, True, None])
+    async def test_query_rejects_non_int_limit(self, tmp_path, bad_limit):
+        backend = SQLiteBackend(str(tmp_path / "q.db"))
+        await backend.initialize()
+        try:
+            with pytest.raises(ValueError, match="'limit' must be an int >= 1"):
+                await backend.query_messages(limit=bad_limit)
+        finally:
+            await backend.close()
+
 
 # ---------------------------------------------------------------------------
 # create_storage factory

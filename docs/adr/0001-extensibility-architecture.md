@@ -130,9 +130,10 @@ subscribe. Rejected because:
   arbitrary Python. The threat model is equivalent to the existing config file, which already
   holds API keys and target user IDs. Mitigation: document clearly, same trust boundary as
   current config.
-- **Import cycles:** filter modules that import `ChannelConfig` must use
-  `from __future__ import annotations` to avoid circular imports at load time. Documented in
-  `CLAUDE.md` and enforced in code review.
+- **Import cycles:** filter modules that reference `ChannelConfig` must use
+  `from __future__ import annotations` so type annotations are not evaluated at import time,
+  and should avoid runtime imports of `ChannelConfig` unless strictly necessary. This guidance
+  is enforced in code review.
 - **No version pinning for plugins:** external packages can break on upgrade. Out of scope;
   follow-up issue will explore setuptools entry-points discovery once the ecosystem matures.
 
@@ -151,6 +152,9 @@ All changes are phased across four PRs, each backwards-compatible:
 
 Existing `config.yaml.example` runs unchanged throughout. New fields are opt-in.
 
-All tasks shipped on branch `extensibility-architecture`. See plan
-`docs/plans/completed/20260430-extensibility-architecture-filters-prompts-storage.md`
-for the full task breakdown.
+All tasks shipped on branch `extensibility-architecture`. Task breakdown:
+
+- Tasks 1–4: ADR, plugin loader, `MessageFilter` Protocol, builtin filters, and config parsing.
+- Task 5: filter chain integrated into `core.py`.
+- Tasks 6–9: prompt extraction, `PromptComposer` Protocol, `DefaultComposer`, and group binding.
+- Tasks 10–11: `query_messages` storage read API and supporting documentation.

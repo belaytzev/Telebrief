@@ -882,6 +882,37 @@ def test_filter_spec_channel_invalid_class_path_raises(tmp_path, mock_env_vars):
 
 
 @pytest.mark.unit
+@pytest.mark.parametrize(
+    "bad_path",
+    ["NoDots", "trailing.", ".leading", "two..dots", "has space.Cls", "1bad.Cls"],
+)
+def test_filter_spec_invalid_dotted_path_raises(tmp_path, mock_env_vars, bad_path):
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@test"\n    name: "Test"\n'
+        "settings:\n  target_user_id: 123456789\n"
+        f"  filters:\n    - class_path: {bad_path!r}\n"
+    )
+    with pytest.raises(ValueError, match="must be a dotted path"):
+        load_config(str(p))
+
+
+@pytest.mark.unit
+def test_prompts_config_strips_whitespace(tmp_path, mock_env_vars):
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@test"\n    name: "Test"\n'
+        "settings:\n  target_user_id: 123456789\n"
+        "prompts:\n"
+        "  base_template: '  src/prompts/base_summary.txt  '\n"
+        "  composer: '  src.extensions.prompts.DefaultComposer  '\n"
+    )
+    config = load_config(str(p))
+    assert config.prompts.base_template == "src/prompts/base_summary.txt"
+    assert config.prompts.composer == "src.extensions.prompts.DefaultComposer"
+
+
+@pytest.mark.unit
 def test_sample_config_fixture_still_constructs(sample_config):
     assert sample_config.settings.filters == []
     assert sample_config.channels[0].filters is None

@@ -760,3 +760,26 @@ async def test_collect_messages_applies_filters_before_storage(
 
     assert result == {"Test Channel": []}
     mock_backend.save_messages.assert_called_once_with([])
+
+
+@pytest.mark.unit
+def test_order_groups_pushes_literal_other_last_when_locale_differs(sample_config):
+    """Literal "Other" must sort last even when output_language localizes the bucket name."""
+    from src.core import _order_groups
+
+    sample_config.settings.output_language = "Russian"
+    grouped = {"News": [], "Other": [], "Sport": []}
+    order = _order_groups(grouped, sample_config)
+    assert order[-1] == "Other"
+    assert set(order) == {"News", "Other", "Sport"}
+
+
+@pytest.mark.unit
+def test_order_groups_pushes_literal_other_case_insensitive(sample_config):
+    """Case variants of "Other" (e.g. "OTHER", "other") all push to the end."""
+    from src.core import _order_groups
+
+    sample_config.settings.output_language = "English"
+    grouped = {"News": [], "OTHER": [], "Sport": []}
+    order = _order_groups(grouped, sample_config)
+    assert order[-1] == "OTHER"

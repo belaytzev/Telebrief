@@ -65,6 +65,14 @@ _QUERY_BASE = (
 )
 
 
+def _validate_query_args(since: datetime | None, until: datetime | None, limit: int) -> None:
+    if not isinstance(limit, int) or isinstance(limit, bool) or limit < 1:
+        raise ValueError(f"query_messages: 'limit' must be an int >= 1, got {limit!r}")
+    for name, dt in (("since", since), ("until", until)):
+        if dt is not None and dt.tzinfo is None:
+            raise ValueError(f"query_messages: {name!r} must be timezone-aware")
+
+
 class StorageBackend(Protocol):
     async def save_messages(self, messages: list[Message]) -> int: ...  # noqa: E704
 
@@ -135,9 +143,7 @@ class SQLiteBackend:
         if self._conn is None:
             raise RuntimeError("SQLiteBackend not initialized; call initialize() first")
 
-        for name, dt in (("since", since), ("until", until)):
-            if dt is not None and dt.tzinfo is None:
-                raise ValueError(f"query_messages: {name!r} must be timezone-aware")
+        _validate_query_args(since, until, limit)
 
         conditions: list[str] = []
         params: list[Any] = []
@@ -223,58 +229,52 @@ class PostgresBackend:  # pragma: no cover
                 await conn.executemany(_PG_INSERT, rows)
         return len(messages)
 
-    async def query_messages(  # pragma: no cover
+    async def query_messages(
         self,
         channel: str | None = None,
         since: datetime | None = None,
         until: datetime | None = None,
         limit: int = 1000,
-    ) -> list[Message]:  # pragma: no cover
-        from src.collector import Message as Msg  # pragma: no cover
+    ) -> list[Message]:
+        from src.collector import Message as Msg
 
-        if self._pool is None:  # pragma: no cover
-            raise RuntimeError(  # pragma: no cover
-                "PostgresBackend not initialized; call initialize() first"
-            )
+        if self._pool is None:
+            raise RuntimeError("PostgresBackend not initialized; call initialize() first")
 
-        for name, dt in (("since", since), ("until", until)):  # pragma: no cover
-            if dt is not None and dt.tzinfo is None:  # pragma: no cover
-                raise ValueError(
-                    f"query_messages: {name!r} must be timezone-aware"
-                )  # pragma: no cover
+        _validate_query_args(since, until, limit)
 
-        conditions: list[str] = []  # pragma: no cover
-        args: list[Any] = []  # pragma: no cover
-        idx = 1  # pragma: no cover
+        conditions: list[str] = []
+        args: list[Any] = []
+        idx = 1
 
-        if channel is not None:  # pragma: no cover
-            conditions.append(f"channel_name = ${idx}")  # pragma: no cover
-            args.append(channel)  # pragma: no cover
-            idx += 1  # pragma: no cover
-        if since is not None:  # pragma: no cover
-            conditions.append(f"timestamp >= ${idx}")  # pragma: no cover
-            args.append(since)  # pragma: no cover
-            idx += 1  # pragma: no cover
-        if until is not None:  # pragma: no cover
-            conditions.append(f"timestamp < ${idx}")  # pragma: no cover
-            args.append(until)  # pragma: no cover
-            idx += 1  # pragma: no cover
+        if channel is not None:
+            conditions.append(f"channel_name = ${idx}")
+            args.append(channel)
+            idx += 1
+        if since is not None:
+            conditions.append(f"timestamp >= ${idx}")
+            args.append(since)
+            idx += 1
+        if until is not None:
+            conditions.append(f"timestamp < ${idx}")
+            args.append(until)
+            idx += 1
 
-        sql = _QUERY_BASE  # pragma: no cover
-        if conditions:  # pragma: no cover
-            sql += " WHERE " + " AND ".join(conditions)  # pragma: no cover
-        sql += f" ORDER BY timestamp DESC LIMIT ${idx}"  # pragma: no cover
-        args.append(limit)  # pragma: no cover
+        sql = _QUERY_BASE
+        if conditions:
+            sql += " WHERE " + " AND ".join(conditions)
+        sql += f" ORDER BY timestamp DESC LIMIT ${idx}"
+        args.append(limit)
 
-        async with self._pool.acquire() as conn:  # pragma: no cover
-            records = await conn.fetch(sql, *args)  # pragma: no cover
+        async with self._pool.acquire() as conn:
+            records = await conn.fetch(sql, *args)
 
-        result: list[Message] = []  # pragma: no cover
-        for r in records:  # pragma: no cover
-            ts: datetime = r["timestamp"]  # pragma: no cover
-            if ts.tzinfo is None:  # pragma: no cover
-                ts = ts.replace(tzinfo=timezone.utc)  # pragma: no cover
-            result.append(  # pragma: no cover
+        result: list[Message] = []
+        for r in records:
+            ts: datetime = r["timestamp"]
+            if ts.tzinfo is None:
+                ts = ts.replace(tzinfo=timezone.utc)
+            result.append(
                 Msg(
                     channel_name=r["channel_name"],
                     sender=r["sender"],
@@ -285,7 +285,7 @@ class PostgresBackend:  # pragma: no cover
                     media_type=r["media_type"],
                 )
             )
-        return result  # pragma: no cover
+        return result
 
     async def close(self) -> None:
         pool, self._pool = self._pool, None

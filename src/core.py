@@ -171,14 +171,21 @@ def _format_group_messages(
 
 
 def _order_groups(grouped: dict, config: "Config") -> list[str]:
-    """Order group names: config-defined order first, then remaining, 'Other' last."""
+    """Order group names: config-defined order first, then remaining, 'Other' last.
+
+    Recognizes both the localized UI string and the literal "Other"
+    (case-insensitive) as the special bucket to push to the end.
+    """
     config_order = [g.name for g in config.settings.digest_groups]
-    other_name = get_ui_strings(config.settings.output_language).get("group_other", "Other")
+    localized_other = get_ui_strings(config.settings.output_language).get("group_other", "Other")
+
+    def _is_other(name: str) -> bool:
+        return name == localized_other or name.lower() == "other"
+
     not_config_ordered = grouped.keys() - set(config_order)
-    remaining = sorted(k for k in not_config_ordered if k != other_name)
-    if other_name in not_config_ordered:
-        remaining.append(other_name)
-    return [n for n in config_order if n in grouped] + remaining
+    remaining = sorted(k for k in not_config_ordered if not _is_other(k))
+    other_keys = sorted(k for k in not_config_ordered if _is_other(k))
+    return [n for n in config_order if n in grouped] + remaining + other_keys
 
 
 def _build_channel_urls(messages_by_channel: dict) -> dict[str, str]:

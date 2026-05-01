@@ -30,7 +30,13 @@ def _load_base_template(path: str) -> str:
 
 
 _DEFAULT_TEMPLATE_PATH = str(Path(__file__).parent / "prompts" / "base_summary.txt")
-SYSTEM_PROMPT_TEMPLATE = _load_base_template(_DEFAULT_TEMPLATE_PATH)
+
+
+def __getattr__(name: str) -> str:
+    # Lazy module attribute: read template only when accessed, keeping import side-effect free.
+    if name == "SYSTEM_PROMPT_TEMPLATE":
+        return _load_base_template(_DEFAULT_TEMPLATE_PATH)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 class Summarizer:
