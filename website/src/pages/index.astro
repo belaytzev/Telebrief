@@ -21,8 +21,9 @@ import logoImage from '../../public/logo.webp';
           <span></span>
         </label>
         <div class="nav-links">
-          <a href="#how-it-works" class="nav-link">How It Works</a>
+          <a href="#example" class="nav-link">Example</a>
           <a href="#features" class="nav-link">Features</a>
+          <a href="#extend" class="nav-link">Extend</a>
           <a href="https://github.com/belaytzev/Telebrief" class="nav-cta" target="_blank" rel="noopener noreferrer">
             <svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
@@ -150,6 +151,81 @@ import logoImage from '../../public/logo.webp';
 
     <div class="rule" aria-hidden="true"></div>
 
+    <!-- Example Output -->
+    <section id="example" class="section" aria-labelledby="example-title">
+      <div class="container">
+        <p class="eyebrow">output preview</p>
+        <h2 id="example-title">What You Receive</h2>
+        <p class="section-desc">A polished daily digest formatted for Telegram. Toggle between channel and topic grouping below.</p>
+
+        <div class="example-mode-toggle">
+          <input type="radio" id="mode-channel" name="example-mode" class="mode-radio" aria-label="Channel mode preview" checked />
+          <input type="radio" id="mode-topic" name="example-mode" class="mode-radio" aria-label="Topic mode preview" />
+
+          <div class="mode-tabs" role="tablist">
+            <label for="mode-channel" class="mode-tab" role="tab">Channel mode</label>
+            <label for="mode-topic" class="mode-tab" role="tab">Topic mode</label>
+          </div>
+
+          <div class="example-bubble">
+            <div class="bubble-header">
+              <Image src={logoImage} alt="" class="bubble-avatar" width={28} height={28} loading="lazy" />
+              <div class="bubble-meta">
+                <span class="bubble-name">Telebrief Bot</span>
+                <span class="bubble-time">12:00 PM</span>
+              </div>
+            </div>
+
+            <div class="bubble-body bubble-channel" role="tabpanel" aria-label="Channel mode digest">
+              <h3 class="digest-h1">📊 Daily Digest — May 2, 2026</h3>
+              <h4 class="digest-h2">🎯 Overview</h4>
+              <p class="digest-p">AI tooling dominated today: Anthropic shipped Claude Opus 4.7, crypto markets rallied on ETF approvals, EU finalized AI Act amendments.</p>
+              <h4 class="digest-h2">💻 TechCrunch</h4>
+              <ul class="digest-list">
+                <li>🚀 <strong>Claude Opus 4.7 released</strong> — 1M context window, faster output</li>
+                <li>🤖 <strong>OpenAI GPT-6 leak</strong> — multimodal benchmarks surface early</li>
+                <li>📱 <strong>Apple Vision Pro 2</strong> — rumored Q3 launch with lighter frame</li>
+              </ul>
+              <h4 class="digest-h2">💰 Crypto News</h4>
+              <ul class="digest-list">
+                <li>📈 <strong>Bitcoin hits $89K</strong> — spot ETF inflows reach record high</li>
+                <li>⚠️ <strong>SEC settles with Ripple</strong> — final ruling closes 6-year case</li>
+                <li>🔐 <strong>Ethereum Pectra upgrade</strong> — mainnet activation confirmed</li>
+              </ul>
+              <p class="digest-stats">📈 20 channels · 1,847 messages processed</p>
+            </div>
+
+            <div class="bubble-body bubble-topic" role="tabpanel" aria-label="Topic mode digest">
+              <h3 class="digest-h1">📊 Daily Digest — May 2, 2026</h3>
+              <h4 class="digest-h2">🎯 Overview</h4>
+              <p class="digest-p">AI tooling dominated today: Anthropic shipped Claude Opus 4.7, crypto markets rallied on ETF approvals, EU finalized AI Act amendments.</p>
+              <h4 class="digest-h2">📰 News</h4>
+              <ul class="digest-list">
+                <li>🚀 <strong>Claude Opus 4.7 released</strong> — 1M context window, faster output</li>
+                <li>📈 <strong>Bitcoin hits $89K</strong> — spot ETF inflows reach record high</li>
+                <li>⚖️ <strong>EU finalizes AI Act</strong> — compliance deadlines set for 2027</li>
+              </ul>
+              <h4 class="digest-h2">🎉 Events</h4>
+              <ul class="digest-list">
+                <li>🎤 <strong>PyCon US 2026</strong> — keynote lineup announced</li>
+                <li>🛠️ <strong>KubeCon EU</strong> — early-bird tickets close Friday</li>
+              </ul>
+              <h4 class="digest-h2">⚽ Sport</h4>
+              <ul class="digest-list">
+                <li>🏆 <strong>Champions League</strong> — semi-final draws set</li>
+                <li>🎾 <strong>Madrid Open</strong> — Alcaraz advances to quarters</li>
+              </ul>
+              <p class="digest-stats">📈 20 channels · 1,847 messages processed</p>
+            </div>
+          </div>
+        </div>
+
+        <p class="example-caption">Both modes configurable via <code>digest_mode</code> in <code>config.yaml</code>.</p>
+      </div>
+    </section>
+
+    <div class="rule" aria-hidden="true"></div>
+
     <!-- Bot Commands -->
     <section class="section" aria-labelledby="commands-title">
       <div class="container">
@@ -234,21 +310,179 @@ import logoImage from '../../public/logo.webp';
             <h3>Private Channels</h3>
             <p>Full support for private Telegram channels using Telethon user API. No restrictions on channel visibility or membership type.</p>
           </div>
+          <div class="bento-card">
+            <div class="feat-label">granular control</div>
+            <h3>Per-Channel Config</h3>
+            <p>Override lookback window or append AI instructions per channel. Tighter window for high-volume feeds, broader for weekly newsletters, custom prompt focus per source.</p>
+          </div>
+          <div class="bento-card">
+            <div class="feat-label">delivery</div>
+            <h3>Smart Message Splitting</h3>
+            <p>Digests over Telegram's 4096-character limit auto-split into sequential messages — never truncated, never lost.</p>
+          </div>
+          <div class="bento-card">
+            <div class="feat-label">devops</div>
+            <h3>Docker Compose Ready</h3>
+            <p>One-command deploy with docker-compose. Volumes pre-wired for persistent storage. Production-ready out of the box.</p>
+          </div>
           <div class="bento-card bento-wide">
             <div class="feat-label">cost</div>
             <h3>Ultra Affordable</h3>
             <p>Run completely free with local Ollama, or use cloud AI for ~$0.30 per month. Self-hosted, no subscription fees, no vendor lock-in.</p>
           </div>
           <div class="bento-card">
-            <div class="feat-label">devops</div>
-            <h3>Docker Ready</h3>
-            <p>Complete Docker containerization with docker-compose. Deploy in minutes with a single command on any server or VPS.</p>
+            <div class="feat-label">registry</div>
+            <h3>Pre-built Docker Images</h3>
+            <p>Pull from GitHub Container Registry. Tagged <code class="bento-code">latest</code>, <code class="bento-code">X.Y</code>, <code class="bento-code">X.Y.Z</code>. Zero build step — pull and run.</p>
+          </div>
+          <div class="bento-card">
+            <div class="feat-label">maintenance</div>
+            <h3>Auto-Cleanup</h3>
+            <p>Old digest messages auto-removed from chat on a schedule. No clutter buildup, no manual housekeeping.</p>
           </div>
           <div class="bento-card">
             <div class="feat-label">open source</div>
             <h3>MIT Licensed</h3>
             <p>Fully open source. Inspect the code, fork it, extend it. No black boxes. Your data stays on your own infrastructure.</p>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="rule" aria-hidden="true"></div>
+
+    <!-- Extend -->
+    <section id="extend" class="section" aria-labelledby="extend-title">
+      <div class="container">
+        <p class="eyebrow">extend telebrief</p>
+        <h2 id="extend-title">Storage &amp; Extensibility</h2>
+        <p class="section-desc">Persist every collected message and bend Telebrief to your workflow — all via config, no core changes required.</p>
+
+        <!-- Storage sub-section -->
+        <div class="extend-block">
+          <div class="extend-head">
+            <h3 class="extend-h3">Persistent Storage</h3>
+            <p class="extend-lede">Save every collected message to a database for historical access, search, or external LLM workflows. Off by default — opt in when you need it.</p>
+          </div>
+
+          <div class="storage-toggle">
+            <input type="radio" id="store-sqlite" name="store-backend" class="store-radio" aria-label="SQLite backend" checked />
+            <input type="radio" id="store-postgres" name="store-backend" class="store-radio" aria-label="PostgreSQL backend" />
+
+            <div class="store-tabs" role="tablist">
+              <label for="store-sqlite" class="store-tab" role="tab">SQLite (default)</label>
+              <label for="store-postgres" class="store-tab" role="tab">PostgreSQL</label>
+            </div>
+
+            <div class="store-panels">
+              <div class="store-panel store-panel-sqlite" role="tabpanel">
+                <p class="store-blurb">Zero setup. File-based. Persists across Docker restarts via mounted volume.</p>
+                <pre class="code-block"><code><span class="cb-key">storage</span>:
+  <span class="cb-key">enabled</span>: <span class="cb-val">true</span>
+  <span class="cb-key">backend</span>: <span class="cb-val">sqlite</span>
+  <span class="cb-key">path</span>: <span class="cb-val">data/messages.db</span></code></pre>
+                <div class="store-tags">
+                  <span class="store-tag">file-based</span>
+                  <span class="store-tag">zero deps</span>
+                  <span class="store-tag">single host</span>
+                </div>
+              </div>
+              <div class="store-panel store-panel-postgres" role="tabpanel">
+                <p class="store-blurb">Multi-host deployments. Concurrent reads. <code class="bento-code">asyncpg</code> already bundled.</p>
+                <pre class="code-block"><code><span class="cb-key">storage</span>:
+  <span class="cb-key">enabled</span>: <span class="cb-val">true</span>
+  <span class="cb-key">backend</span>: <span class="cb-val">postgres</span>
+  <span class="cb-key">url</span>: <span class="cb-val">"postgresql://user:pass@host:5432/dbname"</span></code></pre>
+                <div class="store-tags">
+                  <span class="store-tag">multi-host</span>
+                  <span class="store-tag">concurrent reads</span>
+                  <span class="store-tag">asyncpg bundled</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="capability-strip">
+            <div class="cap-item">
+              <span class="cap-num">8</span>
+              <span class="cap-label">columns per row</span>
+            </div>
+            <div class="cap-divider" aria-hidden="true"></div>
+            <div class="cap-item">
+              <span class="cap-num">1</span>
+              <span class="cap-label">shared schema across backends</span>
+            </div>
+            <div class="cap-divider" aria-hidden="true"></div>
+            <div class="cap-item">
+              <span class="cap-num cap-mono">query_messages()</span>
+              <span class="cap-label">read API for external tools</span>
+            </div>
+          </div>
+
+          <a href="https://github.com/belaytzev/Telebrief?tab=readme-ov-file#-persistent-storage" class="extend-link" target="_blank" rel="noopener noreferrer">
+            Read full storage docs →
+          </a>
+        </div>
+
+        <div class="rule extend-rule" aria-hidden="true"></div>
+
+        <!-- Extensibility sub-section -->
+        <div class="extend-block">
+          <div class="extend-head">
+            <h3 class="extend-h3">Hook Surfaces</h3>
+            <p class="extend-lede">Four extension points to bend Telebrief without touching core. Drop in custom filters, prompts, and group bindings via config — or query the storage layer from your own tooling.</p>
+          </div>
+
+          <div class="hooks-grid">
+            <div class="hook-cell">
+              <span class="hook-num">hook 01</span>
+              <h4 class="hook-name">Filters</h4>
+              <p class="hook-desc">Drop noise before AI sees it. Keyword, regex, length filters built-in. Per-channel overrides supported.</p>
+              <code class="hook-sig">MessageFilter Protocol</code>
+            </div>
+            <div class="hook-cell">
+              <span class="hook-num">hook 02</span>
+              <h4 class="hook-name">Prompts</h4>
+              <p class="hook-desc">Swap base template or plug in a custom composer. Steer tone and focus per channel.</p>
+              <code class="hook-sig">PromptComposer Protocol</code>
+            </div>
+            <div class="hook-cell">
+              <span class="hook-num">hook 03</span>
+              <h4 class="hook-name">Group Binding</h4>
+              <p class="hook-desc">Bind channels to digest groups. Group-level <code class="bento-code">prompt_extra</code> stacks before channel overrides.</p>
+              <code class="hook-sig">digest_groups[].prompt_extra</code>
+            </div>
+            <div class="hook-cell">
+              <span class="hook-num">hook 04</span>
+              <h4 class="hook-name">Storage Queries</h4>
+              <p class="hook-desc">Query stored messages from your own scripts. Filter by channel, time range, limit.</p>
+              <code class="hook-sig">await backend.query_messages(...)</code>
+            </div>
+          </div>
+
+          <div class="hooks-example">
+            <p class="hooks-example-caption">One config block. All four hooks. No code changes.</p>
+            <pre class="code-block"><code><span class="cb-key">settings</span>:
+  <span class="cb-key">filters</span>:
+    - <span class="cb-key">class_path</span>: <span class="cb-val">src.extensions.filters.KeywordFilter</span>
+      <span class="cb-key">config</span>: &#123; <span class="cb-key">include</span>: [<span class="cb-val">"job"</span>, <span class="cb-val">"hiring"</span>] &#125;
+  <span class="cb-key">digest_groups</span>:
+    - <span class="cb-key">name</span>: <span class="cb-val">"Jobs"</span>
+      <span class="cb-key">prompt_extra</span>: <span class="cb-val">"Extract role, company, link."</span>
+
+<span class="cb-key">prompts</span>:
+  <span class="cb-key">base_template</span>: <span class="cb-val">src/prompts/base_summary.txt</span>
+
+<span class="cb-key">channels</span>:
+  - <span class="cb-key">id</span>: <span class="cb-val">"@techleads_jobs"</span>
+    <span class="cb-key">name</span>: <span class="cb-val">"Tech Jobs"</span>
+    <span class="cb-key">group</span>: <span class="cb-val">Jobs</span>
+    <span class="cb-key">prompt_extra</span>: <span class="cb-val">"Senior+ only."</span></code></pre>
+          </div>
+
+          <a href="https://github.com/belaytzev/Telebrief?tab=readme-ov-file#-extensibility" class="extend-link" target="_blank" rel="noopener noreferrer">
+            Full extensibility guide →
+          </a>
         </div>
       </div>
     </section>
@@ -819,6 +1053,194 @@ import logoImage from '../../public/logo.webp';
     50% { opacity: 0; }
   }
 
+  /* ── Example Output ── */
+  .example-mode-toggle {
+    max-width: 720px;
+    margin: 0 auto;
+    position: relative;
+  }
+
+  .mode-radio {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+    width: 0;
+    height: 0;
+  }
+
+  .mode-tabs {
+    display: flex;
+    gap: 0.4rem;
+    margin-bottom: 1.1rem;
+    justify-content: center;
+  }
+
+  .mode-tab {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    padding: 0.45rem 1.05rem;
+    border-radius: 100px;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    background: var(--bg-raised);
+    cursor: pointer;
+    transition: all 0.25s var(--ease-out-expo);
+    letter-spacing: 0.02em;
+    user-select: none;
+  }
+
+  .mode-tab:hover {
+    color: var(--text);
+    border-color: var(--border-hover);
+  }
+
+  #mode-channel:checked ~ .mode-tabs label[for="mode-channel"],
+  #mode-topic:checked ~ .mode-tabs label[for="mode-topic"] {
+    color: var(--accent);
+    border-color: var(--accent-border);
+    background: rgba(61, 165, 219, 0.1);
+  }
+
+  .mode-radio:focus-visible ~ .mode-tabs label {
+    outline: none;
+  }
+  #mode-channel:focus-visible ~ .mode-tabs label[for="mode-channel"],
+  #mode-topic:focus-visible ~ .mode-tabs label[for="mode-topic"] {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .example-bubble {
+    border: 1px solid var(--border);
+    border-top: 1px solid var(--accent-border);
+    border-radius: 14px;
+    background: var(--bg-surface);
+    box-shadow:
+      0 8px 28px rgba(0, 0, 0, 0.32),
+      0 1px 2px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+  }
+
+  .bubble-header {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.85rem 1.25rem;
+    background: var(--bg-raised);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .bubble-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .bubble-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    line-height: 1.2;
+  }
+
+  .bubble-name {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--text);
+  }
+
+  .bubble-time {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    letter-spacing: 0.02em;
+  }
+
+  .bubble-body {
+    display: none;
+    padding: 1.6rem 1.85rem 1.85rem;
+    animation: bubbleFade 0.3s var(--ease-out-expo);
+  }
+
+  #mode-channel:checked ~ .example-bubble .bubble-channel,
+  #mode-topic:checked ~ .example-bubble .bubble-topic { display: block; }
+
+  @keyframes bubbleFade {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .digest-h1 {
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: var(--accent);
+    margin-bottom: 1rem;
+    letter-spacing: -0.01em;
+    line-height: 1.25;
+  }
+
+  .digest-h2 {
+    font-family: var(--font-display);
+    font-size: 0.98rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-top: 1.15rem;
+    margin-bottom: 0.5rem;
+    line-height: 1.3;
+  }
+
+  .digest-p {
+    font-size: 0.875rem;
+    line-height: 1.7;
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+  }
+
+  .digest-list {
+    list-style: none;
+    padding: 0;
+    margin-bottom: 0.4rem;
+  }
+
+  .digest-list li {
+    font-size: 0.875rem;
+    line-height: 1.7;
+    color: var(--text-muted);
+    padding: 0.18rem 0;
+  }
+
+  .digest-list li strong {
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  .digest-stats {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 1.1rem;
+    padding-top: 0.9rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .example-caption {
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-top: 1.5rem;
+  }
+
+  .example-caption code {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--accent);
+    background: rgba(61, 165, 219, 0.08);
+    padding: 0.1rem 0.42rem;
+    border-radius: 4px;
+  }
+
   /* ── Bento Grid ── */
   .bento-grid {
     display: grid;
@@ -868,6 +1290,15 @@ import logoImage from '../../public/logo.webp';
   .bento-card h3 { font-size: 1rem; margin-bottom: 0.5rem; }
   .bento-card p { font-size: 0.875rem; line-height: 1.65; }
 
+  .bento-code {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--accent);
+    background: rgba(61, 165, 219, 0.08);
+    padding: 0.05rem 0.32rem;
+    border-radius: 3px;
+  }
+
   .mode-pills {
     display: flex;
     gap: 0.5rem;
@@ -889,6 +1320,278 @@ import logoImage from '../../public/logo.webp';
     border-color: var(--accent-border);
     color: var(--accent);
     background: rgba(61, 165, 219, 0.08);
+  }
+
+  /* ── Extend section ── */
+  .extend-block { margin-bottom: 0; }
+
+  .extend-rule {
+    margin: 4rem 0;
+    opacity: 0.7;
+  }
+
+  .extend-head { margin-bottom: 2rem; }
+
+  .extend-h3 {
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 0.6rem;
+    letter-spacing: -0.02em;
+  }
+
+  .extend-lede {
+    font-size: 0.98rem;
+    line-height: 1.7;
+    color: var(--text-muted);
+    max-width: 620px;
+  }
+
+  /* Storage tabs */
+  .storage-toggle {
+    position: relative;
+    margin-bottom: 1.5rem;
+  }
+
+  .store-radio {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+    width: 0;
+    height: 0;
+  }
+
+  .store-tabs {
+    display: flex;
+    gap: 0.4rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .store-tab {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    padding: 0.45rem 1rem;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    background: var(--bg-raised);
+    cursor: pointer;
+    transition: all 0.25s var(--ease-out-expo);
+    user-select: none;
+    letter-spacing: 0.02em;
+  }
+
+  .store-tab:hover {
+    color: var(--text);
+    border-color: var(--border-hover);
+  }
+
+  #store-sqlite:checked ~ .store-tabs label[for="store-sqlite"],
+  #store-postgres:checked ~ .store-tabs label[for="store-postgres"] {
+    color: var(--accent);
+    border-color: var(--accent-border);
+    background: rgba(61, 165, 219, 0.1);
+  }
+
+  #store-sqlite:focus-visible ~ .store-tabs label[for="store-sqlite"],
+  #store-postgres:focus-visible ~ .store-tabs label[for="store-postgres"] {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .store-panels { position: relative; }
+
+  .store-panel { display: none; }
+
+  #store-sqlite:checked ~ .store-panels .store-panel-sqlite,
+  #store-postgres:checked ~ .store-panels .store-panel-postgres { display: block; }
+
+  .store-blurb {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    margin-bottom: 0.85rem;
+  }
+
+  .store-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 1rem;
+  }
+
+  .store-tag {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    padding: 0.24rem 0.65rem;
+    border-radius: 4px;
+    background: var(--bg-raised);
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+  }
+
+  /* Code block (yaml) — shared */
+  .code-block {
+    background: #0c0b09;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.1rem 1.3rem;
+    overflow-x: auto;
+    margin: 0;
+    box-shadow:
+      0 4px 16px rgba(0, 0, 0, 0.3),
+      0 1px 2px rgba(0, 0, 0, 0.25);
+  }
+
+  .code-block code {
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    line-height: 1.7;
+    color: var(--text);
+    display: block;
+    white-space: pre;
+  }
+
+  .cb-key { color: var(--accent); }
+  .cb-val { color: var(--text); }
+
+  /* Capability strip */
+  .capability-strip {
+    display: flex;
+    align-items: stretch;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 1.5rem 0 1.25rem;
+    background: rgba(20, 19, 16, 0.7);
+    flex-wrap: wrap;
+  }
+
+  .cap-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    padding: 0.95rem 1.4rem;
+    flex: 1;
+    min-width: 180px;
+  }
+
+  .cap-num {
+    font-family: var(--font-mono);
+    font-size: 1.05rem;
+    font-weight: 500;
+    color: var(--accent);
+    line-height: 1;
+  }
+
+  .cap-num.cap-mono {
+    font-size: 0.88rem;
+  }
+
+  .cap-label {
+    font-size: 0.74rem;
+    color: var(--text-muted);
+  }
+
+  .cap-divider {
+    width: 1px;
+    background: var(--border);
+    flex-shrink: 0;
+  }
+
+  .extend-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--accent);
+    margin-top: 0.5rem;
+    transition: gap 0.25s var(--ease-out-expo);
+  }
+
+  .extend-link:hover {
+    gap: 0.55rem;
+  }
+
+  /* Hooks 2x2 grid */
+  .hooks-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 2rem;
+  }
+
+  .hook-cell {
+    padding: 1.65rem;
+    background: var(--bg);
+    transition: background 0.3s var(--ease-out-expo);
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+  }
+
+  .hook-cell:hover {
+    background: var(--bg-surface);
+  }
+
+  .hook-num {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 500;
+  }
+
+  .hook-name {
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+
+  .hook-desc {
+    font-size: 0.85rem;
+    line-height: 1.6;
+    color: var(--text-muted);
+    margin: 0;
+    flex: 1;
+  }
+
+  .hook-sig {
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    color: var(--text);
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    padding: 0.32rem 0.55rem;
+    border-radius: 4px;
+    display: inline-block;
+    width: fit-content;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .hooks-example {
+    margin-top: 1.5rem;
+  }
+
+  .hooks-example-caption {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 0.7rem;
   }
 
   /* ── CTA ── */
@@ -1062,6 +1765,22 @@ import logoImage from '../../public/logo.webp';
 
     .bento-grid { grid-template-columns: 1fr; }
     .bento-wide { grid-column: span 1; }
+
+    .hooks-grid { grid-template-columns: 1fr; }
+
+    .capability-strip { flex-direction: column; }
+    .cap-divider { width: 100%; height: 1px; }
+    .cap-item { padding: 0.85rem 1.25rem; }
+
+    .extend-h3 { font-size: 1.35rem; }
+    .extend-rule { margin: 2.75rem 0; }
+
+    .bubble-body { padding: 1.25rem 1.35rem 1.5rem; }
+    .digest-h1 { font-size: 1.05rem; }
+    .digest-h2 { font-size: 0.92rem; }
+
+    .code-block { padding: 0.95rem 1rem; }
+    .code-block code { font-size: 0.74rem; }
 
     .footer-inner { flex-direction: column; align-items: flex-start; }
     .footer-bottom { flex-direction: column; align-items: flex-start; }
