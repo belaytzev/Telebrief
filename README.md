@@ -386,14 +386,14 @@ backend = SQLiteBackend("data/messages.db")
 await backend.initialize()
 
 messages = await backend.query_messages(
-    channel="@techcrunch",
+    channel_name="TechCrunch",  # the configured channels[*].name (NOT the @id)
     since=datetime(2026, 4, 1, tzinfo=timezone.utc),
     until=datetime(2026, 4, 30, tzinfo=timezone.utc),
     limit=500,
 )
 ```
 
-All parameters are optional. Omit `channel` to query across all channels. Results are ordered by timestamp descending and capped at `limit` (default 1000).
+All parameters are optional. `channel_name` matches the human-readable `channels[*].name` value from `config.yaml` (this is the value persisted to the `channel_name` column at collection time); omit it to query across all channels. Renaming a channel in config will change the value stored for new rows — historical rows keep the old name. Results are ordered by timestamp descending and capped at `limit` (default 1000, must be ≥ 1).
 
 ---
 

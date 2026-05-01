@@ -200,6 +200,23 @@ def _parse_digest_settings(
     return digest_mode, digest_groups, output_language
 
 
+def _validate_dotted_path(value: str, label: str) -> str:
+    """Validate a YAML-string dotted path (e.g. 'pkg.module.ClassName').
+
+    Returns the stripped value. Raises ValueError if the value is not a non-empty
+    string or does not parse as ≥2 dot-separated identifier segments.
+    """
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{label} must be a non-empty string, got {value!r}")
+    stripped = value.strip()
+    segments = stripped.split(".")
+    if len(segments) < 2 or not all(seg.isidentifier() for seg in segments):
+        raise ValueError(
+            f"{label} must be a dotted path (e.g. 'pkg.module.ClassName'), got {value!r}"
+        )
+    return stripped
+
+
 def _parse_filter_specs(raw_list: object, path_label: str) -> list[FilterSpec]:
     """Parse and validate a list of filter specs from YAML.
 
@@ -214,24 +231,13 @@ def _parse_filter_specs(raw_list: object, path_label: str) -> list[FilterSpec]:
             raise ValueError(f"{path_label}[{i}] must be a mapping, got {type(item).__name__}")
         if "class_path" not in item:
             raise ValueError(f"{path_label}[{i}] missing required field 'class_path'")
-        class_path = item["class_path"]
-        if not isinstance(class_path, str) or not class_path.strip():
-            raise ValueError(
-                f"{path_label}[{i}].class_path must be a non-empty string, " f"got {class_path!r}"
-            )
-        stripped_path = class_path.strip()
-        segments = stripped_path.split(".")
-        if len(segments) < 2 or not all(seg.isidentifier() for seg in segments):
-            raise ValueError(
-                f"{path_label}[{i}].class_path must be a dotted path "
-                f"(e.g. 'pkg.module.ClassName'), got {class_path!r}"
-            )
+        class_path = _validate_dotted_path(item["class_path"], f"{path_label}[{i}].class_path")
         config = item.get("config", {})
         if not isinstance(config, dict):
             raise ValueError(
                 f"{path_label}[{i}].config must be a mapping, " f"got {type(config).__name__}"
             )
-        specs.append(FilterSpec(class_path=class_path.strip(), config=config))
+        specs.append(FilterSpec(class_path=class_path, config=config))
     return specs
 
 
@@ -351,9 +357,10 @@ def _parse_prompts_config(yaml_config: dict) -> PromptsConfig:
     composer = raw.get("composer", "")
     if not isinstance(composer, str):
         raise ValueError(f"prompts.composer must be a string, got {type(composer).__name__}")
-    if composer and not composer.strip():
-        raise ValueError("prompts.composer must be a non-empty dotted path or empty string")
-    composer = composer.strip()
+    if composer.strip():
+        composer = _validate_dotted_path(composer, "prompts.composer")
+    else:
+        composer = ""
 
     return PromptsConfig(base_template=base_template, composer=composer)
 

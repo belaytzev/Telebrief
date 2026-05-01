@@ -898,6 +898,36 @@ def test_filter_spec_invalid_dotted_path_raises(tmp_path, mock_env_vars, bad_pat
 
 
 @pytest.mark.unit
+@pytest.mark.parametrize(
+    "bad_composer",
+    ["NoDots", "trailing.", ".leading", "two..dots", "has space.Cls", "1bad.Cls"],
+)
+def test_prompts_composer_invalid_dotted_path_raises(tmp_path, mock_env_vars, bad_composer):
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@test"\n    name: "Test"\n'
+        "settings:\n  target_user_id: 123456789\n"
+        "prompts:\n"
+        f"  composer: {bad_composer!r}\n"
+    )
+    with pytest.raises(ValueError, match="prompts.composer must be a dotted path"):
+        load_config(str(p))
+
+
+@pytest.mark.unit
+def test_prompts_composer_empty_string_allowed(tmp_path, mock_env_vars):
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        'channels:\n  - id: "@test"\n    name: "Test"\n'
+        "settings:\n  target_user_id: 123456789\n"
+        "prompts:\n"
+        "  composer: ''\n"
+    )
+    config = load_config(str(p))
+    assert config.prompts.composer == ""
+
+
+@pytest.mark.unit
 def test_prompts_config_strips_whitespace(tmp_path, mock_env_vars):
     p = tmp_path / "config.yaml"
     p.write_text(

@@ -80,7 +80,7 @@ class StorageBackend(Protocol):
 
     async def query_messages(  # noqa: E704
         self,
-        channel: str | None = None,
+        channel_name: str | None = None,
         since: datetime | None = None,
         until: datetime | None = None,
         limit: int = 1000,
@@ -133,7 +133,7 @@ class SQLiteBackend:
 
     async def query_messages(
         self,
-        channel: str | None = None,
+        channel_name: str | None = None,
         since: datetime | None = None,
         until: datetime | None = None,
         limit: int = 1000,
@@ -148,9 +148,9 @@ class SQLiteBackend:
         conditions: list[str] = []
         params: list[Any] = []
 
-        if channel is not None:
+        if channel_name is not None:
             conditions.append("channel_name = ?")
-            params.append(channel)
+            params.append(channel_name)
         if since is not None:
             conditions.append("timestamp >= ?")
             params.append(since.isoformat())
@@ -231,7 +231,7 @@ class PostgresBackend:  # pragma: no cover
 
     async def query_messages(
         self,
-        channel: str | None = None,
+        channel_name: str | None = None,
         since: datetime | None = None,
         until: datetime | None = None,
         limit: int = 1000,
@@ -247,9 +247,9 @@ class PostgresBackend:  # pragma: no cover
         args: list[Any] = []
         idx = 1
 
-        if channel is not None:
+        if channel_name is not None:
             conditions.append(f"channel_name = ${idx}")
-            args.append(channel)
+            args.append(channel_name)
             idx += 1
         if since is not None:
             conditions.append(f"timestamp >= ${idx}")

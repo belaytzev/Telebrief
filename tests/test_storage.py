@@ -146,7 +146,7 @@ class TestSQLiteBackend:
                     _make_message("b", "chan2"),
                 ]
             )
-            result = await backend.query_messages(channel="chan1")
+            result = await backend.query_messages(channel_name="chan1")
             assert len(result) == 1
             assert result[0].text == "a"
         finally:
@@ -411,7 +411,7 @@ class TestPostgresBackend:
         backend = PostgresBackend(_PG_URL)
         await backend.initialize()
         try:
-            result = await backend.query_messages(channel=ch)
+            result = await backend.query_messages(channel_name=ch)
             assert result == []
         finally:
             await backend.close()
@@ -423,7 +423,7 @@ class TestPostgresBackend:
         await backend.initialize()
         try:
             await backend.save_messages([_make_message("pg_hello", ch)])
-            result = await backend.query_messages(channel=ch)
+            result = await backend.query_messages(channel_name=ch)
             assert len(result) == 1
             assert result[0].text == "pg_hello"
             assert isinstance(result[0], Message)

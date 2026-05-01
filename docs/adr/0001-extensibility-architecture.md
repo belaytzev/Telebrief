@@ -47,29 +47,32 @@ Extend the existing `StorageBackend` Protocol pattern:
 - All new config fields are optional with safe defaults. YAML key is `class_path:` (not
   `class:` — Python keyword conflict).
 
-Example configuration:
+Example configuration (`filters` and `digest_groups` live under `settings:`; `prompts:`
+is a top-level sibling of `settings:`):
 
 ```yaml
-filters:
-  - class_path: src.extensions.filters.KeywordFilter
-    config:
-      include: ["job", "remote"]
-      exclude: ["nsfw"]
-
-prompts:
-  base_template: src/prompts/base_summary.txt
-  composer: ""
-
-digest_groups:
-  - name: Jobs
-    prompt_extra: "Focus on remote positions."
-
 channels:
   - id: "@example"
+    name: "Example"
     group: Jobs
     filters: null
     prompt_extra: ""
     lookback_hours: null
+
+settings:
+  digest_groups:
+    - name: Jobs
+      prompt_extra: "Focus on remote positions."
+
+  filters:
+    - class_path: src.extensions.filters.KeywordFilter
+      config:
+        include: ["job", "remote"]
+        exclude: ["nsfw"]
+
+prompts:
+  base_template: src/prompts/base_summary.txt
+  composer: ""
 ```
 
 Prompt composition order (specific overrides general):
