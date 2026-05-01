@@ -101,30 +101,30 @@ Telebrief supports two digest modes configured via `digest_mode` in `config.yaml
 Groups summaries by source channel with clickable channel links:
 
 ```markdown
-# 📊 Ежедневный дайджест - 14 декабря 2025
+# 📊 Daily Digest — May 2, 2026
 
-## 🎯 Краткий обзор
+## 🎯 Overview
 
-Сегодня основные темы: запуск Python 3.13 с улучшениями производительности
-обсуждался в нескольких технических каналах, криптовалютный рынок показал
-высокую волатильность на фоне новостей о регулировании.
+Today's main themes: AI tooling dominated with Anthropic's Claude Opus 4.7
+release, crypto markets rallied on spot ETF approvals, EU finalized
+amendments to the AI Act.
 
 ---
 
 ## 💻 TechCrunch
 
-- 🚀 **Python 3.13 релиз**: Официально выпущена новая версия с JIT-компиляцией
-- 🤖 **OpenAI анонсировала GPT-5**: Следующее поколение модели ожидается в Q1 2026
-- 📱 **Apple vs EU**: Новые требования по interoperability
+- 🚀 **Claude Opus 4.7 released**: 1M context window, faster output
+- 🤖 **OpenAI GPT-6 leak**: Multimodal benchmarks surface early
+- 📱 **Apple Vision Pro 2**: Rumored Q3 launch with lighter frame
 
 ## 💰 Crypto News
 
-- 📈 **Bitcoin волатильность**: Цена колебалась между $43K и $46K
-- ⚠️ **SEC предупреждение**: Новая схема мошенничества
-- 🔐 **Ethereum upgrade**: Успешно завершен тестнет
+- 📈 **Bitcoin hits $89K**: Spot ETF inflows reach record high
+- ⚠️ **SEC settles with Ripple**: Final ruling closes 6-year case
+- 🔐 **Ethereum Pectra upgrade**: Mainnet activation confirmed
 
 ---
-📈 **Статистика**: 20 каналов, 1,847 сообщений обработано
+📈 **Stats**: 20 channels, 1,847 messages processed
 ```
 
 ### Topic mode (`digest_mode: "digest"`)
@@ -144,7 +144,7 @@ digest_groups:
 
 Messages that don't match any defined group are placed into an automatic "Other" category.
 
-> All labels (header, statistics, bot commands) use the configured `output_language` — the examples above show the default Russian output.
+> All labels (header, statistics, bot commands) follow the configured `output_language`. The example above uses English; set `output_language: "Russian"` (or any other language) to change the output.
 
 ---
 
