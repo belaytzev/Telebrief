@@ -86,6 +86,7 @@ class Settings:
     digest_mode: str = "channel"
     digest_groups: List[DigestGroupConfig] = field(default_factory=list)
     filters: list[FilterSpec] = field(default_factory=list)
+    dedup_topics: bool = False
 
 
 @dataclass
@@ -540,6 +541,7 @@ def load_config(config_path: str = "config.yaml") -> Config:
         digest_mode=digest_mode,
         digest_groups=digest_groups,
         filters=global_filters,
+        dedup_topics=bool(settings_dict.get("dedup_topics", False)),
     )
 
     if settings.target_user_id == 0:
