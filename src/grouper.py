@@ -75,6 +75,13 @@ class DigestGrouper:
             groups[-1],
         )
 
+        dedup_rule = (
+            "- DEDUPLICATION: If multiple channels describe the same real-world event or story, "
+            "include it only ONCE across all groups. Choose the most informative description. "
+            'List all contributing channel names in "source" separated by commas (e.g. "ChanA, ChanB").\n'
+            if self.config.settings.dedup_topics
+            else ""
+        )
         system_prompt = (
             f"You are a classification assistant. Your task is to extract individual bullet points "
             f"from channel summaries and classify each into one of the defined topic groups.\n\n"
@@ -92,6 +99,7 @@ class DigestGrouper:
             f"- If a point has no emoji, ADD a relevant one at the start\n"
             f"- Preserve any links [→ url] from the original text\n"
             f"- The source must be the channel name the point came from\n"
+            f"{dedup_rule}"
             f"- Output raw JSON only — no markdown, no explanation"
         )
 

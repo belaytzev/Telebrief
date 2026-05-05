@@ -48,6 +48,10 @@ settings:
 
   # Digest mode: "channel" (default) groups by channel, "digest" groups by topic
   digest_mode: "channel"
+  # Deduplicate cross-channel topics: when true, the AI keeps only the most informative
+  # bullet point when multiple channels cover the same event (sources are merged).
+  # Only effective in digest_mode: "digest".
+  # dedup_topics: false
   # Topic groups for digest mode (only used when digest_mode is "digest")
   # An implicit "Other" group catches anything that doesn't match defined groups.
   # digest_groups:

@@ -146,6 +146,23 @@ Messages that don't match any defined group are placed into an automatic "Other"
 
 > All labels (header, statistics, bot commands) follow the configured `output_language`. The example above uses English; set `output_language: "Russian"` (or any other language) to change the output.
 
+### `dedup_topics` — cross-channel deduplication
+
+When multiple channels cover the same event, the grouper normally produces one bullet point per channel. Enable `dedup_topics` to instruct the AI to keep only the most informative description and merge the source attributions:
+
+```yaml
+settings:
+  digest_mode: "digest"
+  dedup_topics: true        # default: false
+  digest_groups:
+    - name: "Tech"
+      description: "Technology news and releases"
+```
+
+With deduplication enabled, if `TechCrunch` and `HackerNews` both report the same product launch, the digest will contain a single bullet point with `source: "TechCrunch, HackerNews"` instead of two separate entries.
+
+> **Note:** `dedup_topics` has no effect in `digest_mode: "channel"` — deduplication only applies during topic-based grouping.
+
 ---
 
 ## ⚙️ Per-Channel Configuration
