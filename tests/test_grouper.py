@@ -285,6 +285,118 @@ class TestGrouperTemperatureOverride:
         assert temp == 0.1
 
 
+class TestStripChannelHeader:
+    """Tests for stripping leading 🚀 header line from channel summaries before grouping."""
+
+    def test_leading_rocket_header_stripped_from_summary(self, grouper):
+        """Leading '🚀 ...' line is removed before being fed to the grouper AI."""
+        channel_summaries = {
+            "TechNews": "🚀 Quick recap of channel events\n- 🤖 AI launched X\n- 📈 Stock up",
+        }
+        groups = grouper._build_group_definitions()
+        messages = grouper._build_classification_prompt(channel_summaries, groups)
+
+        user_prompt = messages[1]["content"]
+        assert "Quick recap of channel events" not in user_prompt
+        assert "AI launched X" in user_prompt
+        assert "Stock up" in user_prompt
+
+    def test_summary_without_rocket_header_unchanged(self, grouper):
+        """Summary that does not start with 🚀 is fed verbatim."""
+        channel_summaries = {
+            "Politics": "- 📰 Election update\n- 🗳️ Voter turnout",
+        }
+        groups = grouper._build_group_definitions()
+        messages = grouper._build_classification_prompt(channel_summaries, groups)
+
+        user_prompt = messages[1]["content"]
+        assert "Election update" in user_prompt
+        assert "Voter turnout" in user_prompt
+
+
+class TestStripSectionTwo:
+    """Tests for stripping Section 2 (📎 Also/Также) from channel summaries before grouping."""
+
+    def test_section_two_english_stripped(self, grouper):
+        """English '📎 Also:' section and everything after is removed."""
+        channel_summaries = {
+            "Ch": "- 🤖 Big news item\n📎 Also:\n• Trivial poll → https://t.me/x/1\n• Random link → https://t.me/x/2",
+        }
+        groups = grouper._build_group_definitions()
+        messages = grouper._build_classification_prompt(channel_summaries, groups)
+
+        user_prompt = messages[1]["content"]
+        assert "Big news item" in user_prompt
+        assert "Trivial poll" not in user_prompt
+        assert "Random link" not in user_prompt
+        assert "📎 Also" not in user_prompt
+
+    def test_section_two_russian_stripped(self, grouper):
+        """Russian '📎 Также:' section and everything after is removed."""
+        channel_summaries = {
+            "Ch": "- 🤖 Главная новость\n📎 Также:\n• Опрос → https://t.me/x/1\n• Картинка → https://t.me/x/2",
+        }
+        groups = grouper._build_group_definitions()
+        messages = grouper._build_classification_prompt(channel_summaries, groups)
+
+        user_prompt = messages[1]["content"]
+        assert "Главная новость" in user_prompt
+        assert "Опрос" not in user_prompt
+        assert "Картинка" not in user_prompt
+
+
+class TestDeterministicDedup:
+    """Tests for deterministic dedup in _parse_grouped_response."""
+
+    def test_verbatim_duplicate_in_same_group_dropped(self, grouper):
+        """If AI emits the same (group, source, point) twice, only one survives."""
+        response = json.dumps(
+            {
+                "Events": [
+                    {"point": "Claude Beginners Guide", "source": "Robot"},
+                    {"point": "Claude Beginners Guide", "source": "Robot"},
+                ],
+            }
+        )
+        groups = grouper._build_group_definitions()
+        valid_names = {g.name for g in groups}
+        result = grouper._parse_grouped_response(response, valid_names)
+
+        assert len(result["Events"]) == 1
+
+    def test_dedup_normalizes_whitespace_and_case(self, grouper):
+        """Near-duplicate (only whitespace/case differs) is also dropped."""
+        response = json.dumps(
+            {
+                "Events": [
+                    {"point": "Claude Beginners Guide", "source": "Robot"},
+                    {"point": "  claude beginners  guide  ", "source": "Robot"},
+                ],
+            }
+        )
+        groups = grouper._build_group_definitions()
+        valid_names = {g.name for g in groups}
+        result = grouper._parse_grouped_response(response, valid_names)
+
+        assert len(result["Events"]) == 1
+
+    def test_same_point_different_source_kept(self, grouper):
+        """Same point text from a different source is preserved (separate signal)."""
+        response = json.dumps(
+            {
+                "Events": [
+                    {"point": "AI Summit", "source": "Ch1"},
+                    {"point": "AI Summit", "source": "Ch2"},
+                ],
+            }
+        )
+        groups = grouper._build_group_definitions()
+        valid_names = {g.name for g in groups}
+        result = grouper._parse_grouped_response(response, valid_names)
+
+        assert len(result["Events"]) == 2
+
+
 class TestGrouperMissingChannelWarning:
     """Tests for warning when input channels are missing from grouped output."""
 

@@ -17,6 +17,27 @@ from src.config_loader import Config, DigestGroupConfig
 from src.ui_strings import get_ui_strings
 from src.xml_escape import escape_xml_delimiters
 
+_LEADING_ROCKET_HEADER_RE = re.compile(r"^🚀[^\n]*\n?")
+_SECTION_TWO_SPLIT_RE = re.compile(r"📎\s*(?:Also|Также)\s*:")
+_DEDUP_NORMALIZE_RE = re.compile(r"\s+")
+
+
+def _strip_channel_summary_noise(summary: str) -> str:
+    """Remove leading 🚀 recap header and the trailing 📎 Also/Также section.
+
+    Both reach the grouper as low-signal lines that previously caused duplicate
+    bullets in the digest (header echoed as bullet, low-priority items competing
+    in cross-channel grouping).
+    """
+    cleaned = _LEADING_ROCKET_HEADER_RE.sub("", summary, count=1)
+    cleaned = _SECTION_TWO_SPLIT_RE.split(cleaned, maxsplit=1)[0]
+    return cleaned.rstrip()
+
+
+def _normalize_point(point: str) -> str:
+    """Normalize a bullet point for dedup: lowercase, collapse whitespace."""
+    return _DEDUP_NORMALIZE_RE.sub(" ", point).strip().lower()
+
 
 @dataclass
 class GroupedPoint:
@@ -106,7 +127,8 @@ class DigestGrouper:
         summaries_text = ""
         for channel_name, summary in channel_summaries.items():
             safe_name = html.escape(channel_name, quote=True)
-            safe_summary = escape_xml_delimiters(summary)
+            cleaned_summary = _strip_channel_summary_noise(summary)
+            safe_summary = escape_xml_delimiters(cleaned_summary)
             summaries_text += (
                 f'\n<channel_summary source="{safe_name}">\n{safe_summary}\n</channel_summary>\n'
             )
@@ -148,6 +170,8 @@ class DigestGrouper:
             result: Dict[str, List[GroupedPoint]] = {}
             # Case-insensitive lookup: AI models may vary casing
             canonical = {n.lower(): n for n in valid_group_names}
+            seen_keys: set[tuple[str, str, str]] = set()
+            dedup_dropped = 0
             for group_name, points in data.items():
                 if not isinstance(points, list):
                     self.logger.warning("Group '%s' value is not a list, skipping", group_name)
@@ -160,9 +184,15 @@ class DigestGrouper:
                 for item in points:
                     if isinstance(item, dict) and "point" in item:
                         src = str(item.get("source", ""))
+                        point_text = str(item["point"])
+                        dedup_key = (target_name, src, _normalize_point(point_text))
+                        if dedup_key in seen_keys:
+                            dedup_dropped += 1
+                            continue
+                        seen_keys.add(dedup_key)
                         grouped.append(
                             GroupedPoint(
-                                point=str(item["point"]),
+                                point=point_text,
                                 source=src,
                                 source_url=urls.get(src, ""),
                             )
@@ -177,6 +207,11 @@ class DigestGrouper:
                     )
                 if grouped:
                     result.setdefault(target_name, []).extend(grouped)
+            if dedup_dropped:
+                self.logger.info(
+                    "Dropped %d duplicate bullet(s) during deterministic dedup",
+                    dedup_dropped,
+                )
             return result
 
         except (json.JSONDecodeError, ValueError) as e:
