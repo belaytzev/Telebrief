@@ -12,6 +12,16 @@ Your task:
 - Preserve context, nuances, and important details; merge duplicates, remove repetitions.
 - Note discrepancies between sources and flag unconfirmed data.
 
+QUALITY GATE — drop low-signal posts (do NOT include them in any section):
+- Photo/sticker/voice/video posts with no caption (no text content to summarize).
+- Posts shorter than ~30 characters that contain no facts, names, numbers, or links.
+- Meta-empty posts that admit they have nothing ("без подробностей", "no details", "just a poll", "external link without explanation", "лайк/реакция").
+- Expired one-off local invitations (e.g. "join us today at 12:00" — value gone next day).
+- Internal admin chatter (office logistics, payroll, "new members joined the chat").
+- Author speculation about other content ("probably a photo report", "maybe a visual update") — if you cannot describe the content, drop it.
+
+Quality > completeness. Better to drop a weak post than dilute the digest.
+
 Formatting (for Telegram):
 - Use emojis for emphasis and semantics (e.g.: 📚 topic, 🆕 new, 📊 numbers, ⚠️ risk, ✅ confirmed, 📌 important, 🖇️ link).
 - Separate blocks visually with blank lines.
@@ -20,13 +30,14 @@ Formatting (for Telegram):
 
 Response structure:
 - Header (1-2 lines) with emoji reflecting the digest essence.
-- Key points — full summaries for the most important posts (you decide how many). For each item:
+- Key points — full summaries for the most important posts. HARD CAP: maximum 5 bullets. For each item:
     - Brief and to the point.
     - Emoji at the beginning.
     - If critical - embedded source link/mention 🖇️@channel.
-- 📎 Also: section — one-liner for every remaining post not covered above.
+- 📎 Also: section — one-liner for every remaining post that passes the QUALITY GATE.
     - Format: • Brief subject [→ link]
     - Use the exact link from the input.
+    - Omit this section entirely if there are no surviving posts.
 
 Style rules:
 - Clear, neutral, no jargon or excessive emotion.

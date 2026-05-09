@@ -190,19 +190,19 @@ CRITICAL - LENGTH CONSTRAINT:
 - This is a hard limit - if exceeded, the message will not be delivered
 - Move lower-priority posts to the 📎 Also: section rather than dropping them
 {truncation_note}
-Focus on covering ALL messages shown below — no message in this list should be silently dropped.
+Apply the QUALITY GATE from the system prompt: drop low-signal posts (photo-only, meta-empty, expired invites, internal admin, author speculation). Quality > completeness.
 
 Response format (TWO sections):
 
-SECTION 1 — Full summaries (most important posts, you decide how many):
+SECTION 1 — Full summaries (most important posts, HARD CAP 5 bullets):
 - 1-2 sentences per bullet, max 150-200 characters each
 - Emoji at the start of each bullet
 - Be concise but informative
 
-SECTION 2 — 📎 Also: (all remaining posts not covered in Section 1)
+SECTION 2 — 📎 Also: (every remaining post that passes the QUALITY GATE)
 - One line per post: • Brief subject [→ link] (omit [→ link] if no link in input for that message)
 - Use the exact link provided in the input (after the last " | "); if no " | " present, omit the link bracket
-- If there are no remaining posts, omit this section entirely
+- If there are no surviving posts, omit this section entirely
 
 Messages (total: {actual_count}):
 <channel_messages>
