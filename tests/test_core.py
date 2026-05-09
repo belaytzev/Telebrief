@@ -783,3 +783,58 @@ def test_order_groups_pushes_literal_other_case_insensitive(sample_config):
     grouped = {"News": [], "OTHER": [], "Sport": []}
     order = _order_groups(grouped, sample_config)
     assert order[-1] == "OTHER"
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_summary_message_dedupes_split_group_names(
+    sample_config, mock_logger, sample_messages
+):
+    """When a group's formatted message is split into >1 chunk, the summary header
+    must list that group exactly once — not once per chunk."""
+    long_news = "a" * 4500  # exceeds split_message default max_length=4000
+
+    with (
+        patch("src.core.MessageCollector") as mock_collector_class,
+        patch("src.core.Summarizer") as mock_summarizer_class,
+        patch("src.core.DigestGrouper") as mock_grouper_class,
+        patch("src.core.DigestFormatter") as mock_formatter_class,
+        patch("src.core.DigestSender") as mock_sender_class,
+    ):
+        mock_collector = MagicMock()
+        mock_collector.connect = AsyncMock()
+        mock_collector.fetch_messages = AsyncMock(return_value={"Test Channel": sample_messages})
+        mock_collector.disconnect = AsyncMock()
+        mock_collector_class.return_value = mock_collector
+
+        mock_summarizer = MagicMock()
+        mock_summarizer.summarize_all = AsyncMock(
+            return_value={
+                "channel_summaries": {"Test Channel": "- Long news"},
+                "overview": "",
+            }
+        )
+        mock_summarizer_class.return_value = mock_summarizer
+
+        mock_grouper = MagicMock()
+        mock_grouper.group_summaries = AsyncMock(
+            return_value={"News": [GroupedPoint(point="X", source="Test Channel")]}
+        )
+        mock_grouper_class.return_value = mock_grouper
+
+        mock_formatter = MagicMock()
+        mock_formatter.format_group_message = MagicMock(return_value=long_news)
+        mock_formatter.format_group_summary_message = MagicMock(return_value="Summary")
+        mock_formatter_class.return_value = mock_formatter
+
+        mock_sender = MagicMock()
+        mock_sender.cleanup_old_digests = AsyncMock()
+        mock_sender.send_channel_messages_with_tracking = AsyncMock(return_value=True)
+        mock_sender_class.return_value = mock_sender
+
+        await generate_and_send_digest_grouped(
+            sample_config, mock_logger, hours=24, user_id=123456789
+        )
+
+        call_kwargs = mock_formatter.format_group_summary_message.call_args.kwargs
+        assert call_kwargs["group_names"] == ["News"]

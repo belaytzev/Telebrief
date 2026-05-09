@@ -361,7 +361,10 @@ async def generate_and_send_digest_grouped(
             await sender.cleanup_old_digests(user_id)
 
         total_points = sum(len(pts) for pts in grouped.values())
-        group_names = [name for name, _ in group_messages]
+        # Same group can appear in multiple chunks when its formatted message
+        # exceeds split_message threshold; dedupe while preserving order so the
+        # summary header lists each group exactly once.
+        group_names = list(dict.fromkeys(name for name, _ in group_messages))
         summary_message = formatter.format_group_summary_message(
             group_names=group_names, total_points=total_points, hours=hours
         )

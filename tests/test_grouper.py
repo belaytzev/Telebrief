@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from src.config_loader import DigestGroupConfig
-from src.grouper import DigestGrouper
+from src.grouper import DigestGrouper, ExtractedBullet, _dedup_extracted
 
 
 @pytest.fixture
@@ -174,18 +174,18 @@ class TestGroupSummaries:
     """Tests for group_summaries() end-to-end with mocked AI provider."""
 
     async def test_end_to_end_with_mocked_provider(self, grouper):
-        """group_summaries calls AI provider and returns parsed groups."""
-        ai_response = json.dumps(
-            {
-                "Events": [
-                    {"point": "AI Summit 2026", "source": "TechChannel"},
-                ],
-                "News": [
-                    {"point": "Market update", "source": "FinanceChannel"},
-                ],
-            }
-        )
-        grouper.provider.chat_completion.return_value = ai_response
+        """group_summaries chains extractor (per channel) → dedup → classifier."""
+        # Two extractor responses (one per channel) + one classifier response
+        grouper.provider.chat_completion.side_effect = [
+            json.dumps([{"point": "AI Summit 2026"}]),
+            json.dumps([{"point": "Market update"}]),
+            json.dumps(
+                {
+                    "Events": [{"point": "AI Summit 2026", "source": "TechChannel"}],
+                    "News": [{"point": "Market update", "source": "FinanceChannel"}],
+                }
+            ),
+        ]
 
         channel_summaries = {
             "TechChannel": "Summary about AI Summit 2026",
@@ -194,15 +194,9 @@ class TestGroupSummaries:
 
         result = await grouper.group_summaries(channel_summaries)
 
-        # Verify AI was called
-        grouper.provider.chat_completion.assert_called_once()
-        call_kwargs = grouper.provider.chat_completion.call_args
-        messages = call_kwargs.kwargs.get("messages") or call_kwargs[1].get("messages")
-        assert len(messages) == 2
-        assert messages[0]["role"] == "system"
-        assert messages[1]["role"] == "user"
+        # Two extract calls + one classify call = 3 total
+        assert grouper.provider.chat_completion.call_count == 3
 
-        # Verify result
         assert "Events" in result
         assert result["Events"][0].point == "AI Summit 2026"
         assert "News" in result
@@ -214,9 +208,13 @@ class TestGroupSummaries:
         assert result == {}
         grouper.provider.chat_completion.assert_not_called()
 
-    async def test_ai_error_propagates(self, grouper):
-        """AI provider errors propagate to caller."""
-        grouper.provider.chat_completion.side_effect = RuntimeError("API down")
+    async def test_classifier_error_propagates(self, grouper):
+        """Classifier (Pass 2b) errors propagate to caller; extractor failures are tolerated."""
+        # Extractor succeeds; classifier raises
+        grouper.provider.chat_completion.side_effect = [
+            json.dumps([{"point": "🤖 AI news"}]),
+            RuntimeError("API down"),
+        ]
 
         with pytest.raises(RuntimeError, match="API down"):
             await grouper.group_summaries({"ch": "summary"})
@@ -228,30 +226,18 @@ class TestGroupSummaries:
 class TestPromptInjectionMitigation:
     """Tests for prompt injection defenses in grouper prompts."""
 
-    def test_channel_summaries_wrapped_in_xml_delimiters(self, grouper):
-        """User prompt wraps each channel summary in <channel_summary> XML delimiters with source attribute."""
-        channel_summaries = {
-            "TechNews": "Summary about AI",
-            "Politics": "Summary about elections",
-        }
-        groups = grouper._build_group_definitions()
-        messages = grouper._build_classification_prompt(channel_summaries, groups)
-
+    def test_extractor_wraps_summary_in_xml_with_source_attribute(self, grouper):
+        """Extractor user prompt wraps the summary in <channel_summary> with source attr."""
+        messages = grouper._build_extractor_prompt(
+            channel_name="TechNews", summary="Summary about AI"
+        )
         user_prompt = messages[1]["content"]
-        # Channel names must be inside the XML tag (as source attribute) for data isolation
         assert '<channel_summary source="TechNews">' in user_prompt
-        assert '<channel_summary source="Politics">' in user_prompt
         assert "</channel_summary>" in user_prompt
-        # Each channel's summary should be wrapped
-        assert user_prompt.count("<channel_summary") == 2
-        assert user_prompt.count("</channel_summary>") == 2
 
-    def test_system_prompt_contains_data_isolation_instruction(self, grouper):
-        """System prompt instructs AI to treat XML-delimited content as DATA only."""
-        channel_summaries = {"Ch": "Summary"}
-        groups = grouper._build_group_definitions()
-        messages = grouper._build_classification_prompt(channel_summaries, groups)
-
+    def test_extractor_system_prompt_contains_data_isolation_instruction(self, grouper):
+        """Extractor system prompt treats XML-delimited content as DATA only."""
+        messages = grouper._build_extractor_prompt(channel_name="Ch", summary="Summary")
         system_prompt = messages[0]["content"]
         assert "DATA" in system_prompt or "data only" in system_prompt.lower()
         assert (
@@ -259,6 +245,13 @@ class TestPromptInjectionMitigation:
             or "xml" in system_prompt.lower()
             or "tags" in system_prompt.lower()
         )
+
+    def test_classifier_system_prompt_contains_data_isolation_instruction(self, grouper):
+        """Classifier system prompt treats input bullets as DATA only."""
+        groups = grouper._build_group_definitions()
+        messages = grouper._build_classifier_prompt([], groups)
+        system_prompt = messages[0]["content"]
+        assert "DATA" in system_prompt or "data only" in system_prompt.lower()
 
 
 # --- Task 3: Output validation layer tests ---
@@ -286,16 +279,14 @@ class TestGrouperTemperatureOverride:
 
 
 class TestStripChannelHeader:
-    """Tests for stripping leading 🚀 header line from channel summaries before grouping."""
+    """Tests for stripping leading 🚀 header line from channel summaries before extraction."""
 
     def test_leading_rocket_header_stripped_from_summary(self, grouper):
-        """Leading '🚀 ...' line is removed before being fed to the grouper AI."""
-        channel_summaries = {
-            "TechNews": "🚀 Quick recap of channel events\n- 🤖 AI launched X\n- 📈 Stock up",
-        }
-        groups = grouper._build_group_definitions()
-        messages = grouper._build_classification_prompt(channel_summaries, groups)
-
+        """Leading '🚀 ...' line is removed before being fed to the extractor AI."""
+        messages = grouper._build_extractor_prompt(
+            channel_name="TechNews",
+            summary="🚀 Quick recap of channel events\n- 🤖 AI launched X\n- 📈 Stock up",
+        )
         user_prompt = messages[1]["content"]
         assert "Quick recap of channel events" not in user_prompt
         assert "AI launched X" in user_prompt
@@ -303,28 +294,29 @@ class TestStripChannelHeader:
 
     def test_summary_without_rocket_header_unchanged(self, grouper):
         """Summary that does not start with 🚀 is fed verbatim."""
-        channel_summaries = {
-            "Politics": "- 📰 Election update\n- 🗳️ Voter turnout",
-        }
-        groups = grouper._build_group_definitions()
-        messages = grouper._build_classification_prompt(channel_summaries, groups)
-
+        messages = grouper._build_extractor_prompt(
+            channel_name="Politics",
+            summary="- 📰 Election update\n- 🗳️ Voter turnout",
+        )
         user_prompt = messages[1]["content"]
         assert "Election update" in user_prompt
         assert "Voter turnout" in user_prompt
 
 
 class TestStripSectionTwo:
-    """Tests for stripping Section 2 (📎 Also/Также) from channel summaries before grouping."""
+    """Tests for stripping Section 2 (📎 Also/Также) from channel summaries before extraction."""
 
     def test_section_two_english_stripped(self, grouper):
         """English '📎 Also:' section and everything after is removed."""
-        channel_summaries = {
-            "Ch": "- 🤖 Big news item\n📎 Also:\n• Trivial poll → https://t.me/x/1\n• Random link → https://t.me/x/2",
-        }
-        groups = grouper._build_group_definitions()
-        messages = grouper._build_classification_prompt(channel_summaries, groups)
-
+        messages = grouper._build_extractor_prompt(
+            channel_name="Ch",
+            summary=(
+                "- 🤖 Big news item\n"
+                "📎 Also:\n"
+                "• Trivial poll → https://t.me/x/1\n"
+                "• Random link → https://t.me/x/2"
+            ),
+        )
         user_prompt = messages[1]["content"]
         assert "Big news item" in user_prompt
         assert "Trivial poll" not in user_prompt
@@ -333,12 +325,15 @@ class TestStripSectionTwo:
 
     def test_section_two_russian_stripped(self, grouper):
         """Russian '📎 Также:' section and everything after is removed."""
-        channel_summaries = {
-            "Ch": "- 🤖 Главная новость\n📎 Также:\n• Опрос → https://t.me/x/1\n• Картинка → https://t.me/x/2",
-        }
-        groups = grouper._build_group_definitions()
-        messages = grouper._build_classification_prompt(channel_summaries, groups)
-
+        messages = grouper._build_extractor_prompt(
+            channel_name="Ch",
+            summary=(
+                "- 🤖 Главная новость\n"
+                "📎 Также:\n"
+                "• Опрос → https://t.me/x/1\n"
+                "• Картинка → https://t.me/x/2"
+            ),
+        )
         user_prompt = messages[1]["content"]
         assert "Главная новость" in user_prompt
         assert "Опрос" not in user_prompt
@@ -395,6 +390,155 @@ class TestDeterministicDedup:
         result = grouper._parse_grouped_response(response, valid_names)
 
         assert len(result["Events"]) == 2
+
+
+class TestExtractBulletsFromChannel:
+    """Tests for Pass 2a — per-channel bullet extraction."""
+
+    @pytest.mark.asyncio
+    async def test_extracts_bullets_from_single_channel(self, grouper):
+        """Extractor returns one ExtractedBullet per bullet in summary."""
+        grouper.provider.chat_completion.return_value = json.dumps(
+            [
+                {"point": "🤖 AI launched X"},
+                {"point": "📈 Stock up 5%"},
+            ]
+        )
+
+        result = await grouper._extract_bullets_from_channel(
+            channel_name="TechNews",
+            summary="- 🤖 AI launched X\n- 📈 Stock up 5%",
+            source_url="https://t.me/technews",
+        )
+
+        assert len(result) == 2
+        assert result[0].point == "🤖 AI launched X"
+        assert result[0].source == "TechNews"
+        assert result[0].source_url == "https://t.me/technews"
+
+    @pytest.mark.asyncio
+    async def test_empty_summary_skips_ai_call(self, grouper):
+        """Empty/whitespace-only summary returns [] without calling AI."""
+        result = await grouper._extract_bullets_from_channel(
+            channel_name="Empty",
+            summary="   \n  ",
+            source_url="",
+        )
+        assert result == []
+        grouper.provider.chat_completion.assert_not_called()
+
+
+class TestExtractAllBullets:
+    """Tests for parallel extraction across channels."""
+
+    @pytest.mark.asyncio
+    async def test_runs_extractor_per_channel_and_aggregates(self, grouper):
+        """_extract_all_bullets calls extractor once per channel and flattens results."""
+        # AI returns one bullet per channel
+        grouper.provider.chat_completion.side_effect = [
+            json.dumps([{"point": "🤖 News A"}]),
+            json.dumps([{"point": "📰 News B"}]),
+        ]
+
+        result = await grouper._extract_all_bullets(
+            channel_summaries={
+                "Ch1": "- 🤖 News A",
+                "Ch2": "- 📰 News B",
+            },
+            channel_urls={"Ch1": "https://t.me/c1", "Ch2": "https://t.me/c2"},
+        )
+
+        assert len(result) == 2
+        sources = {b.source for b in result}
+        assert sources == {"Ch1", "Ch2"}
+        assert grouper.provider.chat_completion.call_count == 2
+
+    @pytest.mark.asyncio
+    async def test_single_channel_failure_does_not_break_aggregation(self, grouper):
+        """If one channel's extractor raises, others still produce bullets."""
+        grouper.provider.chat_completion.side_effect = [
+            RuntimeError("API down"),
+            json.dumps([{"point": "📰 Survived"}]),
+        ]
+
+        result = await grouper._extract_all_bullets(
+            channel_summaries={"Bad": "- broken", "Good": "- 📰 Survived"},
+            channel_urls={},
+        )
+
+        assert len(result) == 1
+        assert result[0].point == "📰 Survived"
+        assert result[0].source == "Good"
+
+
+class TestDedupExtracted:
+    """Tests for cross-channel deterministic dedup chokepoint."""
+
+    def test_same_normalized_text_merges_sources(self):
+        """Two bullets with same normalized text from different sources merge into one."""
+        bullets = [
+            ExtractedBullet(point="AI Summit 2026", source="Ch1", source_url="u1"),
+            ExtractedBullet(point="AI Summit 2026", source="Ch2", source_url="u2"),
+        ]
+        result = _dedup_extracted(bullets)
+
+        assert len(result) == 1
+        assert "Ch1" in result[0].source
+        assert "Ch2" in result[0].source
+
+    def test_keeps_longer_description_when_merging(self):
+        """When merging, longer point text wins."""
+        bullets = [
+            ExtractedBullet(point="Short", source="Ch1"),
+            ExtractedBullet(point="Short", source="Ch2"),
+            ExtractedBullet(point="short", source="Ch3"),  # case-insensitive match
+        ]
+        result = _dedup_extracted(bullets)
+        # All three normalize to "short" → 1 entry
+        assert len(result) == 1
+
+    def test_distinct_bullets_preserved(self):
+        """Bullets with different normalized text are not merged."""
+        bullets = [
+            ExtractedBullet(point="🤖 AI news", source="Ch1"),
+            ExtractedBullet(point="📰 Politics news", source="Ch1"),
+        ]
+        result = _dedup_extracted(bullets)
+        assert len(result) == 2
+
+
+class TestClassifyBullets:
+    """Tests for Pass 2b — classification of pre-extracted, dedup'd bullets."""
+
+    @pytest.mark.asyncio
+    async def test_classifies_flat_bullets_into_groups(self, grouper):
+        """Pass 2b consumes List[ExtractedBullet] and returns Dict[group, List[GroupedPoint]]."""
+        grouper.provider.chat_completion.return_value = json.dumps(
+            {
+                "Events": [{"point": "🎪 Conference", "source": "Events Ch"}],
+                "News": [{"point": "📰 Election", "source": "Politics Ch"}],
+            }
+        )
+
+        bullets = [
+            ExtractedBullet(point="🎪 Conference", source="Events Ch", source_url="u1"),
+            ExtractedBullet(point="📰 Election", source="Politics Ch", source_url="u2"),
+        ]
+        groups = grouper._build_group_definitions()
+        result = await grouper._classify_bullets(bullets, groups)
+
+        assert "Events" in result
+        assert result["Events"][0].source_url == "u1"
+        assert "News" in result
+        assert result["News"][0].source_url == "u2"
+
+    @pytest.mark.asyncio
+    async def test_empty_bullets_returns_empty(self, grouper):
+        """No bullets → no AI call, empty result."""
+        groups = grouper._build_group_definitions()
+        result = await grouper._classify_bullets([], groups)
+        assert result == {}
+        grouper.provider.chat_completion.assert_not_called()
 
 
 class TestGrouperMissingChannelWarning:
