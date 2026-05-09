@@ -144,6 +144,40 @@ class DigestGrouper:
             {"role": "user", "content": user_prompt},
         ]
 
+    def _collect_group_points(
+        self,
+        target_name: str,
+        points: list,
+        urls: Dict[str, str],
+        seen_keys: set[tuple[str, str, str]],
+    ) -> tuple[List[GroupedPoint], int, int]:
+        """Build GroupedPoint list for a single group, dropping malformed + duplicates.
+
+        Returns (grouped, malformed_skipped, dedup_dropped).
+        """
+        grouped: List[GroupedPoint] = []
+        malformed_skipped = 0
+        dedup_dropped = 0
+        for item in points:
+            if not (isinstance(item, dict) and "point" in item):
+                malformed_skipped += 1
+                continue
+            src = str(item.get("source", ""))
+            point_text = str(item["point"])
+            dedup_key = (target_name, src, _normalize_point(point_text))
+            if dedup_key in seen_keys:
+                dedup_dropped += 1
+                continue
+            seen_keys.add(dedup_key)
+            grouped.append(
+                GroupedPoint(
+                    point=point_text,
+                    source=src,
+                    source_url=urls.get(src, ""),
+                )
+            )
+        return grouped, malformed_skipped, dedup_dropped
+
     def _parse_grouped_response(
         self,
         response: str,
@@ -168,37 +202,19 @@ class DigestGrouper:
                 raise ValueError("Expected JSON object at top level")
 
             result: Dict[str, List[GroupedPoint]] = {}
-            # Case-insensitive lookup: AI models may vary casing
             canonical = {n.lower(): n for n in valid_group_names}
             seen_keys: set[tuple[str, str, str]] = set()
-            dedup_dropped = 0
+            urls = channel_urls or {}
+            total_dedup_dropped = 0
             for group_name, points in data.items():
                 if not isinstance(points, list):
                     self.logger.warning("Group '%s' value is not a list, skipping", group_name)
                     continue
-                # Remap unknown group names to Other (case-insensitive)
                 target_name = canonical.get(group_name.lower(), other_name)
-                grouped = []
-                skipped = 0
-                urls = channel_urls or {}
-                for item in points:
-                    if isinstance(item, dict) and "point" in item:
-                        src = str(item.get("source", ""))
-                        point_text = str(item["point"])
-                        dedup_key = (target_name, src, _normalize_point(point_text))
-                        if dedup_key in seen_keys:
-                            dedup_dropped += 1
-                            continue
-                        seen_keys.add(dedup_key)
-                        grouped.append(
-                            GroupedPoint(
-                                point=point_text,
-                                source=src,
-                                source_url=urls.get(src, ""),
-                            )
-                        )
-                    else:
-                        skipped += 1
+                grouped, skipped, dedup_dropped = self._collect_group_points(
+                    target_name, points, urls, seen_keys
+                )
+                total_dedup_dropped += dedup_dropped
                 if skipped:
                     self.logger.warning(
                         "Dropped %d malformed item(s) from group '%s'",
@@ -207,10 +223,10 @@ class DigestGrouper:
                     )
                 if grouped:
                     result.setdefault(target_name, []).extend(grouped)
-            if dedup_dropped:
+            if total_dedup_dropped:
                 self.logger.info(
                     "Dropped %d duplicate bullet(s) during deterministic dedup",
-                    dedup_dropped,
+                    total_dedup_dropped,
                 )
             return result
 
