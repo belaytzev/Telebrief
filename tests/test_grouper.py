@@ -6,7 +6,13 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from src.config_loader import DigestGroupConfig
-from src.grouper import DigestGrouper, ExtractedBullet, _dedup_extracted
+from src.grouper import (
+    DigestGrouper,
+    ExtractedBullet,
+    _dedup_extracted,
+    _quality_gate_filter,
+    _strip_channel_summary_noise,
+)
 
 
 @pytest.fixture
@@ -210,9 +216,9 @@ class TestGroupSummaries:
 
     async def test_classifier_error_propagates(self, grouper):
         """Classifier (Pass 2b) errors propagate to caller; extractor failures are tolerated."""
-        # Extractor succeeds; classifier raises
+        # Extractor succeeds with a bullet substantive enough to survive QUALITY GATE
         grouper.provider.chat_completion.side_effect = [
-            json.dumps([{"point": "🤖 AI news"}]),
+            json.dumps([{"point": "🤖 Cloudflare уволил 1100 сотрудников в марте 2026"}]),
             RuntimeError("API down"),
         ]
 
@@ -301,6 +307,110 @@ class TestStripChannelHeader:
         user_prompt = messages[1]["content"]
         assert "Election update" in user_prompt
         assert "Voter turnout" in user_prompt
+
+
+class TestStripBroaderNoise:
+    """Tests for noise patterns added beyond 🚀 / 📎."""
+
+    def test_strips_key_points_header_english(self):
+        """'📌 Key points:' template header is removed."""
+        out = _strip_channel_summary_noise("📌 Key points:\n- 🤖 Real bullet\n- 📈 Another")
+        assert "Key points" not in out
+        assert "Real bullet" in out
+
+    def test_strips_key_points_header_russian(self):
+        """Russian '📌 Ключевые моменты:' template header is removed."""
+        out = _strip_channel_summary_noise("📌 Ключевые моменты:\n- 🤖 Реальный буллет")
+        assert "Ключевые моменты" not in out
+        assert "Реальный буллет" in out
+
+    def test_strips_numbered_emoji_prefix(self):
+        """Leading 1️⃣-9️⃣ section numbering is removed from each line."""
+        out = _strip_channel_summary_noise(
+            "1️⃣ 🤖 First fact\n2️⃣ 📈 Second fact\n3️⃣ ⚠️ Third fact"
+        )
+        # Numbered emoji prefix gone, content survives
+        assert "1️⃣" not in out
+        assert "2️⃣" not in out
+        assert "First fact" in out
+        assert "Second fact" in out
+
+    def test_strips_template_token_placeholders(self):
+        """Template placeholders like '[emoji]' and '[brief fact]' removed if model echoes them."""
+        out = _strip_channel_summary_noise("- [emoji] [brief fact] real content")
+        assert "[emoji]" not in out
+        assert "[brief fact]" not in out
+        assert "real content" in out
+
+
+class TestQualityGateFilter:
+    """Tests for deterministic QUALITY GATE filter on List[ExtractedBullet]."""
+
+    def test_drops_admin_chatter_new_member(self):
+        """Bullets about new chat members are dropped."""
+        bullets = [
+            ExtractedBullet(point="🆕 В чате появился новый участник Denis Nogtev", source="Ch"),
+            ExtractedBullet(point="🤖 Real news about AI", source="Ch"),
+        ]
+        out = _quality_gate_filter(bullets)
+        assert len(out) == 1
+        assert "Real news" in out[0].point
+
+    def test_drops_meta_empty_no_details(self):
+        """Bullets that admit they have no content are dropped."""
+        bullets = [
+            ExtractedBullet(
+                point="🛸 В подборке упомянуты темы, но без дополнительных деталей", source="Ch"
+            ),
+            ExtractedBullet(
+                point="📰 Cloudflare уволил 1100 сотрудников в марте 2026", source="Ch"
+            ),
+        ]
+        out = _quality_gate_filter(bullets)
+        assert len(out) == 1
+        assert "Cloudflare" in out[0].point
+
+    def test_drops_speculation_without_concrete_entity(self):
+        """Hedging bullets without a concrete entity are dropped."""
+        bullets = [
+            ExtractedBullet(point="📊 Парк выглядит как сильный фотоспот, вероятно", source="Ch"),
+            ExtractedBullet(
+                point="📊 Apple удвоила план выпуска MacBook Neo до 10 млн", source="Ch"
+            ),
+        ]
+        out = _quality_gate_filter(bullets)
+        # Apple bullet has @-free but contains numbers + proper names → kept
+        assert any("Apple" in b.point for b in out)
+        assert not any("фотоспот" in b.point for b in out)
+
+    def test_drops_short_bullets_without_facts(self):
+        """Bullets <30 chars with no digits, @, or URL are dropped."""
+        bullets = [
+            ExtractedBullet(point="🤖 Просто пост", source="Ch"),
+            ExtractedBullet(point="🤖 Apple отчитался $94B выручки", source="Ch"),
+        ]
+        out = _quality_gate_filter(bullets)
+        assert len(out) == 1
+        assert "Apple" in out[0].point
+
+    def test_keeps_bullet_with_url(self):
+        """Short bullet with URL survives."""
+        bullets = [
+            ExtractedBullet(point="🔗 https://t.me/x/123", source="Ch"),
+        ]
+        out = _quality_gate_filter(bullets)
+        assert len(out) == 1
+
+    def test_keeps_substantive_bullets_unchanged(self):
+        """Long, fact-rich bullets pass through untouched."""
+        bullets = [
+            ExtractedBullet(
+                point="🤖 Cloudflare уволил 1100 сотрудников, переход в агентскую эру",
+                source="Ch",
+            ),
+        ]
+        out = _quality_gate_filter(bullets)
+        assert out == bullets
 
 
 class TestStripSectionTwo:
