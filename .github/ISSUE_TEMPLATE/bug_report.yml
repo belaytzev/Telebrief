@@ -1,0 +1,72 @@
+name: Bug Report
+description: Report something that doesn't work as expected
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug!
+        **Never include API keys, phone numbers, `.env` contents, or Telegram session files.**
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Clear description of the bug — expected vs. actual behavior.
+      placeholder: Digest was sent without the Crypto News channel even though it's in config.yaml...
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Configure channels: ...
+        2. Run `python main.py`
+        3. Wait for scheduled digest
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Telebrief version / commit
+      placeholder: e.g. 0.1.0 or commit 37202b9
+    validations:
+      required: true
+  - type: dropdown
+    id: provider
+    attributes:
+      label: AI provider
+      options:
+        - OpenAI
+        - Ollama
+        - Anthropic
+        - Not provider-related
+    validations:
+      required: true
+  - type: dropdown
+    id: deployment
+    attributes:
+      label: Deployment
+      options:
+        - Docker
+        - Bare Python (uv/venv)
+    validations:
+      required: true
+  - type: input
+    id: python
+    attributes:
+      label: Python version and OS
+      placeholder: e.g. Python 3.14.0 on macOS 15 / Debian 12
+  - type: textarea
+    id: config
+    attributes:
+      label: Relevant config (redacted)
+      description: Relevant parts of `config.yaml` — **redact secrets**.
+      render: yaml
+  - type: textarea
+    id: logs
+    attributes:
+      label: Log output
+      description: Relevant lines from `logs/` — **redact secrets**.
+      render: text

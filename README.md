@@ -5,6 +5,11 @@
 
   **Automated Telegram Digest Generator powered by AI**
 
+  [![CI](https://github.com/belaytzev/Telebrief/actions/workflows/ci.yml/badge.svg)](https://github.com/belaytzev/Telebrief/actions/workflows/ci.yml)
+  [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+  [![Python 3.14+](https://img.shields.io/badge/python-3.14+-blue.svg)](https://www.python.org/downloads/)
+  [![Contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg)](CONTRIBUTING.md)
+
   Telebrief collects messages from your Telegram channels (in any language), generates AI-powered summaries, and delivers beautiful daily digests directly to your Telegram account. Group digests by channel or by **AI-detected topics**. Supports multiple AI providers: **OpenAI**, **Ollama** (local), and **Anthropic**. Output language is configurable (default: Russian).
 </div>
 
@@ -467,6 +472,21 @@ A: Yes! Set `ai_provider: "ollama"` in config.yaml and install [Ollama](https://
 
 ---
 
+## 🤝 Contributing
+
+Contributions are welcome! Bug reports, feature requests, documentation fixes, new filters, AI providers, storage backends, and translations are all appreciated.
+
+- Read the [Contributing Guide](CONTRIBUTING.md) for development setup, code style, and the PR process
+- This project follows the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.md)
+- Found a security issue? Please report it privately — see the [Security Policy](SECURITY.md)
+
+---
+
+## 📄 License
+
+This project is licensed under the [MIT License](LICENSE).
+
+---
 
 ## 🙏 Credits
 

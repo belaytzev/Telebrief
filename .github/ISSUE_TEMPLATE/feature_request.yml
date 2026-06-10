@@ -1,0 +1,47 @@
+name: Feature Request
+description: Suggest an idea or improvement
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What problem does this feature solve? What's the use case?
+      placeholder: I want digests grouped by topic across all my channels, but...
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: What would you like to happen?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Other approaches you've thought about, including workarounds you use today.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Collection (Telegram channels)
+        - Summarization (AI providers / prompts)
+        - Digest formatting / output
+        - Bot commands
+        - Storage (SQLite / PostgreSQL)
+        - Filters / extensibility
+        - Deployment (Docker, config)
+        - Translations / UI language
+        - Other
+    validations:
+      required: true
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution
+      options:
+        - label: I'm willing to submit a PR for this
