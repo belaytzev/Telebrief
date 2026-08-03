@@ -27,6 +27,7 @@
 - 📨 **Long Message Splitting** - Digests that exceed Telegram's 4096-character limit are automatically split into sequential messages instead of being truncated
 - 🔐 **Secure** - Single-user only, credentials stored safely
 - 🧹 **Auto-cleanup** - Automatically removes old digest messages
+- 🔌 **MCP Server** - Optional built-in MCP endpoint so AI agents can pull digests instead of reading Telegram
 
 ---
 
@@ -416,6 +417,47 @@ messages = await backend.query_messages(
 ```
 
 All parameters are optional. `channel_name` matches the human-readable `channels[*].name` value from `config.yaml` (this is the value persisted to the `channel_name` column at collection time); omit it to query across all channels. Renaming a channel in config will change the value stored for new rows — historical rows keep the old name. Results are ordered by timestamp descending and capped at `limit` (default 1000, must be ≥ 1).
+
+---
+
+## 🔗 MCP Server
+
+Telebrief can expose its digests over the [Model Context Protocol](https://modelcontextprotocol.io), so an MCP client (Claude Code, for example) can request a digest directly instead of reading it in Telegram.
+
+The server runs **inside the Telebrief process**, sharing its Telegram session, configuration and generation lock with the scheduler and the bot. Digests it returns are byte-for-byte what Telegram receives, including topic grouping and deduplication.
+
+### Enabling it
+
+```yaml
+mcp:
+  enabled: true
+  host: "127.0.0.1"
+  port: 8765
+  path: "/mcp"
+```
+
+Then register it with your client:
+
+```bash
+claude mcp add --transport http telebrief http://127.0.0.1:8765/mcp
+```
+
+### Tools
+
+| Tool | Arguments | Behaviour |
+|------|-----------|-----------|
+| `get_digest` | `hours` (1–168, default 24) | Generates a fresh digest. Takes 20–90 seconds and spends AI provider tokens. |
+| `get_last_digest` | — | Returns the most recent digest from cache, with its generation time. Instant and free. |
+
+Every successful digest — scheduled, bot-triggered or MCP-triggered — is cached to `data/last_digest.json`, so `get_last_digest` serves the same digest that was delivered to Telegram.
+
+Digest generation is serialized: if the scheduler is already building a digest, an MCP call waits for it to finish rather than opening a second Telegram session.
+
+### Security
+
+**The MCP server has no authentication.** It relies on binding to loopback, where the SDK also enables DNS-rebinding protection. Anyone who can reach the port can trigger digest generation and read your channel summaries.
+
+Keep `host` on `127.0.0.1`. Telebrief logs a warning at startup if you bind anywhere else. In Docker, publish the port as `127.0.0.1:8765:8765` rather than exposing it on all interfaces, and put it behind a firewall or reverse proxy with auth if you genuinely need remote access.
 
 ---
 

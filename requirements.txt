@@ -7,6 +7,10 @@ python-dotenv>=1.0.0
 PyYAML>=6.0
 aiohttp>=3.9.0
 
+# MCP server (optional feature, always installed for a single-image build)
+mcp>=2.0.0
+uvicorn>=0.30.0
+
 # Utilities
 python-dateutil>=2.8.0
 

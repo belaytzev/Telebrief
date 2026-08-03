@@ -129,3 +129,14 @@ settings:
 #   backend: sqlite          # "sqlite" (default, no extra setup) or "postgres"
 #   path: data/messages.db   # sqlite only — relative to project root; mount as volume in Docker
 #   url: ""                  # postgres: postgresql://user:pass@host:5432/db
+
+# MCP server — expose digests to MCP clients (Claude Code, etc.) over HTTP
+# Runs inside the Telebrief process; tools: get_digest(hours), get_last_digest()
+# Connect with: claude mcp add --transport http telebrief http://127.0.0.1:8765/mcp
+# WARNING: there is no authentication. Keep host on loopback, or firewall the port.
+# In Docker, publish it as "127.0.0.1:8765:8765" rather than binding 0.0.0.0 openly.
+# mcp:
+#   enabled: false
+#   host: "127.0.0.1"
+#   port: 8765
+#   path: "/mcp"

@@ -11,7 +11,7 @@ from telegram import BotCommand, Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
 from src.config_loader import Config
-from src.core import generate_and_send_channel_digests
+from src.core import generate_and_send_digest
 from src.scheduler import DigestScheduler
 from src.sender import DigestSender
 from src.ui_strings import get_ui_strings
@@ -135,7 +135,7 @@ class BotCommandHandler:
 
         try:
             # Generate and send digest
-            success = await generate_and_send_channel_digests(
+            success = await generate_and_send_digest(
                 config=self.config, logger=self.logger, hours=24, user_id=user_id
             )
 

@@ -13,6 +13,12 @@ services:
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - TZ=UTC
 
+    # Optional: expose the MCP server (requires mcp.enabled and mcp.host: "0.0.0.0"
+    # in config.yaml, since 127.0.0.1 inside the container is unreachable from the host).
+    # The MCP server has no authentication — keep the host side on 127.0.0.1.
+    # ports:
+    #   - "127.0.0.1:8765:8765"
+
     # Volumes for persistent data
     volumes:
       # Configuration file (read-only recommended)

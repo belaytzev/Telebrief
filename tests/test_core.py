@@ -8,19 +8,26 @@ from src.config_loader import ChannelConfig, FilterSpec, StorageConfig
 from src.core import (
     _apply_filters,
     _collect_messages,
-    generate_and_send_channel_digests,
+    build_digest,
     generate_and_send_digest,
-    generate_and_send_digest_grouped,
-    generate_digest,
+    read_last_digest,
+    validate_hours,
 )
 from src.grouper import GroupedPoint
 
 
+@pytest.fixture(autouse=True)
+def _isolate_digest_cache(tmp_path, monkeypatch):
+    """Keep the digest cache out of the repo while tests run."""
+    monkeypatch.setattr("src.core._DIGEST_CACHE_PATH", tmp_path / "last_digest.json")
+
+
 @pytest.mark.unit
 @pytest.mark.asyncio
-async def test_generate_digest_success(sample_config, mock_logger, sample_messages):
-    """Test successful digest generation."""
-    # Mock all components
+async def test_build_digest_success(sample_config, mock_logger, sample_messages):
+    """build_digest returns the header and channel messages joined into one document."""
+    sample_config.settings.digest_mode = "channel"
+
     with (
         patch("src.core.MessageCollector") as mock_collector_class,
         patch("src.core.Summarizer") as mock_summarizer_class,
@@ -44,24 +51,83 @@ async def test_generate_digest_success(sample_config, mock_logger, sample_messag
         mock_summarizer_class.return_value = mock_summarizer
 
         mock_formatter = MagicMock()
-        mock_formatter.create_digest = MagicMock(return_value="Formatted digest")
+        mock_formatter.format_channel_message = MagicMock(return_value="Channel msg")
+        mock_formatter.format_summary_message = MagicMock(return_value="Header")
         mock_formatter_class.return_value = mock_formatter
 
         # Run function
-        digest = await generate_digest(sample_config, mock_logger, hours=24)
+        digest = await build_digest(sample_config, mock_logger, hours=24)
 
         # Assertions
-        assert digest == "Formatted digest"
+        assert digest == "Header\n\nChannel msg"
         mock_collector.connect.assert_called_once()
         mock_collector.fetch_messages.assert_called_once_with(hours=24)
         mock_collector.disconnect.assert_called_once()
         mock_summarizer.summarize_all.assert_called_once()
-        mock_formatter.create_digest.assert_called_once()
 
 
 @pytest.mark.unit
 @pytest.mark.asyncio
-async def test_generate_digest_collector_error(sample_config, mock_logger):
+async def test_build_digest_caches_result(sample_config, mock_logger, sample_messages):
+    """A successful build is cached so get_last_digest can serve it later."""
+    sample_config.settings.digest_mode = "channel"
+
+    with (
+        patch("src.core.MessageCollector") as mock_collector_class,
+        patch("src.core.Summarizer") as mock_summarizer_class,
+        patch("src.core.DigestFormatter") as mock_formatter_class,
+    ):
+        mock_collector_class.return_value = _make_collector_mock(sample_messages)
+
+        mock_summarizer = MagicMock()
+        mock_summarizer.summarize_all = AsyncMock(
+            return_value={"channel_summaries": {"Test Channel": "Summary"}, "overview": ""}
+        )
+        mock_summarizer_class.return_value = mock_summarizer
+
+        mock_formatter = MagicMock()
+        mock_formatter.format_channel_message = MagicMock(return_value="Channel msg")
+        mock_formatter.format_summary_message = MagicMock(return_value="Header")
+        mock_formatter_class.return_value = mock_formatter
+
+        assert read_last_digest() is None
+        await build_digest(sample_config, mock_logger, hours=12)
+
+    cached = read_last_digest()
+    assert cached is not None
+    assert cached["text"] == "Header\n\nChannel msg"
+    assert cached["hours"] == 12
+    assert cached["generated_at"]
+
+
+@pytest.mark.unit
+def test_read_last_digest_ignores_corrupt_cache(tmp_path, monkeypatch):
+    """A truncated or non-JSON cache file reads as absent, not as an exception."""
+    cache = tmp_path / "corrupt.json"
+    cache.write_text('{"text": "half-writ', encoding="utf-8")
+    monkeypatch.setattr("src.core._DIGEST_CACHE_PATH", cache)
+
+    assert read_last_digest() is None
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("hours", [0, -1, 169, 1000, True, 2.5, "24"])
+def test_validate_hours_rejects_bad_input(hours):
+    """Lookback window outside 1..168 (or not an int) is rejected."""
+    with pytest.raises(ValueError):
+        validate_hours(hours)
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("hours", [1, 24, 168])
+def test_validate_hours_accepts_valid_input(hours):
+    """Sane lookback windows pass validation."""
+    validate_hours(hours)
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_build_digest_collector_error(sample_config, mock_logger):
     """Test error handling in message collection."""
     with patch("src.core.MessageCollector") as mock_collector_class:
         mock_collector = MagicMock()
@@ -71,7 +137,7 @@ async def test_generate_digest_collector_error(sample_config, mock_logger):
         mock_collector_class.return_value = mock_collector
 
         with pytest.raises(Exception, match="Collection failed"):
-            await generate_digest(sample_config, mock_logger, hours=24)
+            await build_digest(sample_config, mock_logger, hours=24)
 
         # Should still disconnect
         mock_collector.disconnect.assert_called_once()
@@ -81,6 +147,8 @@ async def test_generate_digest_collector_error(sample_config, mock_logger):
 @pytest.mark.asyncio
 async def test_generate_and_send_digest_success(sample_config, mock_logger, sample_messages):
     """Test successful digest generation and sending."""
+    sample_config.settings.digest_mode = "channel"
+
     with (
         patch("src.core.MessageCollector") as mock_collector_class,
         patch("src.core.Summarizer") as mock_summarizer_class,
@@ -89,11 +157,7 @@ async def test_generate_and_send_digest_success(sample_config, mock_logger, samp
     ):
 
         # Set up mocks
-        mock_collector = MagicMock()
-        mock_collector.connect = AsyncMock()
-        mock_collector.fetch_messages = AsyncMock(return_value={"Test Channel": sample_messages})
-        mock_collector.disconnect = AsyncMock()
-        mock_collector_class.return_value = mock_collector
+        mock_collector_class.return_value = _make_collector_mock(sample_messages)
 
         mock_summarizer = MagicMock()
         mock_summarizer.summarize_all = AsyncMock(
@@ -105,11 +169,13 @@ async def test_generate_and_send_digest_success(sample_config, mock_logger, samp
         mock_summarizer_class.return_value = mock_summarizer
 
         mock_formatter = MagicMock()
-        mock_formatter.create_digest = MagicMock(return_value="Formatted digest")
+        mock_formatter.format_channel_message = MagicMock(return_value="Channel msg")
+        mock_formatter.format_summary_message = MagicMock(return_value="Header")
         mock_formatter_class.return_value = mock_formatter
 
         mock_sender = MagicMock()
-        mock_sender.send_digest = AsyncMock(return_value=True)
+        mock_sender.cleanup_old_digests = AsyncMock()
+        mock_sender.send_channel_messages_with_tracking = AsyncMock(return_value=True)
         mock_sender_class.return_value = mock_sender
 
         # Run function
@@ -119,13 +185,17 @@ async def test_generate_and_send_digest_success(sample_config, mock_logger, samp
 
         # Assertions
         assert result is True
-        mock_sender.send_digest.assert_called_once_with("Formatted digest", 123456789)
+        mock_sender.send_channel_messages_with_tracking.assert_called_once_with(
+            [("Test Channel", "Channel msg")], "Header", 123456789
+        )
 
 
 @pytest.mark.unit
 @pytest.mark.asyncio
 async def test_generate_and_send_digest_send_failure(sample_config, mock_logger, sample_messages):
     """Test handling of send failure."""
+    sample_config.settings.digest_mode = "channel"
+
     with (
         patch("src.core.MessageCollector") as mock_collector_class,
         patch("src.core.Summarizer") as mock_summarizer_class,
@@ -134,11 +204,7 @@ async def test_generate_and_send_digest_send_failure(sample_config, mock_logger,
     ):
 
         # Set up mocks (same as success case)
-        mock_collector = MagicMock()
-        mock_collector.connect = AsyncMock()
-        mock_collector.fetch_messages = AsyncMock(return_value={"Test Channel": sample_messages})
-        mock_collector.disconnect = AsyncMock()
-        mock_collector_class.return_value = mock_collector
+        mock_collector_class.return_value = _make_collector_mock(sample_messages)
 
         mock_summarizer = MagicMock()
         mock_summarizer.summarize_all = AsyncMock(
@@ -150,12 +216,14 @@ async def test_generate_and_send_digest_send_failure(sample_config, mock_logger,
         mock_summarizer_class.return_value = mock_summarizer
 
         mock_formatter = MagicMock()
-        mock_formatter.create_digest = MagicMock(return_value="Formatted digest")
+        mock_formatter.format_channel_message = MagicMock(return_value="Channel msg")
+        mock_formatter.format_summary_message = MagicMock(return_value="Header")
         mock_formatter_class.return_value = mock_formatter
 
         # Send fails
         mock_sender = MagicMock()
-        mock_sender.send_digest = AsyncMock(return_value=False)
+        mock_sender.cleanup_old_digests = AsyncMock()
+        mock_sender.send_channel_messages_with_tracking = AsyncMock(return_value=False)
         mock_sender_class.return_value = mock_sender
 
         # Run function
@@ -167,10 +235,20 @@ async def test_generate_and_send_digest_send_failure(sample_config, mock_logger,
 
 @pytest.mark.unit
 @pytest.mark.asyncio
+async def test_generate_and_send_digest_rejects_bad_hours(sample_config, mock_logger):
+    """Invalid lookback windows raise instead of silently returning False."""
+    with pytest.raises(ValueError):
+        await generate_and_send_digest(sample_config, mock_logger, hours=0)
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
 async def test_generate_and_send_digest_grouped_success(
     sample_config, mock_logger, sample_messages
 ):
     """Test digest-grouped flow calls grouper and formatter correctly."""
+    sample_config.settings.digest_mode = "digest"
+
     with (
         patch("src.core.MessageCollector") as mock_collector_class,
         patch("src.core.Summarizer") as mock_summarizer_class,
@@ -216,7 +294,7 @@ async def test_generate_and_send_digest_grouped_success(
         mock_sender.send_channel_messages_with_tracking = AsyncMock(return_value=True)
         mock_sender_class.return_value = mock_sender
 
-        result = await generate_and_send_digest_grouped(
+        result = await generate_and_send_digest(
             sample_config, mock_logger, hours=24, user_id=123456789
         )
 
@@ -239,6 +317,8 @@ async def test_generate_and_send_digest_grouped_skips_empty_groups(
     sample_config, mock_logger, sample_messages
 ):
     """Test that empty groups produce no message."""
+    sample_config.settings.digest_mode = "digest"
+
     with (
         patch("src.core.MessageCollector") as mock_collector_class,
         patch("src.core.Summarizer") as mock_summarizer_class,
@@ -280,7 +360,7 @@ async def test_generate_and_send_digest_grouped_skips_empty_groups(
         mock_sender.send_channel_messages_with_tracking = AsyncMock(return_value=True)
         mock_sender_class.return_value = mock_sender
 
-        result = await generate_and_send_digest_grouped(
+        result = await generate_and_send_digest(
             sample_config, mock_logger, hours=24, user_id=123456789
         )
 
@@ -295,29 +375,55 @@ async def test_generate_and_send_digest_grouped_skips_empty_groups(
 
 @pytest.mark.unit
 @pytest.mark.asyncio
-async def test_channel_digests_delegates_to_grouped_when_digest_mode(
-    sample_config, mock_logger, sample_messages
-):
-    """Test mode switch delegates to grouped function when mode is 'digest'."""
+async def test_digest_mode_uses_grouper(sample_config, mock_logger, sample_messages):
+    """Mode 'digest' routes through the topic grouper."""
     sample_config.settings.digest_mode = "digest"
 
-    with patch("src.core.generate_and_send_digest_grouped", new_callable=AsyncMock) as mock_grouped:
-        mock_grouped.return_value = True
+    with (
+        patch("src.core.MessageCollector") as mock_collector_class,
+        patch("src.core.Summarizer") as mock_summarizer_class,
+        patch("src.core.DigestGrouper") as mock_grouper_class,
+        patch("src.core.DigestFormatter") as mock_formatter_class,
+        patch("src.core.DigestSender") as mock_sender_class,
+    ):
+        mock_collector_class.return_value = _make_collector_mock(sample_messages)
 
-        result = await generate_and_send_channel_digests(
-            sample_config, mock_logger, hours=12, user_id=999
+        mock_summarizer = MagicMock()
+        mock_summarizer.summarize_all = AsyncMock(
+            return_value={
+                "channel_summaries": {"Test Channel": "- Point A"},
+                "overview": "Overview",
+            }
         )
+        mock_summarizer_class.return_value = mock_summarizer
+
+        mock_grouper = MagicMock()
+        mock_grouper.group_summaries = AsyncMock(
+            return_value={"News": [GroupedPoint(point="Point A", source="Test Channel")]}
+        )
+        mock_grouper_class.return_value = mock_grouper
+
+        mock_formatter = MagicMock()
+        mock_formatter.format_group_message = MagicMock(return_value="News msg")
+        mock_formatter.format_group_summary_message = MagicMock(return_value="Summary header")
+        mock_formatter_class.return_value = mock_formatter
+
+        mock_sender = MagicMock()
+        mock_sender.cleanup_old_digests = AsyncMock()
+        mock_sender.send_channel_messages_with_tracking = AsyncMock(return_value=True)
+        mock_sender_class.return_value = mock_sender
+
+        result = await generate_and_send_digest(sample_config, mock_logger, hours=12, user_id=999)
 
         assert result is True
-        mock_grouped.assert_called_once_with(sample_config, mock_logger, 12, 999)
+        mock_grouper.group_summaries.assert_called_once()
+        mock_formatter.format_channel_message.assert_not_called()
 
 
 @pytest.mark.unit
 @pytest.mark.asyncio
-async def test_channel_digests_uses_per_channel_flow_when_channel_mode(
-    sample_config, mock_logger, sample_messages
-):
-    """Test mode switch uses existing per-channel flow when mode is 'channel'."""
+async def test_channel_mode_skips_grouper(sample_config, mock_logger, sample_messages):
+    """Mode 'channel' formats per channel and never touches the grouper."""
     sample_config.settings.digest_mode = "channel"
 
     with (
@@ -325,13 +431,9 @@ async def test_channel_digests_uses_per_channel_flow_when_channel_mode(
         patch("src.core.Summarizer") as mock_summarizer_class,
         patch("src.core.DigestFormatter") as mock_formatter_class,
         patch("src.core.DigestSender") as mock_sender_class,
-        patch("src.core.generate_and_send_digest_grouped", new_callable=AsyncMock) as mock_grouped,
+        patch("src.core.DigestGrouper") as mock_grouper_class,
     ):
-        mock_collector = MagicMock()
-        mock_collector.connect = AsyncMock()
-        mock_collector.fetch_messages = AsyncMock(return_value={"Test Channel": sample_messages})
-        mock_collector.disconnect = AsyncMock()
-        mock_collector_class.return_value = mock_collector
+        mock_collector_class.return_value = _make_collector_mock(sample_messages)
 
         mock_summarizer = MagicMock()
         mock_summarizer.summarize_all = AsyncMock(
@@ -352,13 +454,13 @@ async def test_channel_digests_uses_per_channel_flow_when_channel_mode(
         mock_sender.send_channel_messages_with_tracking = AsyncMock(return_value=True)
         mock_sender_class.return_value = mock_sender
 
-        result = await generate_and_send_channel_digests(
+        result = await generate_and_send_digest(
             sample_config, mock_logger, hours=24, user_id=123456789
         )
 
         assert result is True
-        # Should NOT have delegated to grouped flow
-        mock_grouped.assert_not_called()
+        # Should NOT have used the grouped flow
+        mock_grouper_class.assert_not_called()
         # Should have used per-channel formatting
         mock_formatter.format_channel_message.assert_called_once()
         mock_sender.send_channel_messages_with_tracking.assert_called_once()
@@ -487,10 +589,8 @@ async def test_collect_messages_storage_init_failure_is_non_fatal(
 
 @pytest.mark.unit
 @pytest.mark.asyncio
-async def test_generate_digest_calls_storage_when_enabled(
-    sample_config, mock_logger, sample_messages
-):
-    """generate_digest saves messages to storage when enabled."""
+async def test_build_digest_calls_storage_when_enabled(sample_config, mock_logger, sample_messages):
+    """build_digest saves messages to storage when enabled."""
     sample_config.storage = StorageConfig(enabled=True, backend="sqlite", path=":memory:")
     mock_backend = MagicMock()
     mock_backend.save_messages = AsyncMock(return_value=len(sample_messages))
@@ -515,7 +615,7 @@ async def test_generate_digest_calls_storage_when_enabled(
         mock_formatter.create_digest = MagicMock(return_value="digest")
         mock_formatter_class.return_value = mock_formatter
 
-        await generate_digest(sample_config, mock_logger, hours=24)
+        await build_digest(sample_config, mock_logger, hours=24)
 
         mock_create.assert_called_once_with(sample_config.storage)
         mock_backend.save_messages.assert_called_once_with(sample_messages)
@@ -546,10 +646,10 @@ async def test_save_to_storage_close_failure_is_non_fatal(
 
 @pytest.mark.unit
 @pytest.mark.asyncio
-async def test_generate_digest_storage_disabled_does_not_save(
+async def test_build_digest_storage_disabled_does_not_save(
     sample_config, mock_logger, sample_messages
 ):
-    """generate_digest skips storage when disabled."""
+    """build_digest skips storage when disabled."""
     sample_config.storage = StorageConfig(enabled=False)
     with (
         patch("src.core.MessageCollector") as mock_collector_class,
@@ -570,7 +670,7 @@ async def test_generate_digest_storage_disabled_does_not_save(
         mock_formatter.create_digest = MagicMock(return_value="digest")
         mock_formatter_class.return_value = mock_formatter
 
-        await generate_digest(sample_config, mock_logger, hours=24)
+        await build_digest(sample_config, mock_logger, hours=24)
 
         mock_create.assert_called_once_with(sample_config.storage)
 
@@ -793,6 +893,7 @@ async def test_summary_message_dedupes_split_group_names(
     """When a group's formatted message is split into >1 chunk, the summary header
     must list that group exactly once — not once per chunk."""
     long_news = "a" * 4500  # exceeds split_message default max_length=4000
+    sample_config.settings.digest_mode = "digest"
 
     with (
         patch("src.core.MessageCollector") as mock_collector_class,
@@ -832,9 +933,7 @@ async def test_summary_message_dedupes_split_group_names(
         mock_sender.send_channel_messages_with_tracking = AsyncMock(return_value=True)
         mock_sender_class.return_value = mock_sender
 
-        await generate_and_send_digest_grouped(
-            sample_config, mock_logger, hours=24, user_id=123456789
-        )
+        await generate_and_send_digest(sample_config, mock_logger, hours=24, user_id=123456789)
 
         call_kwargs = mock_formatter.format_group_summary_message.call_args.kwargs
         assert call_kwargs["group_names"] == ["News"]

@@ -8,6 +8,7 @@ import pytest
 from src.config_loader import (
     DigestGroupConfig,
     FilterSpec,
+    McpConfig,
     PromptsConfig,
     StorageConfig,
     load_config,
@@ -1177,3 +1178,72 @@ def test_digest_group_config_equality_with_prompt_extra(tmp_path, mock_env_vars)
     assert config.settings.digest_groups[0] == DigestGroupConfig(
         name="Events", description="Conferences", prompt_extra="Be concise."
     )
+
+
+# ---------------------------------------------------------------------------
+# McpConfig tests
+# ---------------------------------------------------------------------------
+
+
+def _mcp_config_file(tmp_path, mcp_block: str) -> str:
+    content = f"""
+channels:
+  - id: "@test"
+    name: "Test"
+
+settings:
+  target_user_id: 123456789
+
+{mcp_block}
+"""
+    p = tmp_path / "config.yaml"
+    p.write_text(content)
+    return str(p)
+
+
+@pytest.mark.unit
+def test_mcp_config_missing_block_defaults(tmp_path, mock_env_vars):
+    """No mcp: block leaves the server disabled on loopback."""
+    config = load_config(_mcp_config_file(tmp_path, ""))
+    assert config.mcp == McpConfig()
+    assert config.mcp.enabled is False
+    assert config.mcp.host == "127.0.0.1"
+    assert config.mcp.port == 8765
+    assert config.mcp.path == "/mcp"
+
+
+@pytest.mark.unit
+def test_mcp_config_explicit(tmp_path, mock_env_vars):
+    """An explicit block is parsed field by field."""
+    block = """
+mcp:
+  enabled: true
+  host: "0.0.0.0"
+  port: 9000
+  path: "/telebrief"
+"""
+    config = load_config(_mcp_config_file(tmp_path, block))
+    assert config.mcp.enabled is True
+    assert config.mcp.host == "0.0.0.0"
+    assert config.mcp.port == 9000
+    assert config.mcp.path == "/telebrief"
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "block,match",
+    [
+        ('mcp:\n  enabled: "yes"\n', "mcp.enabled must be a bool"),
+        ("mcp:\n  host: 123\n", "mcp.host must be a non-empty string"),
+        ('mcp:\n  host: "  "\n', "mcp.host must be a non-empty string"),
+        ("mcp:\n  port: 0\n", "mcp.port must be an int"),
+        ("mcp:\n  port: 70000\n", "mcp.port must be an int"),
+        ('mcp:\n  port: "8765"\n', "mcp.port must be an int"),
+        ('mcp:\n  path: "mcp"\n', "mcp.path must be a string starting"),
+        ("mcp: notamapping\n", "'mcp' must be a mapping"),
+    ],
+)
+def test_mcp_config_rejects_invalid(tmp_path, mock_env_vars, block, match):
+    """Malformed mcp blocks fail loudly at load time, not at request time."""
+    with pytest.raises(ValueError, match=match):
+        load_config(_mcp_config_file(tmp_path, block))

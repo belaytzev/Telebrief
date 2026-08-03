@@ -9,7 +9,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 
 from src.config_loader import Config
-from src.core import generate_and_send_channel_digests
+from src.core import generate_and_send_digest
 
 
 class DigestScheduler:
@@ -73,7 +73,7 @@ class DigestScheduler:
         self.logger.info("=" * 60)
 
         try:
-            success = await generate_and_send_channel_digests(
+            success = await generate_and_send_digest(
                 config=self.config, logger=self.logger, hours=self.config.settings.lookback_hours
             )
 

@@ -62,9 +62,7 @@ async def test_handle_digest_processing_message_uses_output_language(english_con
     handler = BotCommandHandler(english_config, mock_logger)
     update = _make_update(123456789)
 
-    with patch(
-        "src.bot_commands.generate_and_send_channel_digests", new=AsyncMock(return_value=True)
-    ):
+    with patch("src.bot_commands.generate_and_send_digest", new=AsyncMock(return_value=True)):
         await handler.handle_digest(update, MagicMock())
 
     processing_text = update.message.reply_text.call_args_list[0][0][0]
@@ -79,9 +77,7 @@ async def test_handle_digest_success_message_uses_output_language(english_config
     handler = BotCommandHandler(english_config, mock_logger)
     update = _make_update(123456789)
 
-    with patch(
-        "src.bot_commands.generate_and_send_channel_digests", new=AsyncMock(return_value=True)
-    ):
+    with patch("src.bot_commands.generate_and_send_digest", new=AsyncMock(return_value=True)):
         await handler.handle_digest(update, MagicMock())
 
     success_text = update.message.reply_text.call_args_list[1][0][0]
@@ -96,9 +92,7 @@ async def test_handle_digest_error_message_uses_output_language(english_config, 
     handler = BotCommandHandler(english_config, mock_logger)
     update = _make_update(123456789)
 
-    with patch(
-        "src.bot_commands.generate_and_send_channel_digests", new=AsyncMock(return_value=False)
-    ):
+    with patch("src.bot_commands.generate_and_send_digest", new=AsyncMock(return_value=False)):
         await handler.handle_digest(update, MagicMock())
 
     error_text = update.message.reply_text.call_args_list[1][0][0]
@@ -192,9 +186,7 @@ async def test_digest_rate_limited_on_rapid_successive_calls(english_config, moc
     handler = BotCommandHandler(english_config, mock_logger)
     update = _make_update(123456789)
 
-    with patch(
-        "src.bot_commands.generate_and_send_channel_digests", new=AsyncMock(return_value=True)
-    ):
+    with patch("src.bot_commands.generate_and_send_digest", new=AsyncMock(return_value=True)):
         await handler.handle_digest(update, MagicMock())
         # Reset mock to track second call
         update.message.reply_text.reset_mock()
@@ -214,9 +206,7 @@ async def test_rate_limit_resets_after_cooldown(english_config, mock_logger):
     update = _make_update(123456789)
 
     with (
-        patch(
-            "src.bot_commands.generate_and_send_channel_digests", new=AsyncMock(return_value=True)
-        ),
+        patch("src.bot_commands.generate_and_send_digest", new=AsyncMock(return_value=True)),
         patch("src.bot_commands.time") as mock_time,
     ):
         # First call at time 0 — must NOT be rate-limited
@@ -244,9 +234,7 @@ async def test_rate_limit_message_uses_configured_language(sample_config, mock_l
     handler = BotCommandHandler(sample_config, mock_logger)
     update = _make_update(123456789)
 
-    with patch(
-        "src.bot_commands.generate_and_send_channel_digests", new=AsyncMock(return_value=True)
-    ):
+    with patch("src.bot_commands.generate_and_send_digest", new=AsyncMock(return_value=True)):
         await handler.handle_digest(update, MagicMock())
         update.message.reply_text.reset_mock()
         await handler.handle_digest(update, MagicMock())

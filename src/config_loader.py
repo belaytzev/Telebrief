@@ -62,6 +62,16 @@ class StorageConfig:
 
 
 @dataclass
+class McpConfig:
+    """Configuration for the built-in MCP server."""
+
+    enabled: bool = False
+    host: str = "127.0.0.1"
+    port: int = 8765
+    path: str = "/mcp"
+
+
+@dataclass
 class Settings:
     """Application settings."""
 
@@ -105,6 +115,7 @@ class Config:
     anthropic_api_key: str = ""
     storage: StorageConfig = field(default_factory=StorageConfig)
     prompts: PromptsConfig = field(default_factory=PromptsConfig)
+    mcp: McpConfig = field(default_factory=McpConfig)
 
 
 SUPPORTED_LANGUAGES = ("English", "Russian", "Spanish", "German", "French")
@@ -338,6 +349,37 @@ def _parse_storage_config(yaml_config: dict) -> StorageConfig:
     return StorageConfig(enabled=enabled, backend=backend, path=path, url=url)
 
 
+def _parse_mcp_config(yaml_config: dict) -> McpConfig:
+    """Parse and validate the optional top-level mcp: block.
+
+    Raises:
+        ValueError: If any field has wrong type or invalid value.
+    """
+    raw = yaml_config.get("mcp")
+    if raw is None:
+        return McpConfig()
+    if not isinstance(raw, dict):
+        raise ValueError(f"'mcp' must be a mapping, got {type(raw).__name__}")
+
+    enabled = raw.get("enabled", False)
+    if not isinstance(enabled, bool):
+        raise ValueError(f"mcp.enabled must be a bool, got {type(enabled).__name__}")
+
+    host = raw.get("host", "127.0.0.1")
+    if not isinstance(host, str) or not host.strip():
+        raise ValueError("mcp.host must be a non-empty string")
+
+    port = raw.get("port", 8765)
+    if not isinstance(port, int) or isinstance(port, bool) or not 1 <= port <= 65535:
+        raise ValueError(f"mcp.port must be an int in 1..65535, got {port!r}")
+
+    path = raw.get("path", "/mcp")
+    if not isinstance(path, str) or not path.startswith("/"):
+        raise ValueError(f"mcp.path must be a string starting with '/', got {path!r}")
+
+    return McpConfig(enabled=enabled, host=host.strip(), port=port, path=path)
+
+
 def _parse_prompts_config(yaml_config: dict) -> PromptsConfig:
     """Parse and validate the optional top-level prompts: block.
 
@@ -509,6 +551,9 @@ def load_config(config_path: str = "config.yaml") -> Config:
     # Parse prompts config
     prompts_config = _parse_prompts_config(yaml_config)
 
+    # Parse MCP server config
+    mcp_config = _parse_mcp_config(yaml_config)
+
     # Parse settings
     settings_dict = yaml_config.get("settings", {})
     ai_provider, ai_model = _resolve_ai_settings(settings_dict)
@@ -560,6 +605,7 @@ def load_config(config_path: str = "config.yaml") -> Config:
         settings=settings,
         storage=storage_config,
         prompts=prompts_config,
+        mcp=mcp_config,
         **env_vars,
     )
 
