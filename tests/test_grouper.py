@@ -326,9 +326,7 @@ class TestStripBroaderNoise:
 
     def test_strips_numbered_emoji_prefix(self):
         """Leading 1️⃣-9️⃣ section numbering is removed from each line."""
-        out = _strip_channel_summary_noise(
-            "1️⃣ 🤖 First fact\n2️⃣ 📈 Second fact\n3️⃣ ⚠️ Third fact"
-        )
+        out = _strip_channel_summary_noise("1️⃣ 🤖 First fact\n2️⃣ 📈 Second fact\n3️⃣ ⚠️ Third fact")
         # Numbered emoji prefix gone, content survives
         assert "1️⃣" not in out
         assert "2️⃣" not in out

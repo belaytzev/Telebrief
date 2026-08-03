@@ -114,7 +114,7 @@ A good bug report includes:
 
 **Never include your Telegram session files, API credentials, or `.env` contents in issues.**
 
-## Questions?
+## Questions
 
 Open a [discussion or issue](https://github.com/belaytzev/Telebrief/issues) — happy to help.
 
