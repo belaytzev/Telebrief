@@ -104,7 +104,7 @@ class MessageCollector:
             )
             lookback_time = now - timedelta(hours=channel_hours)
             try:
-                messages = await self._fetch_channel_messages(channel_config, lookback_time)
+                messages = await self.fetch_channel_messages(channel_config, lookback_time)
                 all_messages[channel_config.name] = messages
                 self.logger.info(f"✓ {channel_config.name}: {len(messages)} messages")
             except ChannelPrivateError:
@@ -119,7 +119,7 @@ class MessageCollector:
                 await asyncio.sleep(e.seconds)
                 # Retry once
                 try:
-                    messages = await self._fetch_channel_messages(channel_config, lookback_time)
+                    messages = await self.fetch_channel_messages(channel_config, lookback_time)
                     all_messages[channel_config.name] = messages
                 except Exception as retry_error:
                     self.logger.error(f"Retry failed for {channel_config.name}: {retry_error}")
@@ -144,7 +144,7 @@ class MessageCollector:
 
         return all_messages
 
-    async def _fetch_channel_messages(
+    async def fetch_channel_messages(
         self, channel_config: ChannelConfig, lookback_time: datetime
     ) -> List[Message]:
         """

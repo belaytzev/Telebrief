@@ -448,10 +448,38 @@ claude mcp add --transport http telebrief http://127.0.0.1:8765/mcp
 |------|-----------|-----------|
 | `get_digest` | `hours` (1–168, default 24) | Generates a fresh digest. Takes 20–90 seconds and spends AI provider tokens. |
 | `get_last_digest` | — | Returns the most recent digest from cache, with its generation time. Instant and free. |
+| `get_channel_messages` | `channel`, `hours` (1–168, default 24), `limit` (1–500, default 200) | Returns the individual messages of one channel, unsummarized. No AI tokens spent. |
 
 Every successful digest — scheduled, bot-triggered or MCP-triggered — is cached to `data/last_digest.json`, so `get_last_digest` serves the same digest that was delivered to Telegram.
 
 Digest generation is serialized: if the scheduler is already building a digest, an MCP call waits for it to finish rather than opening a second Telegram session.
+
+### Reading a single channel
+
+`get_channel_messages` answers "what was actually posted in this channel", as opposed to the AI summary a digest gives you.
+
+`channel` accepts either form from `config.yaml` — the human-readable `channels[*].name` or the `channels[*].id` (`@username` or numeric) — matched case-insensitively. An unknown value fails with the list of configured channel names, so no separate discovery call is needed.
+
+The tool reads from persistent storage when it is enabled and holds messages for the requested window, and falls back to a live Telegram read otherwise. The response header states which path was used:
+
+```text
+channel: AI News (from storage, 42 msgs, last 24h)
+
+[2026-08-07T09:12:04+00:00] Alice
+OpenAI released a new model...
+https://t.me/ainews/1234
+
+[2026-08-07T10:30:11+00:00] Bob
+[photo] Benchmark chart
+https://t.me/ainews/1235
+```
+
+Messages come back in chronological order; `limit` keeps the newest ones and drops the oldest. The live fallback runs under the same generation lock as digests and applies the channel's configured [filters](#filters), so both paths return the same set of messages.
+
+Two deliberate differences from digest generation:
+
+- `channels[*].lookback_hours` is **not** applied — the tool honours the `hours` the caller asked for.
+- Media-only messages arrive as their placeholder text (`[photo]`, `[video]`), exactly as they are stored.
 
 ### Security
 

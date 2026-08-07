@@ -8,7 +8,9 @@ from src.config_loader import ChannelConfig, FilterSpec, StorageConfig
 from src.core import (
     _apply_filters,
     _collect_messages,
+    _resolve_channel,
     build_digest,
+    collect_channel_messages,
     generate_and_send_digest,
     read_last_digest,
     validate_hours,
@@ -937,3 +939,147 @@ async def test_summary_message_dedupes_split_group_names(
 
         call_kwargs = mock_formatter.format_group_summary_message.call_args.kwargs
         assert call_kwargs["group_names"] == ["News"]
+
+
+def _make_single_channel_collector(messages):
+    """Collector mock for the single-channel path."""
+    mock_collector = MagicMock()
+    mock_collector.connect = AsyncMock()
+    mock_collector.fetch_channel_messages = AsyncMock(return_value=messages)
+    mock_collector.disconnect = AsyncMock()
+    return mock_collector
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "wanted", ["Test Channel", "test channel", "@test_channel", " @TEST_CHANNEL "]
+)
+def test_resolve_channel_matches_name_or_id(sample_config, wanted):
+    """A channel is addressable by its config name or its id, case-insensitively."""
+    assert _resolve_channel(sample_config, wanted).name == "Test Channel"
+
+
+@pytest.mark.unit
+def test_resolve_channel_lists_known_names(sample_config):
+    """An unknown channel fails with the configured names, so the caller can retry."""
+    with pytest.raises(ValueError, match="Test Channel, Private Group"):
+        _resolve_channel(sample_config, "Nope")
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_collect_channel_messages_prefers_storage(
+    sample_config, mock_logger, sample_messages
+):
+    """Stored messages are served without touching Telegram, newest-first flipped to chronological."""
+    mock_backend = MagicMock()
+    mock_backend.query_messages = AsyncMock(return_value=list(reversed(sample_messages)))
+    mock_backend.close = AsyncMock()
+
+    with (
+        patch("src.core.create_storage", new_callable=AsyncMock) as mock_create,
+        patch("src.core.MessageCollector") as mock_collector_class,
+    ):
+        mock_create.return_value = mock_backend
+
+        messages, source = await collect_channel_messages(
+            sample_config, mock_logger, "Test Channel", hours=12, limit=50
+        )
+
+        assert source == "storage"
+        assert messages == sample_messages
+        assert mock_backend.query_messages.call_args.kwargs["channel_name"] == "Test Channel"
+        assert mock_backend.query_messages.call_args.kwargs["limit"] == 50
+        mock_backend.close.assert_called_once()
+        mock_collector_class.assert_not_called()
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "storage_result",
+    [None, []],
+    ids=["storage_disabled", "storage_empty"],
+)
+async def test_collect_channel_messages_falls_back_to_telegram(
+    sample_config, mock_logger, sample_messages, storage_result
+):
+    """No usable stored data means a live read, with the config filters applied."""
+    mock_backend = MagicMock()
+    mock_backend.query_messages = AsyncMock(return_value=[])
+    mock_backend.close = AsyncMock()
+
+    with (
+        patch("src.core.create_storage", new_callable=AsyncMock) as mock_create,
+        patch("src.core.MessageCollector") as mock_collector_class,
+        patch("src.core._apply_filters", new_callable=AsyncMock) as mock_filters,
+    ):
+        mock_create.return_value = None if storage_result is None else mock_backend
+        collector = _make_single_channel_collector(sample_messages)
+        mock_collector_class.return_value = collector
+        mock_filters.return_value = sample_messages
+
+        messages, source = await collect_channel_messages(
+            sample_config, mock_logger, "@test_channel", hours=6
+        )
+
+        assert source == "telegram"
+        assert messages == sample_messages
+        collector.disconnect.assert_called_once()
+        mock_filters.assert_called_once()
+        assert mock_filters.call_args[0][0].name == "Test Channel"
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_collect_channel_messages_falls_back_when_storage_raises(
+    sample_config, mock_logger, sample_messages
+):
+    """A broken store logs and degrades to Telegram instead of failing the call."""
+    with (
+        patch("src.core.create_storage", new_callable=AsyncMock) as mock_create,
+        patch("src.core.MessageCollector") as mock_collector_class,
+        patch("src.core._apply_filters", new_callable=AsyncMock) as mock_filters,
+    ):
+        mock_create.side_effect = RuntimeError("db down")
+        mock_collector_class.return_value = _make_single_channel_collector(sample_messages)
+        mock_filters.return_value = sample_messages
+
+        _, source = await collect_channel_messages(sample_config, mock_logger, "Test Channel")
+
+        assert source == "telegram"
+        assert "RuntimeError" in mock_logger.error.call_args[0][0]
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_collect_channel_messages_keeps_newest_within_limit(
+    sample_config, mock_logger, sample_messages
+):
+    """The limit trims the oldest messages, since the newest ones matter most."""
+    with (
+        patch("src.core.create_storage", new_callable=AsyncMock) as mock_create,
+        patch("src.core.MessageCollector") as mock_collector_class,
+        patch("src.core._apply_filters", new_callable=AsyncMock) as mock_filters,
+    ):
+        mock_create.return_value = None
+        mock_collector_class.return_value = _make_single_channel_collector(sample_messages)
+        mock_filters.return_value = sample_messages
+
+        messages, _ = await collect_channel_messages(
+            sample_config, mock_logger, "Test Channel", limit=1
+        )
+
+        assert messages == sample_messages[-1:]
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+@pytest.mark.parametrize("limit", [0, -1, 501, True, 2.5, "10"])
+async def test_collect_channel_messages_rejects_bad_limit(sample_config, mock_logger, limit):
+    """An out-of-range limit fails before any storage or Telegram work happens."""
+    with patch("src.core.create_storage", new_callable=AsyncMock) as mock_create:
+        with pytest.raises(ValueError, match="limit must be between"):
+            await collect_channel_messages(sample_config, mock_logger, "Test Channel", limit=limit)
+
+        mock_create.assert_not_called()

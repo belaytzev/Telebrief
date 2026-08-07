@@ -11,8 +11,16 @@ import logging
 
 from mcp.server import MCPServer
 
+from src.collector import Message
 from src.config_loader import Config
-from src.core import MAX_DIGEST_HOURS, build_digest, read_last_digest, validate_hours
+from src.core import (
+    MAX_CHANNEL_MESSAGES,
+    MAX_DIGEST_HOURS,
+    build_digest,
+    collect_channel_messages,
+    read_last_digest,
+    validate_hours,
+)
 
 
 def _is_loopback(host: str) -> bool:
@@ -23,6 +31,15 @@ def _is_loopback(host: str) -> bool:
         return ipaddress.ip_address(host).is_loopback
     except ValueError:
         return False
+
+
+def _format_messages(channel: str, messages: list[Message], source: str, hours: int) -> str:
+    """Render collected messages as the flat text the model reads."""
+    header = f"channel: {channel} (from {source}, {len(messages)} msgs, last {hours}h)"
+    body = "\n\n".join(
+        f"[{msg.timestamp.isoformat()}] {msg.sender}\n{msg.text}\n{msg.link}" for msg in messages
+    )
+    return f"{header}\n\n{body}"
 
 
 def build_server(config: Config, logger: logging.Logger) -> MCPServer:
@@ -74,5 +91,26 @@ def build_server(config: Config, logger: logging.Logger) -> MCPServer:
             f"covering the previous {cached.get('hours', '?')} hours:\n\n{cached['text']}"
         )
 
-    logger.info(f"MCP tools registered: get_digest (max {MAX_DIGEST_HOURS}h), get_last_digest")
+    @mcp.tool()
+    async def get_channel_messages(channel: str, hours: int = 24, limit: int = 200) -> str:
+        """Return the individual messages of one configured channel, unsummarized.
+
+        Reads from Telebrief's message store when it holds the requested window, and
+        falls back to a live Telegram read otherwise. Free and instant on the stored
+        path; the fallback takes a few seconds. The response header says which was used.
+
+        Args:
+            channel: Channel name or id as configured under channels[*] in config.yaml
+            hours: How many hours back to look, 1 to 168 (default 24)
+            limit: Maximum messages to return, 1 to 500, newest kept (default 200)
+        """
+        messages, source = await collect_channel_messages(config, logger, channel, hours, limit)
+        if not messages:
+            return f"No messages in {channel!r} in the last {hours} hours."
+        return _format_messages(channel, messages, source, hours)
+
+    logger.info(
+        f"MCP tools registered: get_digest (max {MAX_DIGEST_HOURS}h), get_last_digest, "
+        f"get_channel_messages (max {MAX_CHANNEL_MESSAGES} msgs)"
+    )
     return mcp

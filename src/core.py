@@ -7,11 +7,11 @@ import inspect
 import json
 import logging
 import re
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional
 
-from src.collector import MessageCollector
+from src.collector import Message, MessageCollector
 from src.config_loader import ChannelConfig, Config
 from src.extensions.loader import load_class
 from src.formatter import DigestFormatter
@@ -26,6 +26,7 @@ _CHANNEL_URL_RE = re.compile(r"^https://t\.me/(?:c/\d+|[^/]{2,})$")
 
 _DIGEST_CACHE_PATH = Path("data/last_digest.json")
 MAX_DIGEST_HOURS = 168  # one week; guards against a caller asking for a year of history
+MAX_CHANNEL_MESSAGES = 500  # guards against a caller pulling a whole archive into the context
 
 # ponytail: one process-wide lock, not per-source; the scheduler, the bot and the
 # MCP server all build digests, and concurrent runs fight over the single
@@ -363,6 +364,104 @@ async def _build_digest_parts(
         execution_time = (datetime.now(timezone.utc) - start_time).total_seconds()
         logger.info(f"Digest build completed in {execution_time:.1f}s")
         return parts, summary_message
+
+
+async def _channel_from_storage(
+    config: Config,
+    logger: logging.Logger,
+    channel_cfg: ChannelConfig,
+    since: datetime,
+    limit: int,
+) -> Optional[list[Message]]:
+    """Read one channel from storage. None when storage is off, empty or unreadable."""
+    try:
+        storage = await create_storage(config.storage)
+    except Exception as e:
+        logger.error(f"Storage init failed ({type(e).__name__}), falling back to Telegram")
+        return None
+    if storage is None:
+        return None
+    try:
+        messages = await storage.query_messages(
+            channel_name=channel_cfg.name, since=since, limit=limit
+        )
+    except Exception as e:
+        logger.error(f"Storage read failed ({type(e).__name__}), falling back to Telegram")
+        return None
+    finally:
+        try:
+            await storage.close()
+        except Exception as e:
+            logger.error(f"Storage close failed ({type(e).__name__})", exc_info=True)
+    messages.reverse()  # query_messages returns newest first; callers read chronologically
+    return messages or None
+
+
+def _resolve_channel(config: Config, channel: str) -> ChannelConfig:
+    """Find the configured channel by its name or its id.
+
+    Raises:
+        ValueError: If no configured channel matches
+    """
+    wanted = channel.strip().lower()
+    for ch in config.channels:
+        if wanted in (ch.name.lower(), str(ch.id).lower()):
+            return ch
+    known = ", ".join(ch.name for ch in config.channels) or "none configured"
+    raise ValueError(f"Unknown channel {channel!r}. Configured channels: {known}")
+
+
+async def collect_channel_messages(
+    config: Config,
+    logger: logging.Logger,
+    channel: str,
+    hours: int = 24,
+    limit: int = 200,
+) -> tuple[list[Message], str]:
+    """Fetch one channel's messages, preferring stored ones over a live Telegram read.
+
+    Args:
+        config: Application configuration
+        logger: Logger instance
+        channel: Channel name or id as configured under channels[*]
+        hours: Lookback window
+        limit: Maximum messages to return, newest kept
+
+    Returns:
+        (messages in chronological order, source) where source is "storage" or "telegram"
+
+    Raises:
+        ValueError: If hours or limit are out of range, or channel is not configured
+    """
+    validate_hours(hours)
+    if (
+        not isinstance(limit, int)
+        or isinstance(limit, bool)
+        or not 1 <= limit <= MAX_CHANNEL_MESSAGES
+    ):
+        raise ValueError(f"limit must be between 1 and {MAX_CHANNEL_MESSAGES}, got {limit!r}")
+
+    channel_cfg = _resolve_channel(config, channel)
+    since = datetime.now(timezone.utc) - timedelta(hours=hours)
+
+    stored = await _channel_from_storage(config, logger, channel_cfg, since, limit)
+    if stored is not None:
+        logger.info(f"Read {len(stored)} stored messages for {channel_cfg.name!r}")
+        return stored, "storage"
+
+    # ponytail: same process-wide lock as digest builds — one Telethon session file
+    async with _digest_lock:
+        collector = MessageCollector(config, logger)
+        await collector.connect()
+        try:
+            messages = await collector.fetch_channel_messages(channel_cfg, since)
+        finally:
+            await collector.disconnect()
+
+    # filters run outside the lock: they are user code and may block on the network
+    messages = await _apply_filters(channel_cfg, messages, config, logger)
+    logger.info(f"Fetched {len(messages)} live messages for {channel_cfg.name!r}")
+    return messages[-limit:], "telegram"
 
 
 async def build_digest(config: Config, logger: logging.Logger, hours: int = 24) -> str:

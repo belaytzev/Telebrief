@@ -20,12 +20,12 @@ def server(sample_config, mock_logger):
 
 @pytest.mark.unit
 @pytest.mark.asyncio
-async def test_registers_both_tools(server):
-    """Both digest tools are exposed with a description for the model."""
+async def test_registers_all_tools(server):
+    """Every tool is exposed with a description for the model."""
     tools = await server.list_tools()
 
     names = {tool.name for tool in tools}
-    assert names == {"get_digest", "get_last_digest"}
+    assert names == {"get_digest", "get_last_digest", "get_channel_messages"}
     assert all(tool.description for tool in tools)
 
 
@@ -105,6 +105,65 @@ async def test_get_last_digest_includes_age(server):
         assert "Header\n\nGroup msg" in text
         assert "2026-08-03T09:00:12+00:00" in text
         assert "24" in text
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_get_channel_messages_renders_messages(
+    server, sample_config, mock_logger, sample_messages
+):
+    """Each message is rendered with its time, sender, text and link under a source header."""
+    with patch("src.mcp_server.collect_channel_messages", new_callable=AsyncMock) as mock_collect:
+        mock_collect.return_value = (sample_messages, "storage")
+
+        result = await server.call_tool(
+            "get_channel_messages", {"channel": "Test Channel", "hours": 12, "limit": 50}
+        )
+
+        text = _text(result)
+        assert "channel: Test Channel (from storage, 3 msgs, last 12h)" in text
+        assert "[2025-12-14T10:00:00+00:00] User1" in text
+        assert "Test message 1" in text
+        assert "https://t.me/test/1" in text
+        mock_collect.assert_called_once_with(sample_config, mock_logger, "Test Channel", 12, 50)
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_get_channel_messages_defaults(server, sample_config, mock_logger, sample_messages):
+    """Calling without a window uses 24 hours and 200 messages."""
+    with patch("src.mcp_server.collect_channel_messages", new_callable=AsyncMock) as mock_collect:
+        mock_collect.return_value = (sample_messages, "telegram")
+
+        await server.call_tool("get_channel_messages", {"channel": "Test Channel"})
+
+        mock_collect.assert_called_once_with(sample_config, mock_logger, "Test Channel", 24, 200)
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_get_channel_messages_reports_empty_result(server):
+    """An empty channel reads as an explicit 'nothing found', not a bare header."""
+    with patch("src.mcp_server.collect_channel_messages", new_callable=AsyncMock) as mock_collect:
+        mock_collect.return_value = ([], "storage")
+
+        result = await server.call_tool(
+            "get_channel_messages", {"channel": "Test Channel", "hours": 3}
+        )
+
+        assert "No messages" in _text(result)
+        assert "3 hours" in _text(result)
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_get_channel_messages_surfaces_unknown_channel(server):
+    """An unknown channel surfaces as a tool error the model can act on."""
+    with patch("src.mcp_server.collect_channel_messages", new_callable=AsyncMock) as mock_collect:
+        mock_collect.side_effect = ValueError("Unknown channel 'Nope'. Configured channels: X")
+
+        with pytest.raises(ToolError):
+            await server.call_tool("get_channel_messages", {"channel": "Nope"})
 
 
 @pytest.mark.unit
