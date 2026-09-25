@@ -39,6 +39,12 @@ Before you begin, you'll need:
 
 2. **Telegram App Credentials** - [Get from my.telegram.org](https://my.telegram.org)
    - `api_id` and `api_hash`
+   - If the form at [my.telegram.org/apps](https://my.telegram.org/apps) only shows `ERROR`, the rejection comes from Telegram, not Telebrief. Workarounds that usually help:
+     - Use a unique, random alphanumeric App title and Short name (Short name: 5–32 letters/digits, no spaces)
+     - Turn off VPN, proxy, and ad-blocking extensions; try a private window or another browser
+     - Switch networks, e.g. mobile data instead of Wi-Fi
+     - Submit again a few times; the check is intermittent
+   - If nothing works, contact [Telegram support](https://telegram.org/support). Never enter your login code on third-party sites that offer to create an app for you.
 
 3. **Telegram Bot Token** - Create via [@BotFather](https://t.me/BotFather)
    - Send `/newbot` to create a new bot
