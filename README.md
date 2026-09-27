@@ -29,7 +29,7 @@
 - [Per-Channel Configuration](#%EF%B8%8F-per-channel-configuration) — [lookback window](#lookback_hours--per-channel-lookback-window), [AI instructions](#prompt_extra--per-channel-ai-instructions)
 - [Persistent Storage](#%EF%B8%8F-persistent-storage) — [SQLite](#sqlite-default-backend), [PostgreSQL](#postgresql-optional-backend), [schema](#schema)
 - [Extensibility](#-extensibility) — [filters](#filters), [prompts](#prompts), [group binding](#group-binding), [storage queries](#storage-queries)
-- [MCP Server](#-mcp-server) — [enabling](#enabling-it), [stdio mode](#stdio-mode), [tools](#tools), [single channel](#reading-a-single-channel), [security](#security)
+- [MCP Server](#-mcp-server) — [enabling](#enabling-it), [stdio mode](#stdio-mode), [tools](#tools), [single channel](#reading-a-single-channel), [searching](#searching), [security](#security)
 - [Development & Testing](#%EF%B8%8F-development--testing)
 - [FAQ](#-faq)
 - [Contributing](#-contributing) · [License](#-license) · [Credits](#-credits)
@@ -474,9 +474,10 @@ claude mcp add --transport http telebrief http://127.0.0.1:8765/mcp
 
 | Tool | Arguments | Behaviour |
 |------|-----------|-----------|
-| `get_digest` | `hours` (1–168, default 24) | Generates a fresh digest. Takes 20–90 seconds and spends AI provider tokens. |
+| `get_digest` | `hours` (1–168, default 24) | Generates a fresh digest. Takes 20–90 seconds and spends AI provider tokens. `hours=168` gives a weekly digest. |
 | `get_last_digest` | — | Returns the most recent digest from cache, with its generation time. Instant and free. |
 | `get_channel_messages` | `channel`, `hours` (1–168, default 24), `limit` (1–500, default 200) | Returns the individual messages of one channel, unsummarized. No AI tokens spent. |
+| `search_messages` | `query`, `channel` (optional), `days` (1–365, default 30), `limit` (1–100, default 30) | Finds messages across all configured channels, or one, newest first. No AI tokens spent. |
 
 Every successful digest — scheduled, bot-triggered or MCP-triggered — is cached to `data/last_digest.json`, so `get_last_digest` serves the same digest that was delivered to Telegram.
 
@@ -508,6 +509,21 @@ Two deliberate differences from digest generation:
 
 - `channels[*].lookback_hours` is **not** applied — the tool honours the `hours` the caller asked for.
 - Media-only messages arrive as their placeholder text (`[photo]`, `[video]`), exactly as they are stored.
+
+### Searching
+
+`search_messages` answers "where and when was this mentioned". It uses Telegram's own search, so it covers each channel's full history, not only what Telebrief collected, and works without persistent storage. Matching is by words, as in the Telegram app, not by substring or regex.
+
+Each call makes one Telegram request per searched channel, under the same lock as digest generation; pass `channel` when you know where to look. Channel [filters](#filters) are not applied to search results. If a channel can't be searched (left, private, rate-limited), the others still return and the response header names the failed ones:
+
+```text
+search: 'kubernetes' (2 matches, last 30 days)
+search failed in: Private Group
+
+[2026-09-26T14:02:11+00:00] Tech News · Alice
+Kubernetes 1.34 is out...
+https://t.me/technews/812
+```
 
 ### Security
 

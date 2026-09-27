@@ -25,7 +25,7 @@ async def test_registers_all_tools(server):
     tools = await server.list_tools()
 
     names = {tool.name for tool in tools}
-    assert names == {"get_digest", "get_last_digest", "get_channel_messages"}
+    assert names == {"get_digest", "get_last_digest", "get_channel_messages", "search_messages"}
     assert all(tool.description for tool in tools)
 
 
@@ -164,6 +164,54 @@ async def test_get_channel_messages_surfaces_unknown_channel(server):
 
         with pytest.raises(ToolError):
             await server.call_tool("get_channel_messages", {"channel": "Nope"})
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_search_messages_renders_matches(server, sample_config, mock_logger, sample_messages):
+    """Each match carries its channel, and failed channels are named in the header."""
+    with patch("src.mcp_server.search_messages", new_callable=AsyncMock) as mock_search:
+        mock_search.return_value = (sample_messages[:2], ["Private Group"])
+
+        result = await server.call_tool(
+            "search_messages",
+            {"query": "release", "channel": "Test Channel", "days": 7, "limit": 5},
+        )
+
+        text = _text(result)
+        assert "search: 'release' (2 matches, last 7 days)" in text
+        assert "search failed in: Private Group" in text
+        assert "Test Channel · User1" in text
+        assert "https://t.me/test/1" in text
+        mock_search.assert_called_once_with(
+            sample_config, mock_logger, "release", channel="Test Channel", days=7, limit=5
+        )
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_search_messages_defaults_and_no_matches(server, sample_config, mock_logger):
+    """Without options it searches all channels for 30 days, 30 results; empty says so."""
+    with patch("src.mcp_server.search_messages", new_callable=AsyncMock) as mock_search:
+        mock_search.return_value = ([], [])
+
+        result = await server.call_tool("search_messages", {"query": "nothing"})
+
+        assert "No matches." in _text(result)
+        mock_search.assert_called_once_with(
+            sample_config, mock_logger, "nothing", channel=None, days=30, limit=30
+        )
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_search_messages_surfaces_bad_arguments(server):
+    """Validation errors from core reach the model as a tool error."""
+    with patch("src.mcp_server.search_messages", new_callable=AsyncMock) as mock_search:
+        mock_search.side_effect = ValueError("days must be between 1 and 365, got 999")
+
+        with pytest.raises(ToolError):
+            await server.call_tool("search_messages", {"query": "q", "days": 999})
 
 
 @pytest.mark.unit

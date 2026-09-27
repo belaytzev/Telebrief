@@ -27,6 +27,8 @@ _CHANNEL_URL_RE = re.compile(r"^https://t\.me/(?:c/\d+|[^/]{2,})$")
 _DIGEST_CACHE_PATH = Path("data/last_digest.json")
 MAX_DIGEST_HOURS = 168  # one week; guards against a caller asking for a year of history
 MAX_CHANNEL_MESSAGES = 500  # guards against a caller pulling a whole archive into the context
+MAX_SEARCH_DAYS = 365
+MAX_SEARCH_RESULTS = 100
 
 # ponytail: one process-wide lock, not per-source; the scheduler, the bot and the
 # MCP server all build digests, and concurrent runs fight over the single
@@ -462,6 +464,71 @@ async def collect_channel_messages(
     messages = await _apply_filters(channel_cfg, messages, config, logger)
     logger.info(f"Fetched {len(messages)} live messages for {channel_cfg.name!r}")
     return messages[-limit:], "telegram"
+
+
+def _validate_search(query: str, days: int, limit: int) -> str:
+    """Return the stripped query, or raise ValueError for out-of-range arguments."""
+    if not isinstance(query, str) or not query.strip():
+        raise ValueError("query must be a non-empty string")
+    for name, value, top in (
+        ("days", days, MAX_SEARCH_DAYS),
+        ("limit", limit, MAX_SEARCH_RESULTS),
+    ):
+        if not isinstance(value, int) or isinstance(value, bool) or not 1 <= value <= top:
+            raise ValueError(f"{name} must be between 1 and {top}, got {value!r}")
+    return query.strip()
+
+
+async def search_messages(
+    config: Config,
+    logger: logging.Logger,
+    query: str,
+    *,
+    channel: Optional[str] = None,
+    days: int = 30,
+    limit: int = 30,
+) -> tuple[list[Message], list[str]]:
+    """Search the configured channels with Telegram's server-side search.
+
+    Args:
+        config: Application configuration
+        logger: Logger instance
+        query: Text to search for
+        channel: Channel name or id to search in; all configured channels when None
+        days: How far back to search
+        limit: Maximum matches to return, newest kept
+
+    Returns:
+        (matches newest first, names of channels whose search failed)
+
+    Raises:
+        ValueError: If arguments are out of range or channel is not configured
+    """
+    query = _validate_search(query, days, limit)
+    channels = [_resolve_channel(config, channel)] if channel else config.channels
+    since = datetime.now(timezone.utc) - timedelta(days=days)
+    found: list[Message] = []
+    failed: list[str] = []
+
+    # ponytail: channels searched one by one, asyncio.gather if latency matters
+    async with _digest_lock:
+        collector = MessageCollector(config, logger)
+        await collector.connect()
+        try:
+            for ch in channels:
+                try:
+                    found += await collector.fetch_channel_messages(
+                        ch, since, search=query, limit=limit
+                    )
+                except Exception as e:  # one unreachable channel must not sink the whole search
+                    logger.warning(f"Search in {ch.name!r} failed: {e}")
+                    failed.append(ch.name)
+        finally:
+            await collector.disconnect()
+
+    found.sort(key=lambda m: m.timestamp, reverse=True)
+    logger.info(f"Search {query!r}: {len(found)} matches in {len(channels)} channels")
+    return found[:limit], failed
 
 
 async def build_digest(config: Config, logger: logging.Logger, hours: int = 24) -> str:

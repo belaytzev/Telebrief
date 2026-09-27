@@ -145,7 +145,11 @@ class MessageCollector:
         return all_messages
 
     async def fetch_channel_messages(
-        self, channel_config: ChannelConfig, lookback_time: datetime
+        self,
+        channel_config: ChannelConfig,
+        lookback_time: datetime,
+        search: str | None = None,
+        limit: int | None = None,
     ) -> List[Message]:
         """
         Fetch messages from a single channel.
@@ -153,12 +157,14 @@ class MessageCollector:
         Args:
             channel_config: Channel configuration
             lookback_time: Earliest message time
+            search: Only messages matching this text, via Telegram's server-side search
+            limit: Maximum messages to read; defaults to max_messages_per_channel
 
         Returns:
             List of Message objects
         """
         messages = []
-        max_messages = self.config.settings.max_messages_per_channel
+        max_messages = limit or self.config.settings.max_messages_per_channel
 
         try:
             # Get channel entity
@@ -166,7 +172,10 @@ class MessageCollector:
 
             # Fetch messages
             async for message in self.client.iter_messages(
-                entity, limit=max_messages, offset_date=datetime.now(timezone.utc)
+                entity,
+                limit=max_messages,
+                offset_date=datetime.now(timezone.utc),
+                search=search,
             ):
                 # Stop if message is older than lookback time
                 if message.date < lookback_time:

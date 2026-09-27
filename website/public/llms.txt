@@ -22,7 +22,7 @@ Telebrief runs as a single Docker container (linux/amd64 and linux/arm64) publis
 ## MCP server
 
 - [MCP documentation](https://github.com/belaytzev/Telebrief#-mcp-server): streamable HTTP endpoint inside the running service (`mcp.enabled: true`, default `http://127.0.0.1:8765/mcp`), or stdio via `python main.py mcp`.
-- Tools: `get_digest(hours)` builds a fresh digest, `get_last_digest()` returns the cached one, `get_channel_messages(channel, hours, limit)` returns raw messages of one configured channel.
+- Tools: `get_digest(hours)` builds a fresh digest (`hours=168` for a weekly one), `get_last_digest()` returns the cached one, `get_channel_messages(channel, hours, limit)` returns raw messages of one configured channel, `search_messages(query, channel, days, limit)` searches the configured channels' full history via Telegram search.
 - The MCP server has no authentication: keep it on loopback or behind a firewall.
 
 ## Optional

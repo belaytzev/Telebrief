@@ -1,9 +1,11 @@
 """Tests for core module."""
 
+from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from src.collector import Message
 from src.config_loader import ChannelConfig, FilterSpec, StorageConfig
 from src.core import (
     _apply_filters,
@@ -13,6 +15,7 @@ from src.core import (
     collect_channel_messages,
     generate_and_send_digest,
     read_last_digest,
+    search_messages,
     validate_hours,
 )
 from src.grouper import GroupedPoint
@@ -1083,3 +1086,102 @@ async def test_collect_channel_messages_rejects_bad_limit(sample_config, mock_lo
             await collect_channel_messages(sample_config, mock_logger, "Test Channel", limit=limit)
 
         mock_create.assert_not_called()
+
+
+def _msg(channel: str, hour: int, text: str = "hit"):
+    return Message(
+        text=text,
+        sender="U",
+        timestamp=datetime(2026, 9, 1, hour, tzinfo=timezone.utc),
+        link=f"https://t.me/x/{hour}",
+        channel_name=channel,
+        has_media=False,
+        media_type="",
+    )
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_search_messages_merges_channels_newest_first(sample_config, mock_logger):
+    """Matches from every channel are merged, sorted newest first and capped at limit."""
+    results = {
+        "Test Channel": [_msg("Test Channel", 1), _msg("Test Channel", 5)],
+        "Private Group": [_msg("Private Group", 3)],
+    }
+    with patch("src.core.MessageCollector") as mock_cls:
+        collector = mock_cls.return_value
+        collector.connect = AsyncMock()
+        collector.disconnect = AsyncMock()
+        collector.fetch_channel_messages = AsyncMock(
+            side_effect=lambda ch, since, search, limit: results[ch.name]
+        )
+
+        found, failed = await search_messages(
+            sample_config, mock_logger, "  kubernetes  ", days=7, limit=2
+        )
+
+    assert [m.timestamp.hour for m in found] == [5, 3]
+    assert failed == []
+    for call in collector.fetch_channel_messages.call_args_list:
+        assert call.kwargs == {"search": "kubernetes", "limit": 2}
+    collector.disconnect.assert_awaited_once()
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_search_messages_reports_failed_channel(sample_config, mock_logger):
+    """A channel that errors is reported by name; the others still return matches."""
+
+    async def fetch(ch, since, search, limit):
+        if ch.name == "Private Group":
+            raise RuntimeError("channel is private")
+        return [_msg(ch.name, 2)]
+
+    with patch("src.core.MessageCollector") as mock_cls:
+        collector = mock_cls.return_value
+        collector.connect = AsyncMock()
+        collector.disconnect = AsyncMock()
+        collector.fetch_channel_messages = AsyncMock(side_effect=fetch)
+
+        found, failed = await search_messages(sample_config, mock_logger, "q")
+
+    assert [m.channel_name for m in found] == ["Test Channel"]
+    assert failed == ["Private Group"]
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_search_messages_single_channel(sample_config, mock_logger):
+    """channel narrows the search to that one configured channel, matched by name."""
+    with patch("src.core.MessageCollector") as mock_cls:
+        collector = mock_cls.return_value
+        collector.connect = AsyncMock()
+        collector.disconnect = AsyncMock()
+        collector.fetch_channel_messages = AsyncMock(return_value=[])
+
+        await search_messages(sample_config, mock_logger, "q", channel="private group")
+
+    searched = [c.args[0].name for c in collector.fetch_channel_messages.call_args_list]
+    assert searched == ["Private Group"]
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "kwargs,match",
+    [
+        ({"query": "   "}, "query must be"),
+        ({"query": "q", "days": 0}, "days must be between"),
+        ({"query": "q", "days": 366}, "days must be between"),
+        ({"query": "q", "limit": 101}, "limit must be between"),
+        ({"query": "q", "limit": True}, "limit must be between"),
+        ({"query": "q", "channel": "Nope"}, "Unknown channel"),
+    ],
+)
+async def test_search_messages_rejects_bad_arguments(sample_config, mock_logger, kwargs, match):
+    """Bad arguments fail before any Telegram connection is opened."""
+    with patch("src.core.MessageCollector") as mock_cls:
+        with pytest.raises(ValueError, match=match):
+            await search_messages(sample_config, mock_logger, **kwargs)
+
+    mock_cls.assert_not_called()
