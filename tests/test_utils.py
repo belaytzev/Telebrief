@@ -9,6 +9,7 @@ from src.utils import (
     clear_digest_message_ids,
     get_digest_message_ids,
     get_lookback_time,
+    markdown_to_telegram_html,
     save_digest_message_ids,
     setup_logging,
     split_message,
@@ -224,3 +225,38 @@ def test_save_digest_message_ids_multiple_users(tmp_path, monkeypatch):
     # Retrieve and verify
     assert get_digest_message_ids(user1_id) == user1_messages
     assert get_digest_message_ids(user2_id) == user2_messages
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "md,expected",
+    [
+        # channel name with nested brackets broke legacy Markdown
+        (
+            "## 📺 Acme [beta] · [Open channel →](https://t.me/example_chan)",
+            '<b>📺 Acme [beta] · <a href="https://t.me/example_chan">Open channel →</a></b>',
+        ),
+        (
+            "- [📺 Acme [beta]](https://t.me/example_chan/5)",
+            '- <a href="https://t.me/example_chan/5">📺 Acme [beta]</a>',
+        ),
+        # a lone underscore in a model-written URL started an unclosed italic
+        (
+            "see https://example.com/post?ref_src=feed now",
+            "see https://example.com/post?ref_src=feed now",
+        ),
+        (
+            "[post](https://example.com/post?a=1&ref_src=feed)",
+            '<a href="https://example.com/post?a=1&amp;ref_src=feed">post</a>',
+        ),
+        ("**Bold** and *also bold*", "<b>Bold</b> and <b>also bold</b>"),
+        ("* bullet with *em*", "* bullet with <b>em</b>"),
+        ("# 📊 Daily Digest - 02 May 2026", "<b>📊 Daily Digest - 02 May 2026</b>"),
+        ("run `a<b>`", "run <code>a&lt;b&gt;</code>"),
+        ("1 < 2 & 3 > 2", "1 &lt; 2 &amp; 3 &gt; 2"),
+        ("snake_case_name and 2*3", "snake_case_name and 2*3"),
+        ("---\n📈 **Stats**: 3", "---\n📈 <b>Stats</b>: 3"),
+    ],
+)
+def test_markdown_to_telegram_html(md, expected):
+    assert markdown_to_telegram_html(md) == expected
