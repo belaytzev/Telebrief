@@ -19,7 +19,7 @@
 
 - 🌐 **Multi-language Support** - Reads channels in ANY language (English, Russian, Ukrainian, Chinese, etc.)
 - 🌍 **Configurable Output Language** - All UI labels, summaries, and bot messages in any language (default: Russian)
-- 🤖 **Multi-Provider AI** - Supports OpenAI, Ollama (local), and Anthropic for summarization
+- 🤖 **Multi-Provider AI** - Supports OpenAI (including GPT-6 Luna, Sol, Astra), Ollama (local), and Anthropic for summarization
 - ⏰ **Scheduled & On-Demand** - Daily automatic digests + instant generation via bot commands
 - 🔒 **Private Channel Support** - Access your private chats and channels
 - 📑 **Digest Modes** - Group by channel (default) or by AI-detected topics like News, Events, Sport
