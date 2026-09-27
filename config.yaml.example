@@ -81,7 +81,7 @@ settings:
   include_statistics: true
 
   # Telegram Bot
-  target_user_id: 0  # Your Telegram user ID (get from @userinfobot)
+  target_user_id: 0  # Your Telegram user ID (`main.py init` fills it; or get from @userinfobot)
   auto_cleanup_old_digests: true  # Automatically delete previous digest messages
 
   # Safety limits
