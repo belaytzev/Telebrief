@@ -7,6 +7,7 @@ import logging
 from typing import Optional
 
 from telegram import Bot
+from telegram import Message as TelegramMessage
 from telegram.constants import ParseMode
 from telegram.error import TelegramError
 
@@ -15,6 +16,7 @@ from src.formatter import DigestFormatter
 from src.utils import (
     clear_digest_message_ids,
     get_digest_message_ids,
+    markdown_to_telegram_html,
     save_digest_message_ids,
     split_message,
 )
@@ -37,40 +39,33 @@ class DigestSender:
         self.target_user_id = config.settings.target_user_id
         self.formatter = DigestFormatter(config, logger)
 
-    async def _send_message_part(self, user_id: int, text: str, part_num: int) -> None:
-        """
-        Send a single message part with markdown fallback.
-
-        Args:
-            user_id: Target user ID
-            text: Message text
-            part_num: Part number for logging
+    async def _send_formatted(self, user_id: int, text: str, what: str) -> TelegramMessage:
+        """Send Markdown text as Telegram HTML, falling back to plain text if Telegram rejects it.
 
         Raises:
-            TelegramError: If sending fails (not markdown parsing)
+            TelegramError: If sending fails for any reason other than entity parsing
         """
         try:
-            # Try with Markdown first
-            await self.bot.send_message(
+            return await self.bot.send_message(
                 chat_id=user_id,
-                text=text,
-                parse_mode=ParseMode.MARKDOWN,
+                text=markdown_to_telegram_html(text),
+                parse_mode=ParseMode.HTML,
                 disable_web_page_preview=False,
             )
         except TelegramError as e:
-            # If markdown parsing fails, try plain text
-            if "Can't parse entities" in str(e):
-                self.logger.warning(
-                    f"Markdown parse error in part {part_num}, falling back to plain text"
-                )
-                await self.bot.send_message(
-                    chat_id=user_id,
-                    text=text,
-                    parse_mode=None,
-                    disable_web_page_preview=False,
-                )
-            else:
+            if "Can't parse entities" not in str(e):
                 raise
+            self.logger.warning(f"Formatting error in {what}, falling back to plain text: {e}")
+            return await self.bot.send_message(
+                chat_id=user_id,
+                text=text,
+                parse_mode=None,
+                disable_web_page_preview=False,
+            )
+
+    async def _send_message_part(self, user_id: int, text: str, part_num: int) -> None:
+        """Send a single message part."""
+        await self._send_formatted(user_id, text, f"part {part_num}")
 
     async def send_digest(self, digest: str, user_id: Optional[int] = None) -> bool:
         """
@@ -199,19 +194,9 @@ class DigestSender:
             return False
 
         try:
-            await self.bot.send_message(chat_id=user_id, text=text, parse_mode=ParseMode.MARKDOWN)
+            await self._send_formatted(user_id, text, "send_message")
             return True
         except TelegramError as e:
-            if "Can't parse entities" in str(e):
-                self.logger.warning(
-                    "Markdown parse error in send_message, falling back to plain text"
-                )
-                try:
-                    await self.bot.send_message(chat_id=user_id, text=text, parse_mode=None)
-                    return True
-                except TelegramError as e2:
-                    self.logger.error(f"Failed to send message (plain text fallback): {e2}")
-                    return False
             self.logger.error(f"Failed to send message: {e}")
             return False
 
@@ -284,25 +269,8 @@ class DigestSender:
         Returns:
             Message ID if successful, None otherwise
         """
-        try:
-            message = await self.bot.send_message(
-                chat_id=user_id,
-                text=message_text,
-                parse_mode=ParseMode.MARKDOWN,
-                disable_web_page_preview=False,
-            )
-            return message.message_id
-        except TelegramError as e:
-            if "Can't parse entities" in str(e):
-                self.logger.warning("Markdown parse error, falling back to plain text")
-                message = await self.bot.send_message(
-                    chat_id=user_id,
-                    text=message_text,
-                    parse_mode=None,
-                    disable_web_page_preview=False,
-                )
-                return message.message_id
-            raise
+        message = await self._send_formatted(user_id, message_text, channel_name)
+        return message.message_id
 
     async def _send_summary_message(
         self,
@@ -320,25 +288,12 @@ class DigestSender:
             Message ID if successful, None otherwise
         """
         try:
-            message = await self.bot.send_message(
-                chat_id=user_id,
-                text=summary_message,
-                parse_mode=ParseMode.MARKDOWN,
-            )
-            self.logger.info("✅ Summary message sent")
-            return message.message_id
+            message = await self._send_formatted(user_id, summary_message, "summary")
         except TelegramError as e:
-            if "Can't parse entities" in str(e):
-                self.logger.warning("Markdown parse error in summary, falling back to plain text")
-                message = await self.bot.send_message(
-                    chat_id=user_id,
-                    text=summary_message,
-                    parse_mode=None,
-                )
-                self.logger.info("✅ Summary message sent (plain text fallback)")
-                return message.message_id
             self.logger.warning(f"⚠️ Failed to send summary message: {e}")
             return None
+        self.logger.info("✅ Summary message sent")
+        return message.message_id
 
     def _log_and_return_result(
         self, success_count: int, total_count: int, failed_channels: list[str]

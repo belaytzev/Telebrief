@@ -2,12 +2,47 @@
 Utility functions and logging setup for Telebrief.
 """
 
+import html
 import json
 import logging
 import os
+import re
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import List
+
+# Link text may hold one level of nested brackets, e.g. a channel named "Acme [beta]".
+_INLINE_MD = re.compile(
+    r"`(?P<code>[^`\n]+)`"
+    r"|\[(?P<ltext>(?:[^\[\]\n]|\[[^\[\]\n]*\])+)\]\((?P<url>https?://[^\s)]+)\)"
+    r"|\*\*(?P<b2>[^*\s](?:[^*\n]*[^*\s])?)\*\*"
+    r"|\*(?P<b1>[^*\s](?:[^*\n]*[^*\s])?)\*"
+)
+_HEADER_MD = re.compile(r"#{1,6}\s+(.*)")
+
+
+def _inline_to_html(text: str) -> str:
+    out, pos = [], 0
+    for m in _INLINE_MD.finditer(text):
+        out.append(html.escape(text[pos : m.start()], quote=False))
+        if m["code"]:
+            out.append(f"<code>{html.escape(m['code'], quote=False)}</code>")
+        elif m["url"]:
+            out.append(f'<a href="{html.escape(m["url"])}">{_inline_to_html(m["ltext"])}</a>')
+        else:
+            out.append(f"<b>{_inline_to_html(m['b2'] or m['b1'])}</b>")
+        pos = m.end()
+    out.append(html.escape(text[pos:], quote=False))
+    return "".join(out)
+
+
+def markdown_to_telegram_html(text: str) -> str:
+    """Escape text for Telegram HTML, turning only bold, links, `code` and #-headers into tags."""
+    lines = []
+    for line in text.split("\n"):
+        header = _HEADER_MD.match(line)
+        lines.append(f"<b>{_inline_to_html(header[1])}</b>" if header else _inline_to_html(line))
+    return "\n".join(lines)
 
 
 def setup_logging(log_level: str = "INFO") -> logging.Logger:

@@ -143,6 +143,28 @@ async def test_send_digest_markdown_fallback(sample_config, mock_logger):
 
 @pytest.mark.unit
 @pytest.mark.asyncio
+async def test_channel_message_sent_as_html(sample_config, mock_logger):
+    """Channel messages go out as escaped HTML, so '_' and '[...]' no longer break formatting."""
+    from telegram.constants import ParseMode
+
+    with patch("src.sender.Bot") as mock_bot_class:
+        mock_bot = MagicMock()
+        mock_bot.send_message = AsyncMock(return_value=MagicMock(message_id=42))
+        mock_bot_class.return_value = mock_bot
+
+        sender = DigestSender(sample_config, mock_logger)
+        message_id = await sender._send_message_with_tracking(
+            123456789, "## Acme [beta]\n- link https://example.com/p?ref_src=feed", "Acme [beta]"
+        )
+
+    assert message_id == 42
+    kwargs = mock_bot.send_message.call_args.kwargs
+    assert kwargs["parse_mode"] == ParseMode.HTML
+    assert kwargs["text"] == "<b>Acme [beta]</b>\n- link https://example.com/p?ref_src=feed"
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
 async def test_cleanup_old_digests_success(sample_config, mock_logger, tmp_path, monkeypatch):
     """Test cleaning up old digest messages."""
     from src.utils import save_digest_message_ids
