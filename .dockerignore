@@ -71,7 +71,6 @@ TESTING.md
 
 # Docker files
 Dockerfile
-docker-compose.yml
 .dockerignore
 
 # Logs (will be mounted as volume)

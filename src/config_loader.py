@@ -592,7 +592,7 @@ def load_config(config_path: str = "config.yaml") -> Config:
     if settings.target_user_id == 0:
         raise ValueError(
             "target_user_id not configured in config.yaml. "
-            "Get your Telegram user ID from @userinfobot"
+            "Run `python main.py init` or get your Telegram user ID from @userinfobot"
         )
 
     # Cross-validate channel group references against known digest_groups

@@ -35,7 +35,7 @@
 
 Before you begin, you'll need:
 
-1. **Python 3.14+** - [Download Python](https://www.python.org/downloads/)
+1. **Docker** - [Install Docker](https://docs.docker.com/get-docker/)
 
 2. **Telegram App Credentials** - [Get from my.telegram.org](https://my.telegram.org)
    - `api_id` and `api_hash`
@@ -55,38 +55,30 @@ Before you begin, you'll need:
    - **Anthropic**: [Get from console.anthropic.com](https://console.anthropic.com)
    - **Ollama**: No API key needed - [install locally](https://ollama.ai)
 
-5. **Your Telegram User ID** - Get from [@userinfobot](https://t.me/userinfobot)
-   - Send `/start` to get your ID
-
 ---
 
-## 🐳 Docker Deployment
+## 🚀 Quick Start
 
-Telebrief can be run in Docker for easy deployment. **No Python installation required on host!**
-
-The image is published to GitHub Container Registry on every release:
+No clone and no Python needed. In an empty directory, run the setup wizard:
 
 ```bash
-# Pull the latest image
-docker pull ghcr.io/belaytzev/telebrief:latest
+mkdir telebrief && cd telebrief
+docker run --rm -it --user "$(id -u):$(id -g)" -v "$PWD":/setup \
+  ghcr.io/belaytzev/telebrief python main.py init /setup
 ```
 
-Available tags: `latest`, `X.Y` (minor), `X.Y.Z` (patch).
+The wizard logs into your Telegram account (phone, code, 2FA), checks the bot token, lets you pick channels from your dialogs by number, and writes `.env`, `config.yaml`, `docker-compose.yml` and `sessions/user.session`. Your user ID is taken from the login.
+
+Then press **Start** in your bot's chat and launch the service:
 
 ```bash
-# 1. Create Telegram session (REQUIRED - one-time setup)
-./create_session.sh
-
-# 2. Start the service
 docker compose up -d
-
-# 3. View logs
 docker compose logs -f telebrief
 ```
 
-The `docker-compose.yml` uses the pre-built GHCR image by default, so no local build step is needed. If you want to build from source instead, replace the `image:` line with `build: .`.
+Send `/digest` to the bot to get the first digest right away. Re-run the wizard any time: it reuses the existing session and asks before overwriting files.
 
-**Important**: You must create the Telegram session file BEFORE running Docker. The script uses Docker itself, so no additional dependencies needed.
+Images are published to GitHub Container Registry on every release with tags `latest`, `X.Y` (minor), `X.Y.Z` (patch). To build from source, replace the `image:` line in `docker-compose.yml` with `build: .`. For all options beyond the wizard, see [`config.yaml.example`](config.yaml.example).
 
 ---
 

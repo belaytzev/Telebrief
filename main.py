@@ -16,6 +16,7 @@ from src.utils import setup_logging
 from src.scheduler import DigestScheduler
 from src.bot_commands import BotCommandHandler
 from src.mcp_server import build_server
+from src.setup_wizard import main as run_setup_wizard
 
 
 class TelebriefApp:
@@ -202,6 +203,9 @@ async def main():
 
 
 if __name__ == "__main__":
+    if len(sys.argv) > 1 and sys.argv[1] == "init":
+        sys.exit(run_setup_wizard(sys.argv[2] if len(sys.argv) > 2 else "."))
+
     print(
         """
 ╔══════════════════════════════════════════════════════════╗
