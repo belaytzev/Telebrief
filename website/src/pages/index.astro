@@ -59,10 +59,10 @@ import logoImage from '../../public/logo.webp';
         <p class="hero-desc">
           Telebrief collects messages from your Telegram channels,
           generates AI-powered summaries grouped by channel or topic,
-          and delivers polished daily digests directly to your account.
+          and delivers a daily digest through your own Telegram bot.
         </p>
         <div class="hero-actions">
-          <a href="https://github.com/belaytzev/Telebrief?tab=readme-ov-file#-prerequisites" class="btn-primary" target="_blank" rel="noopener noreferrer">
+          <a href="https://github.com/belaytzev/Telebrief?tab=readme-ov-file#-quick-start" class="btn-primary" target="_blank" rel="noopener noreferrer">
             Get started →
           </a>
           <a href="#how-it-works" class="btn-ghost">
@@ -86,8 +86,8 @@ import logoImage from '../../public/logo.webp';
           </div>
           <div class="stat-divider" aria-hidden="true"></div>
           <div class="stat-item">
-            <span class="stat-num">Any</span>
-            <span class="stat-label">output language</span>
+            <span class="stat-num">5</span>
+            <span class="stat-label">output languages</span>
           </div>
         </div>
       </div>
@@ -107,7 +107,7 @@ import logoImage from '../../public/logo.webp';
             <div class="phase-num" aria-hidden="true">1</div>
             <div class="phase-body">
               <h3>Collect Messages</h3>
-              <p>Telebrief connects to your Telegram channels via Telethon and pulls all messages from the last 24 hours, including content from private channels you're a member of.</p>
+              <p>Telebrief connects to your Telegram channels via Telethon and pulls messages from the last 24 hours (adjustable per channel), including private channels and groups you're a member of.</p>
               <div class="tag-row">
                 <span class="tag">telethon</span>
                 <span class="tag">user API</span>
@@ -136,7 +136,7 @@ import logoImage from '../../public/logo.webp';
             <div class="phase-num" aria-hidden="true">3</div>
             <div class="phase-body">
               <h3>Format & Deliver</h3>
-              <p>A beautifully formatted Markdown digest with clickable channel links and inline navigation buttons is sent directly to your Telegram via bot, on your schedule or on demand.</p>
+              <p>A formatted Markdown digest with links back to each channel is sent to you by your own bot, on your schedule or on demand. AI agents can fetch the same digest over MCP.</p>
               <div class="tag-row">
                 <span class="tag">markdown</span>
                 <span class="tag">channel links</span>
@@ -177,45 +177,42 @@ import logoImage from '../../public/logo.webp';
             </div>
 
             <div class="bubble-body bubble-channel" role="tabpanel" aria-label="Channel mode digest">
-              <h3 class="digest-h1">📊 Daily Digest — May 2, 2026</h3>
-              <h4 class="digest-h2">🎯 Overview</h4>
-              <p class="digest-p">AI tooling dominated today: Anthropic shipped Claude Opus 4.7, crypto markets rallied on ETF approvals, EU finalized AI Act amendments.</p>
-              <h4 class="digest-h2">💻 TechCrunch</h4>
+              <h3 class="digest-h1">📊 Daily Digest - 02 May 2026</h3>
+              <h4 class="digest-h2">🎯 Brief Overview</h4>
+              <p class="digest-p">A busy day in tech: a major framework release and a security patch worth applying. Markets closed higher, and there is a self-hosting meetup this Friday.</p>
+              <h4 class="digest-h2">💻 Tech News · <span class="accent">Open channel →</span></h4>
               <ul class="digest-list">
-                <li>🚀 <strong>Claude Opus 4.7 released</strong> — 1M context window, faster output</li>
-                <li>🤖 <strong>OpenAI GPT-6 leak</strong> — multimodal benchmarks surface early</li>
-                <li>📱 <strong>Apple Vision Pro 2</strong> — rumored Q3 launch with lighter frame</li>
+                <li>🚀 <strong>Framework 2.0 released</strong> — faster builds, new plugin API</li>
+                <li>🔐 <strong>Security advisory</strong> — patch for a popular web server</li>
+                <li>📱 <strong>Phone launch rumors</strong> — lighter frame, bigger battery</li>
               </ul>
-              <h4 class="digest-h2">💰 Crypto News</h4>
+              <h4 class="digest-h2">💰 Markets · <span class="accent">Open channel →</span></h4>
               <ul class="digest-list">
-                <li>📈 <strong>Bitcoin hits $89K</strong> — spot ETF inflows reach record high</li>
-                <li>⚠️ <strong>SEC settles with Ripple</strong> — final ruling closes 6-year case</li>
-                <li>🔐 <strong>Ethereum Pectra upgrade</strong> — mainnet activation confirmed</li>
+                <li>📈 <strong>Stocks close higher</strong> — tech shares lead the rally</li>
+                <li>🏦 <strong>Rate decision</strong> — central bank holds steady</li>
               </ul>
-              <p class="digest-stats">📈 20 channels · 1,847 messages processed</p>
+              <p class="digest-stats">📈 Statistics: 3 channels, 214 messages processed</p>
             </div>
 
             <div class="bubble-body bubble-topic" role="tabpanel" aria-label="Topic mode digest">
-              <h3 class="digest-h1">📊 Daily Digest — May 2, 2026</h3>
-              <h4 class="digest-h2">🎯 Overview</h4>
-              <p class="digest-p">AI tooling dominated today: Anthropic shipped Claude Opus 4.7, crypto markets rallied on ETF approvals, EU finalized AI Act amendments.</p>
+              <h3 class="digest-h1">📊 Daily Digest - 02 May 2026</h3>
+              <h4 class="digest-h2">🎯 Brief Overview</h4>
+              <p class="digest-p">A busy day in tech: a major framework release and a security patch worth applying. Markets closed higher, and there is a self-hosting meetup this Friday.</p>
               <h4 class="digest-h2">📰 News</h4>
               <ul class="digest-list">
-                <li>🚀 <strong>Claude Opus 4.7 released</strong> — 1M context window, faster output</li>
-                <li>📈 <strong>Bitcoin hits $89K</strong> — spot ETF inflows reach record high</li>
-                <li>⚖️ <strong>EU finalizes AI Act</strong> — compliance deadlines set for 2027</li>
+                <li>🚀 <strong>Framework 2.0 released</strong> — faster builds, new plugin API <span class="accent">(Tech News)</span></li>
+                <li>📈 <strong>Stocks close higher</strong> — tech shares lead the rally <span class="accent">(Markets)</span></li>
+                <li>🔐 <strong>Security advisory</strong> — patch for a popular web server <span class="accent">(Tech News, Sysadmin)</span></li>
               </ul>
               <h4 class="digest-h2">🎉 Events</h4>
               <ul class="digest-list">
-                <li>🎤 <strong>PyCon US 2026</strong> — keynote lineup announced</li>
-                <li>🛠️ <strong>KubeCon EU</strong> — early-bird tickets close Friday</li>
+                <li>🎤 <strong>Self-hosting meetup on Friday</strong> — talks and demos <span class="accent">(City Events)</span></li>
               </ul>
-              <h4 class="digest-h2">⚽ Sport</h4>
+              <h4 class="digest-h2">📦 Other</h4>
               <ul class="digest-list">
-                <li>🏆 <strong>Champions League</strong> — semi-final draws set</li>
-                <li>🎾 <strong>Madrid Open</strong> — Alcaraz advances to quarters</li>
+                <li>📱 <strong>Phone launch rumors</strong> — lighter frame, bigger battery <span class="accent">(Tech News)</span></li>
               </ul>
-              <p class="digest-stats">📈 20 channels · 1,847 messages processed</p>
+              <p class="digest-stats">📈 Statistics: 4 channels, 268 messages processed</p>
             </div>
           </div>
         </div>
@@ -244,7 +241,7 @@ import logoImage from '../../public/logo.webp';
             <div class="cmd-line">
               <span class="cmd-prompt" aria-hidden="true">$</span>
               <span class="cmd-name">/start</span>
-              <span class="cmd-desc">— Show welcome message and available commands</span>
+              <span class="cmd-desc">— Same as /help</span>
             </div>
             <div class="cmd-line">
               <span class="cmd-prompt" aria-hidden="true">$</span>
@@ -254,7 +251,7 @@ import logoImage from '../../public/logo.webp';
             <div class="cmd-line">
               <span class="cmd-prompt" aria-hidden="true">$</span>
               <span class="cmd-name">/status</span>
-              <span class="cmd-desc">— View configuration and next scheduled run</span>
+              <span class="cmd-desc">— AI provider and model, channel count, next scheduled run</span>
             </div>
             <div class="cmd-line">
               <span class="cmd-prompt" aria-hidden="true">$</span>
@@ -298,7 +295,7 @@ import logoImage from '../../public/logo.webp';
           <div class="bento-card">
             <div class="feat-label">i18n</div>
             <h3>Multi-Language Support</h3>
-            <p>Collect messages in any language — English, Russian, Ukrainian, Chinese, and more. Output language is fully configurable.</p>
+            <p>Collect messages in any language — English, Russian, Ukrainian, Chinese, and more. Get the digest in English, Russian, Spanish, German, or French.</p>
           </div>
           <div class="bento-card">
             <div class="feat-label">automation</div>
@@ -308,7 +305,7 @@ import logoImage from '../../public/logo.webp';
           <div class="bento-card">
             <div class="feat-label">access</div>
             <h3>Private Channels</h3>
-            <p>Full support for private Telegram channels using Telethon user API. No restrictions on channel visibility or membership type.</p>
+            <p>Reads through the Telethon user API as you, so any public or private channel or group you're a member of works.</p>
           </div>
           <div class="bento-card">
             <div class="feat-label">granular control</div>
@@ -322,23 +319,28 @@ import logoImage from '../../public/logo.webp';
           </div>
           <div class="bento-card">
             <div class="feat-label">devops</div>
-            <h3>Docker Compose Ready</h3>
-            <p>One-command deploy with docker-compose. Volumes pre-wired for persistent storage. Production-ready out of the box.</p>
+            <h3>Setup Wizard</h3>
+            <p><code class="bento-code">main.py init</code> logs in to Telegram, checks your bot and lets you pick channels, then writes the config and <code class="bento-code">docker-compose.yml</code>. No clone, no local Python.</p>
           </div>
           <div class="bento-card bento-wide">
             <div class="feat-label">cost</div>
-            <h3>Ultra Affordable</h3>
-            <p>Run completely free with local Ollama, or use cloud AI for ~$0.30 per month. Self-hosted, no subscription fees, no vendor lock-in.</p>
+            <h3>Affordable</h3>
+            <p>Run completely free with local Ollama, or pay only your cloud provider's token usage. Self-hosted, no subscription fees, no vendor lock-in.</p>
           </div>
           <div class="bento-card">
             <div class="feat-label">registry</div>
             <h3>Pre-built Docker Images</h3>
-            <p>Pull from GitHub Container Registry. Tagged <code class="bento-code">latest</code>, <code class="bento-code">X.Y</code>, <code class="bento-code">X.Y.Z</code>. Zero build step — pull and run.</p>
+            <p>Pull from GitHub Container Registry for amd64 and arm64. Tagged <code class="bento-code">latest</code>, <code class="bento-code">X.Y</code>, <code class="bento-code">X.Y.Z</code>. Zero build step — pull and run.</p>
           </div>
           <div class="bento-card">
             <div class="feat-label">maintenance</div>
             <h3>Auto-Cleanup</h3>
-            <p>Old digest messages auto-removed from chat on a schedule. No clutter buildup, no manual housekeeping.</p>
+            <p>The previous digest is removed from the chat when a new one arrives. No clutter buildup, no manual housekeeping.</p>
+          </div>
+          <div class="bento-card">
+            <div class="feat-label">agents</div>
+            <h3>MCP Server</h3>
+            <p>Let AI agents pull a fresh or cached digest, or the raw messages of one channel, over HTTP or stdio instead of reading Telegram.</p>
           </div>
           <div class="bento-card">
             <div class="feat-label">open source</div>
@@ -419,7 +421,7 @@ import logoImage from '../../public/logo.webp';
             </div>
           </div>
 
-          <a href="https://github.com/belaytzev/Telebrief?tab=readme-ov-file#-persistent-storage" class="extend-link" target="_blank" rel="noopener noreferrer">
+          <a href="https://github.com/belaytzev/Telebrief?tab=readme-ov-file#%EF%B8%8F-persistent-storage" class="extend-link" target="_blank" rel="noopener noreferrer">
             Read full storage docs →
           </a>
         </div>
@@ -501,7 +503,7 @@ import logoImage from '../../public/logo.webp';
             </svg>
             View on GitHub
           </a>
-          <a href="https://github.com/belaytzev/Telebrief?tab=readme-ov-file#-docker-deployment" class="btn-ghost" target="_blank" rel="noopener noreferrer">
+          <a href="https://github.com/belaytzev/Telebrief?tab=readme-ov-file#-quick-start" class="btn-ghost" target="_blank" rel="noopener noreferrer">
             Quick start guide →
           </a>
         </div>
@@ -522,7 +524,7 @@ import logoImage from '../../public/logo.webp';
           <a href="https://github.com/belaytzev/Telebrief" target="_blank" rel="noopener noreferrer">GitHub</a>
           <a href="https://github.com/belaytzev/Telebrief#readme" target="_blank" rel="noopener noreferrer">Docs</a>
           <a href="https://github.com/belaytzev/Telebrief/issues" target="_blank" rel="noopener noreferrer">Issues</a>
-          <a href="https://t.me/telebrief" target="_blank" rel="noopener noreferrer">Telegram</a>
+          <a href="https://github.com/belaytzev/Telebrief/discussions" target="_blank" rel="noopener noreferrer">Discussions</a>
           <a href="https://github.com/belaytzev/Telebrief/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">License</a>
         </nav>
       </div>
