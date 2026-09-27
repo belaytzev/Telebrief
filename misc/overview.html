@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@10..48,700;10..48,800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500&display=block" rel="stylesheet">
+<style>
+  :root {
+    --bg: #141310; --bg-surface: #1a1916; --bg-raised: #21201c; --bg-deep: #0c0b09;
+    --accent: #3da5db; --accent-light: #7bbde0; --accent-dim: rgba(61,165,219,.1); --accent-border: rgba(61,165,219,.3);
+    --warm: #f5a623; --text: #e8e6e1; --text-muted: #a09d95; --text-bright: #f5f4f1;
+    --border: #3d3a36;
+    --font-display: 'Bricolage Grotesque', sans-serif; --font-body: 'DM Sans', sans-serif; --font-mono: 'JetBrains Mono', monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: transparent; }
+  body { width: 1280px; font-family: var(--font-body); color: var(--text); }
+  .card {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 24px;
+    padding: 44px 48px; display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center;
+  }
+  .eyebrow { font-family: var(--font-mono); font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); margin-bottom: 10px; }
+  h1 { font-family: var(--font-display); font-weight: 800; font-size: 34px; color: var(--text-bright); line-height: 1.1; margin-bottom: 26px; }
+  h1 span { color: var(--accent); }
+
+  .flow { display: flex; flex-direction: column; gap: 0; }
+  .node { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; }
+  .node-title { font-weight: 600; color: var(--text-bright); font-size: 16px; display: flex; align-items: center; gap: 10px; }
+  .node-sub { color: var(--text-muted); font-size: 13.5px; margin-top: 6px; line-height: 1.45; }
+  .node.core { background: var(--accent-dim); border-color: var(--accent-border); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .chip { font-family: var(--font-mono); font-size: 12px; padding: 3px 9px; border-radius: 999px; background: var(--bg-raised); border: 1px solid var(--border); color: var(--text); }
+  .chip.a { border-color: var(--accent-border); color: var(--accent-light); }
+  .arrow { display: flex; align-items: center; gap: 10px; padding: 7px 0 7px 22px; color: var(--text-muted); font-family: var(--font-mono); font-size: 12.5px; }
+  .arrow::before { content: "↓"; color: var(--accent); font-size: 18px; font-family: var(--font-body); }
+  .outs { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .bubble { background: var(--bg-raised); border: 1px solid var(--border); border-radius: 18px; padding: 18px 22px 16px; box-shadow: 0 24px 60px rgba(0,0,0,.35); }
+  .bubble-header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .avatar { width: 30px; height: 30px; border-radius: 50%; background: var(--accent); color: var(--bg-deep); font-family: var(--font-display); font-weight: 800; display: grid; place-items: center; font-size: 15px; }
+  .name { font-weight: 600; color: var(--accent-light); font-size: 15px; }
+  .time { color: var(--text-muted); font-size: 12px; margin-left: auto; font-family: var(--font-mono); }
+  .d-h1 { font-family: var(--font-display); font-weight: 700; font-size: 20px; color: var(--text-bright); margin-bottom: 10px; }
+  .d-h2 { font-weight: 600; font-size: 15px; color: var(--text-bright); margin: 12px 0 6px; }
+  .d-p { font-size: 14px; line-height: 1.5; color: var(--text); }
+  ul { list-style: none; }
+  li { font-size: 14px; line-height: 1.5; padding: 2px 0; color: var(--text); }
+  li strong { color: var(--text-bright); font-weight: 600; }
+  .stats { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); font-size: 12.5px; color: var(--text-muted); font-family: var(--font-mono); }
+  .note { margin-top: 12px; text-align: center; font-size: 12px; color: var(--text-muted); font-family: var(--font-mono); }
+</style>
+</head>
+<body>
+<div class="card">
+  <div>
+    <p class="eyebrow">how it works</p>
+    <h1>Your channels in, <span>one digest out</span></h1>
+    <div class="flow">
+      <div class="node">
+        <div class="node-title">📢 Telegram channels &amp; groups you follow</div>
+        <div class="node-sub">Public and private, in any language. Read with your own account.</div>
+      </div>
+      <div class="arrow">collect · last 24h, per-channel windows</div>
+      <div class="node core">
+        <div class="node-title">🧠 Telebrief <span style="color:var(--text-muted);font-weight:400;font-size:13.5px">· self-hosted, one container</span></div>
+        <div class="node-sub">Filters noise, then summarizes each channel or groups stories by topic, optionally merging duplicates.</div>
+        <div class="chips">
+          <span class="chip a">OpenAI</span><span class="chip a">Anthropic</span><span class="chip a">Ollama</span>
+          <span class="chip">SQLite / Postgres</span><span class="chip">daily schedule</span>
+        </div>
+      </div>
+      <div class="arrow">deliver</div>
+      <div class="outs">
+        <div class="node">
+          <div class="node-title">🤖 Your bot</div>
+          <div class="node-sub">Daily digest, plus <code style="font-family:var(--font-mono)">/digest</code> on demand</div>
+        </div>
+        <div class="node">
+          <div class="node-title">🔌 AI agents</div>
+          <div class="node-sub">Digests and raw messages over MCP</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="bubble">
+      <div class="bubble-header">
+        <div class="avatar">T</div>
+        <span class="name">Telebrief Bot</span>
+        <span class="time">08:00</span>
+      </div>
+      <div class="d-h1">📊 Daily Digest</div>
+      <div class="d-h2">🎯 Overview</div>
+      <p class="d-p">A busy day in tech: a major framework release and a security patch worth applying. Markets closed higher, and there is a self-hosting meetup this Friday.</p>
+      <div class="d-h2">💻 Tech News</div>
+      <ul>
+        <li>🚀 <strong>Framework 2.0 released</strong> — faster builds, new plugin API</li>
+        <li>🔐 <strong>Security advisory</strong> — patch for a popular web server</li>
+        <li>📱 <strong>Phone launch rumors</strong> — lighter frame, bigger battery</li>
+      </ul>
+      <div class="d-h2">💰 Markets</div>
+      <ul>
+        <li>📈 <strong>Stocks close higher</strong> — tech shares lead the rally</li>
+        <li>🏦 <strong>Rate decision</strong> — central bank holds steady</li>
+      </ul>
+      <div class="d-h2">🏙️ City Events</div>
+      <ul>
+        <li>🎤 <strong>Self-hosting meetup on Friday</strong> — talks and demos</li>
+      </ul>
+      <div class="stats">📈 3 channels · 214 messages processed</div>
+    </div>
+    <p class="note">sample digest · channel mode</p>
+  </div>
+</div>
+</body>
+</html>

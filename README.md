@@ -11,6 +11,10 @@
   [![Contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
   Telebrief collects messages from your Telegram channels (in any language), generates AI-powered summaries, and delivers beautiful daily digests directly to your Telegram account. Group digests by channel or by **AI-detected topics**. Supports multiple AI providers: **OpenAI**, **Ollama** (local), and **Anthropic**. Output language is configurable (default: Russian).
+
+  <br/>
+
+  <img src="misc/overview.png" alt="How Telebrief works: Telegram channels are collected, summarized by OpenAI, Anthropic or Ollama, and delivered as a daily digest to your bot or to AI agents over MCP. Right side: a sample digest with an overview and per-channel bullet points." width="100%"/>
 </div>
 
 ---
