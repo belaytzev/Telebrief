@@ -509,6 +509,105 @@ async def test_openai_provider_falls_back_to_max_tokens_after_reasoning_effort_r
         assert third_call_kwargs["max_tokens"] == 500
 
 
+def _param_error(param: str):
+    import httpx
+    from openai import BadRequestError
+
+    body = {"message": f"Unsupported value: '{param}'", "param": param, "code": "unsupported_value"}
+    return BadRequestError(
+        message=body["message"],
+        response=httpx.Response(
+            400,
+            json={"error": body},
+            request=httpx.Request("POST", "https://api.openai.com/v1/chat/completions"),
+        ),
+        body=body,
+    )
+
+
+def _ok_response(text: str):
+    choice = MagicMock()
+    choice.message.content = text
+    choice.message.refusal = None
+    choice.finish_reason = "stop"
+    response = MagicMock()
+    response.choices = [choice]
+    return response
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_openai_provider_drops_temperature_rejected_by_gpt6(mock_logger):
+    """GPT-6 rejects non-default temperature; retry drops only temperature."""
+    with patch("src.ai_providers.AsyncOpenAI"):
+        provider = OpenAIProvider(api_key="sk-test", logger=mock_logger)
+        provider.client.chat.completions.create = AsyncMock(
+            side_effect=[_param_error("temperature"), _ok_response("gpt6 summary")]
+        )
+
+        result = await provider.chat_completion(
+            messages=[{"role": "user", "content": "Hello"}],
+            model="gpt-6-luna",
+            temperature=0.1,
+            max_tokens=500,
+            reasoning_effort="low",
+        )
+
+        assert result == "gpt6 summary"
+        retry_kwargs = provider.client.chat.completions.create.call_args_list[1][1]
+        assert "temperature" not in retry_kwargs
+        assert retry_kwargs["reasoning_effort"] == "low"
+        assert retry_kwargs["max_completion_tokens"] == 500
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_openai_provider_chains_param_drops(mock_logger):
+    """Each rejection strips the named param, until the request succeeds."""
+    with patch("src.ai_providers.AsyncOpenAI"):
+        provider = OpenAIProvider(api_key="sk-test", logger=mock_logger)
+        provider.client.chat.completions.create = AsyncMock(
+            side_effect=[
+                _param_error("temperature"),
+                _param_error("max_completion_tokens"),
+                _ok_response("done"),
+            ]
+        )
+
+        result = await provider.chat_completion(
+            messages=[{"role": "user", "content": "Hello"}],
+            model="some-model",
+            temperature=0.7,
+            max_tokens=300,
+        )
+
+        assert result == "done"
+        last_kwargs = provider.client.chat.completions.create.call_args_list[2][1]
+        assert "temperature" not in last_kwargs
+        assert last_kwargs["max_tokens"] == 300
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_openai_provider_does_not_retry_unrelated_param(mock_logger):
+    """A rejected param outside the retryable set is a real error: no retry."""
+    from openai import BadRequestError
+
+    with patch("src.ai_providers.AsyncOpenAI"):
+        provider = OpenAIProvider(api_key="sk-test", logger=mock_logger)
+        provider.client.chat.completions.create = AsyncMock(side_effect=[_param_error("messages")])
+
+        with pytest.raises(BadRequestError):
+            await provider.chat_completion(
+                messages=[{"role": "user", "content": "Hello"}],
+                model="gpt-6-sol",
+                temperature=0.7,
+                max_tokens=300,
+            )
+
+        assert provider.client.chat.completions.create.call_count == 1
+
+
 # --- Ollama provider tests ---
 
 

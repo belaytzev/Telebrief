@@ -26,6 +26,9 @@ def _redact_url(url: str) -> str:
     return url
 
 
+_RETRYABLE_PARAMS = ("temperature", "reasoning_effort", "max_completion_tokens")
+
+
 class TokenBudgetExhaustedError(RuntimeError):
     """Raised when a provider exhausts its token budget without producing visible output."""
 
@@ -88,7 +91,7 @@ class OpenAIProvider(AIProvider):
         try:
             response = await self.client.chat.completions.create(**create_kwargs)
         except OpenAIBadRequestError as exc:
-            response = await self._handle_bad_request(create_kwargs, exc, reasoning_effort)
+            response = await self._handle_bad_request(create_kwargs, exc)
 
         if not response.choices:
             raise RuntimeError("OpenAI returned no choices in response")
@@ -134,31 +137,30 @@ class OpenAIProvider(AIProvider):
             )
         return text
 
+    # ponytail: extra 400 round trip per call, cache rejected params per model if latency matters
     async def _handle_bad_request(
-        self,
-        create_kwargs: Dict[str, Any],
-        original_exc: OpenAIBadRequestError,
-        reasoning_effort: str | None,
-    ):
-        """Handle a BadRequestError by retrying with stripped parameters."""
-        if reasoning_effort is not None:
-            self.logger.debug(
-                "reasoning_effort=%r rejected by model, retrying without it: %s",
-                reasoning_effort,
-                original_exc,
+        self, create_kwargs: Dict[str, Any], exc: OpenAIBadRequestError
+    ) -> Any:
+        """Retry without the parameter the model rejected, one parameter per attempt."""
+        param = exc.param
+        if param is None:
+            param = (
+                "reasoning_effort"
+                if "reasoning_effort" in create_kwargs
+                else "max_completion_tokens"
             )
-            create_kwargs.pop("reasoning_effort")
-            try:
-                return await self.client.chat.completions.create(**create_kwargs)
-            except OpenAIBadRequestError as exc2:
-                self.logger.debug("retry without reasoning_effort also rejected: %s", exc2)
-                # fall through to max_tokens fallback
-        self.logger.debug(
-            "max_completion_tokens rejected by model, retrying with max_tokens: %s",
-            original_exc,
-        )
-        create_kwargs["max_tokens"] = create_kwargs.pop("max_completion_tokens")
-        return await self.client.chat.completions.create(**create_kwargs)
+        if param not in _RETRYABLE_PARAMS or param not in create_kwargs:
+            raise exc
+
+        value = create_kwargs.pop(param)
+        if param == "max_completion_tokens":
+            create_kwargs["max_tokens"] = value
+        self.logger.debug("%s=%r rejected by model, retrying without it: %s", param, value, exc)
+
+        try:
+            return await self.client.chat.completions.create(**create_kwargs)
+        except OpenAIBadRequestError as retry_exc:
+            return await self._handle_bad_request(create_kwargs, retry_exc)
 
 
 class OllamaProvider(AIProvider):
