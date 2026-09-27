@@ -202,9 +202,22 @@ async def main():
             await app.shutdown()
 
 
+def run_mcp_stdio() -> int:
+    """Serve only the MCP tools over stdio, for clients that launch the server themselves."""
+    try:
+        config = load_config()
+    except (FileNotFoundError, ValueError) as e:
+        print(f"❌ Configuration error: {e}", file=sys.stderr)
+        return 1
+    build_server(config, setup_logging(config.log_level)).run("stdio")
+    return 0
+
+
 if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == "init":
         sys.exit(run_setup_wizard(sys.argv[2] if len(sys.argv) > 2 else "."))
+    if len(sys.argv) > 1 and sys.argv[1] == "mcp":
+        sys.exit(run_mcp_stdio())
 
     print(
         """

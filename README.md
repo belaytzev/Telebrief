@@ -440,6 +440,10 @@ Then register it with your client:
 claude mcp add --transport http telebrief http://127.0.0.1:8765/mcp
 ```
 
+### Stdio mode
+
+`python main.py mcp` serves the same tools over stdio without the bot and the scheduler, for clients that launch the server themselves. It reads the same `config.yaml`, `.env` and session, and connects to Telegram only when a tool is called. Don't run it alongside the main service on the same session file: prefer the HTTP endpoint above when Telebrief is already running.
+
 ### Tools
 
 | Tool | Arguments | Behaviour |
