@@ -1,5 +1,6 @@
 """Tests for summarizer module."""
 
+import asyncio
 from datetime import datetime
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
@@ -286,6 +287,58 @@ async def test_summarize_all_partial_failure(sample_config, mock_logger, sample_
 
         assert "Failing Channel" in result["channel_summaries"]
         assert ERROR_SUMMARY_PREFIX in result["channel_summaries"]["Failing Channel"]
+
+
+def _concurrency_probe(delays: dict[str, float], fail: str = ""):
+    """Fake _summarize_channel that records how many calls ran at once."""
+    state = {"running": 0, "peak": 0}
+
+    async def fake(channel_name, messages):
+        state["running"] += 1
+        state["peak"] = max(state["peak"], state["running"])
+        await asyncio.sleep(delays[channel_name])
+        state["running"] -= 1
+        if channel_name == fail:
+            raise RuntimeError("boom")
+        return f"summary of {channel_name}"
+
+    return fake, state
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_summaries_run_in_parallel_and_keep_channel_order(
+    sample_config, mock_logger, sample_messages
+):
+    """Cloud providers summarize channels concurrently; output keeps input order."""
+    delays = {"Alpha": 0.05, "Beta": 0.01, "Gamma": 0.03}
+    fake, state = _concurrency_probe(delays, fail="Gamma")
+    with patch("src.ai_providers.AsyncOpenAI"):
+        summarizer = Summarizer(sample_config, mock_logger)
+    summarizer._summarize_channel = fake
+
+    result = await summarizer.summarize_all({name: sample_messages for name in delays})
+
+    summaries = result["channel_summaries"]
+    assert list(summaries) == ["Alpha", "Beta", "Gamma"]
+    assert summaries["Alpha"] == "summary of Alpha"
+    assert summaries["Gamma"].startswith(ERROR_SUMMARY_PREFIX)
+    assert state["peak"] == 3
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_ollama_summaries_run_one_at_a_time(sample_config, mock_logger, sample_messages):
+    """Ollama queues requests itself, so channels go one by one to avoid timeouts."""
+    sample_config.settings.ai_provider = "ollama"
+    delays = {"Alpha": 0.01, "Beta": 0.01}
+    fake, state = _concurrency_probe(delays)
+    summarizer = Summarizer(sample_config, mock_logger)
+    summarizer._summarize_channel = fake
+
+    await summarizer.summarize_all({name: sample_messages for name in delays})
+
+    assert state["peak"] == 1
 
 
 @pytest.mark.unit
