@@ -40,4 +40,5 @@ async def test_mcp_stdio_lists_tools_without_telegram(tmp_path):
         "get_digest",
         "get_last_digest",
         "get_channel_messages",
+        "search_messages",
     }

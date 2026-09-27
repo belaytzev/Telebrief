@@ -19,6 +19,7 @@ from src.core import (
     build_digest,
     collect_channel_messages,
     read_last_digest,
+    search_messages,
     validate_hours,
 )
 
@@ -38,6 +39,20 @@ def _format_messages(channel: str, messages: list[Message], source: str, hours: 
     header = f"channel: {channel} (from {source}, {len(messages)} msgs, last {hours}h)"
     body = "\n\n".join(
         f"[{msg.timestamp.isoformat()}] {msg.sender}\n{msg.text}\n{msg.link}" for msg in messages
+    )
+    return f"{header}\n\n{body}"
+
+
+def _format_search(query: str, messages: list[Message], failed: list[str], days: int) -> str:
+    """Render search matches newest first, each tagged with its channel."""
+    header = f"search: {query!r} ({len(messages)} matches, last {days} days)"
+    if failed:
+        header += f"\nsearch failed in: {', '.join(failed)}"
+    if not messages:
+        return f"{header}\n\nNo matches."
+    body = "\n\n".join(
+        f"[{msg.timestamp.isoformat()}] {msg.channel_name} · {msg.sender}\n{msg.text}\n{msg.link}"
+        for msg in messages
     )
     return f"{header}\n\n{body}"
 
@@ -68,6 +83,7 @@ def build_server(config: Config, logger: logging.Logger) -> MCPServer:
         Collects messages, summarizes them with AI and formats the result exactly
         as the digest delivered to Telegram. Takes roughly 20-90 seconds and costs
         AI provider tokens, so prefer get_last_digest when recent data is enough.
+        Use hours=168 for a weekly digest.
 
         Args:
             hours: How many hours back to look, 1 to 168 (default 24)
@@ -109,8 +125,30 @@ def build_server(config: Config, logger: logging.Logger) -> MCPServer:
             return f"No messages in {channel!r} in the last {hours} hours."
         return _format_messages(channel, messages, source, hours)
 
+    @mcp.tool(name="search_messages")
+    async def search_messages_tool(
+        query: str, channel: str | None = None, days: int = 30, limit: int = 30
+    ) -> str:
+        """Find messages mentioning something across the configured Telegram channels.
+
+        Uses Telegram's own search, so it covers each channel's full history, not only
+        what digests collected, and it matches words, not substrings or regexes. No AI
+        tokens spent. Makes one Telegram request per channel: pass channel when you
+        know where to look. Channel filters from config.yaml are not applied.
+
+        Args:
+            query: Words to search for
+            channel: Channel name or id as configured under channels[*]; all channels if omitted
+            days: How many days back to search, 1 to 365 (default 30)
+            limit: Maximum matches to return, 1 to 100, newest kept (default 30)
+        """
+        messages, failed = await search_messages(
+            config, logger, query, channel=channel, days=days, limit=limit
+        )
+        return _format_search(query, messages, failed, days)
+
     logger.info(
         f"MCP tools registered: get_digest (max {MAX_DIGEST_HOURS}h), get_last_digest, "
-        f"get_channel_messages (max {MAX_CHANNEL_MESSAGES} msgs)"
+        f"get_channel_messages (max {MAX_CHANNEL_MESSAGES} msgs), search_messages"
     )
     return mcp
