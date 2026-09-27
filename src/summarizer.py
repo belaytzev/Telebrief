@@ -17,6 +17,7 @@ from src.xml_escape import escape_xml_delimiters
 ERROR_SUMMARY_PREFIX = "Error processing channel"
 MAX_SUMMARY_CHARS = 3500
 _MINOR_OVERAGE_CHARS = 200  # truncate directly without retry for small overages
+_SUMMARY_CONCURRENCY = 10
 
 
 def _load_base_template(path: str) -> str:
@@ -132,7 +133,7 @@ class Summarizer:
         self, messages_by_channel: Dict[str, List[Message]]
     ) -> Dict[str, str]:
         """
-        Generate summary for each channel.
+        Generate summary for each channel, in parallel, keeping the input channel order.
 
         Args:
             messages_by_channel: Messages grouped by channel
@@ -140,18 +141,24 @@ class Summarizer:
         Returns:
             Dictionary mapping channel names to summaries
         """
-        summaries = {}
+        # Ollama serves requests one at a time by default; parallel calls would only
+        # queue up behind each other and hit api_timeout.
+        limit = 1 if self.config.settings.ai_provider == "ollama" else _SUMMARY_CONCURRENCY
+        sem = asyncio.Semaphore(limit)
 
-        for channel_name, messages in messages_by_channel.items():
-            try:
-                summary = await self._summarize_channel(channel_name, messages)
-                summaries[channel_name] = summary
+        async def _run(channel_name: str, messages: List[Message]) -> str:
+            async with sem:
+                try:
+                    summary = await self._summarize_channel(channel_name, messages)
+                except Exception as e:
+                    self.logger.error(f"Failed to summarize {channel_name}: {e}")
+                    return f"{ERROR_SUMMARY_PREFIX}: {str(e)}"
                 self.logger.info(f"Summarized {channel_name}")
-            except Exception as e:
-                self.logger.error(f"Failed to summarize {channel_name}: {e}")
-                summaries[channel_name] = f"{ERROR_SUMMARY_PREFIX}: {str(e)}"
+                return summary
 
-        return summaries
+        names = list(messages_by_channel)
+        results = await asyncio.gather(*(_run(n, messages_by_channel[n]) for n in names))
+        return dict(zip(names, results))
 
     async def _summarize_channel(self, channel_name: str, messages: List[Message]) -> str:
         """
