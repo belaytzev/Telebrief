@@ -19,6 +19,23 @@
 
 ---
 
+## 📑 Contents
+
+- [Features](#-features)
+- [Prerequisites](#-prerequisites)
+- [Quick Start](#-quick-start)
+- [Bot Commands](#-bot-commands)
+- [Example Output](#-example-output) — [channel mode](#channel-mode-digest_mode-channel--default), [topic mode](#topic-mode-digest_mode-digest), [deduplication](#dedup_topics--cross-channel-deduplication)
+- [Per-Channel Configuration](#%EF%B8%8F-per-channel-configuration) — [lookback window](#lookback_hours--per-channel-lookback-window), [AI instructions](#prompt_extra--per-channel-ai-instructions)
+- [Persistent Storage](#%EF%B8%8F-persistent-storage) — [SQLite](#sqlite-default-backend), [PostgreSQL](#postgresql-optional-backend), [schema](#schema)
+- [Extensibility](#-extensibility) — [filters](#filters), [prompts](#prompts), [group binding](#group-binding), [storage queries](#storage-queries)
+- [MCP Server](#-mcp-server) — [enabling](#enabling-it), [stdio mode](#stdio-mode), [tools](#tools), [single channel](#reading-a-single-channel), [security](#security)
+- [Development & Testing](#%EF%B8%8F-development--testing)
+- [FAQ](#-faq)
+- [Contributing](#-contributing) · [License](#-license) · [Credits](#-credits)
+
+---
+
 ## ✨ Features
 
 - 🌐 **Multi-language Support** - Reads channels in ANY language (English, Russian, Ukrainian, Chinese, etc.)
