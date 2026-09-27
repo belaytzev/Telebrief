@@ -10,7 +10,7 @@
   [![Docker: amd64 | arm64](https://img.shields.io/badge/docker-amd64%20%7C%20arm64-2496ED?logo=docker&logoColor=white)](https://github.com/belaytzev/Telebrief/pkgs/container/telebrief)
   [![Contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
-  Telebrief collects messages from your Telegram channels (in any language), generates AI-powered summaries, and delivers beautiful daily digests directly to your Telegram account. Group digests by channel or by **AI-detected topics**. Supports multiple AI providers: **OpenAI**, **Ollama** (local), and **Anthropic**. Output language is configurable (default: Russian).
+  Telebrief collects messages from your Telegram channels (in any language), generates AI-powered summaries, and delivers a daily digest through your own Telegram bot. Group digests by channel or by **AI-detected topics**. Supports multiple AI providers: **OpenAI**, **Ollama** (local), and **Anthropic**. Digests come in English, Russian, Spanish, German or French (default: Russian).
 
   <br/>
 
@@ -39,14 +39,14 @@
 ## ✨ Features
 
 - 🌐 **Multi-language Support** - Reads channels in ANY language (English, Russian, Ukrainian, Chinese, etc.)
-- 🌍 **Configurable Output Language** - All UI labels, summaries, and bot messages in any language (default: Russian)
+- 🌍 **Configurable Output Language** - Summaries, labels and bot messages in English, Russian, Spanish, German or French (default: Russian)
 - 🤖 **Multi-Provider AI** - Supports OpenAI (including GPT-6 Luna, Sol, Astra), Ollama (local), and Anthropic for summarization
 - ⏰ **Scheduled & On-Demand** - Daily automatic digests + instant generation via bot commands
 - 🔒 **Private Channel Support** - Access your private chats and channels
 - 📑 **Digest Modes** - Group by channel (default) or by AI-detected topics like News, Events, Sport
 - 🎨 **Smart Formatting** - Markdown with emojis, bullet points, and clickable channel links
 - 📨 **Long Message Splitting** - Digests that exceed Telegram's 4096-character limit are automatically split into sequential messages instead of being truncated
-- 🔐 **Secure** - Single-user only, credentials stored safely
+- 🔐 **Self-hosted** - Single-user; your session, API keys and messages stay on your server
 - 🧹 **Auto-cleanup** - Automatically removes old digest messages
 - 🔌 **MCP Server** - Optional built-in MCP endpoint so AI agents can pull digests instead of reading Telegram
 
@@ -74,7 +74,7 @@ Before you begin, you'll need:
 4. **AI Provider API Key** (one of the following):
    - **OpenAI**: [Get from platform.openai.com](https://platform.openai.com)
    - **Anthropic**: [Get from console.anthropic.com](https://console.anthropic.com)
-   - **Ollama**: No API key needed - [install locally](https://ollama.ai)
+   - **Ollama**: No API key needed - [install locally](https://ollama.com)
 
 ---
 
@@ -99,6 +99,12 @@ docker compose logs -f telebrief
 
 Send `/digest` to the bot to get the first digest right away. Re-run the wizard any time: it reuses the existing session and asks before overwriting files.
 
+To update to the latest release:
+
+```bash
+docker compose pull && docker compose up -d
+```
+
 Images are published to GitHub Container Registry on every release with tags `latest`, `X.Y` (minor), `X.Y.Z` (patch). To build from source, replace the `image:` line in `docker-compose.yml` with `build: .`. For all options beyond the wizard, see [`config.yaml.example`](config.yaml.example).
 
 ---
@@ -109,10 +115,10 @@ Open Telegram and message your bot:
 
 | Command | Description |
 |---------|-------------|
-| `/start` | Show welcome message and available commands |
+| `/start` | Same as `/help` |
 | `/help` | Display help message with all commands |
 | `/digest` | Generate and send digest for last 24 hours (uses configured `digest_mode`) |
-| `/status` | Show configuration, next scheduled run, and system info |
+| `/status` | Show AI provider and model, number of channels, auto-cleanup and the next scheduled run |
 | `/cleanup` | Manually delete old digest messages |
 
 ---
@@ -126,31 +132,30 @@ Telebrief supports two digest modes configured via `digest_mode` in `config.yaml
 Groups summaries by source channel with clickable channel links:
 
 ```markdown
-# 📊 Daily Digest — May 2, 2026
+# 📊 Daily Digest - 02 May 2026
 
-## 🎯 Overview
+## 🎯 Brief Overview
 
-Today's main themes: AI tooling dominated with Anthropic's Claude Opus 4.7
-release, crypto markets rallied on spot ETF approvals, EU finalized
-amendments to the AI Act.
-
----
-
-## 💻 TechCrunch
-
-- 🚀 **Claude Opus 4.7 released**: 1M context window, faster output
-- 🤖 **OpenAI GPT-6 leak**: Multimodal benchmarks surface early
-- 📱 **Apple Vision Pro 2**: Rumored Q3 launch with lighter frame
-
-## 💰 Crypto News
-
-- 📈 **Bitcoin hits $89K**: Spot ETF inflows reach record high
-- ⚠️ **SEC settles with Ripple**: Final ruling closes 6-year case
-- 🔐 **Ethereum Pectra upgrade**: Mainnet activation confirmed
+A busy day in tech: a major framework release and a security patch worth
+applying. Markets closed higher, and there is a self-hosting meetup this Friday.
 
 ---
-📈 **Stats**: 20 channels, 1,847 messages processed
+
+## 💻 Tech News · [Open channel →](https://t.me/technews)
+
+- 🚀 **Framework 2.0 released**: faster builds, new plugin API
+- 🔐 **Security advisory**: patch for a popular web server
+
+## 💰 Markets · [Open channel →](https://t.me/markets)
+
+- 📈 **Stocks close higher**: tech shares lead the rally
+- 🏦 **Rate decision**: central bank holds steady
+
+---
+📈 **Statistics**: 3 channels, 214 messages processed
 ```
+
+The layout of each channel's bullet points comes from the AI, guided by the prompt, so it varies slightly between providers and models.
 
 ### Topic mode (`digest_mode: "digest"`)
 
@@ -169,7 +174,7 @@ digest_groups:
 
 Messages that don't match any defined group are placed into an automatic "Other" category.
 
-> All labels (header, statistics, bot commands) follow the configured `output_language`. The example above uses English; set `output_language: "Russian"` (or any other language) to change the output.
+> All labels (header, statistics, bot commands) follow the configured `output_language`. The example above uses `English`; the other supported values are `Russian` (default), `Spanish`, `German` and `French`.
 
 ### `dedup_topics` — cross-channel deduplication
 
@@ -264,7 +269,7 @@ storage:
   url: "postgresql://user:pass@host:5432/dbname"
 ```
 
-`asyncpg` is included in the standard dependencies and is installed automatically by `uv sync`. No extra install step is needed.
+`asyncpg` ships in the Docker image and in the standard dependencies (`uv sync`), so no extra install step is needed.
 
 ### Schema
 
@@ -514,54 +519,43 @@ Keep `host` on `127.0.0.1`. Telebrief logs a warning at startup if you bind anyw
 
 ## 🛠️ Development & Testing
 
-This project uses [uv](https://docs.astral.sh/uv/) for package management.
+This project uses [uv](https://docs.astral.sh/uv/) and Python 3.14+. Setup, the full check suite, code style and the PR process are in the [Contributing Guide](CONTRIBUTING.md).
 
 ### Running Tests
 
 ```bash
-# Install development dependencies
 uv sync --extra dev
-
-# Run all tests
 uv run pytest tests/ -v
-
-# Type checking
 uv run mypy src/
-
-# Linting
-uv tool run ruff check src/ tests/
-
-# Auto-format code
-make format
 ```
 
 ---
 
 ## ❓ FAQ
 
-**Q: Can I change the output language?**
-A: Yes! Set `output_language` in `config.yaml` to any language (e.g., "English", "Spanish", "Chinese").
+**Q: Which output languages are supported?**
+A: English, Russian (default), Spanish, German and French, set via `output_language`. Channels themselves can be in any language.
 
 **Q: How many channels can I monitor?**
-A: Tested up to 50 channels. Performance depends on message volume.
+A: There is no hard limit. Each digest reads up to `max_messages_per_channel` messages per channel (500 by default), so run time and AI cost grow with the number of active channels.
 
 **Q: Can multiple users receive digests?**
-A: Currently single-user only. Multi-user support would require database and additional auth logic.
+A: No, Telebrief is single-user by design: one Telegram account, one recipient.
 
 **Q: Does it work with group chats?**
-A: Yes! Add group chat IDs to `config.yaml` the same way as channels.
+A: Yes. The setup wizard lists your groups next to channels, or add a group's ID to `config.yaml` the same way as a channel.
 
-**Q: How do I switch to topic-based digests?**
-A: Set `digest_mode: "digest"` in `config.yaml` and define your `digest_groups`. Each group has a `name` and `description` that guides the AI classification. An implicit "Other" group catches anything that doesn't match.
-
-**Q: Can I customize the digest format?**
-A: Yes! Edit `src/formatter.py` to change Markdown structure, emojis, and sections.
+**Q: Is my Telegram account at risk?**
+A: Telebrief logs in as you through the Telegram user API (Telethon) and only reads messages, but this is a user session, not a bot, so Telegram's usual rules for third-party clients apply. The session file in `sessions/` grants full access to your account: keep it private.
 
 **Q: How much does it cost to run?**
-A: With OpenAI GPT-5-nano: ~$0.30/month. With Ollama: free (runs locally). Anthropic pricing varies by model.
+A: Only your AI provider's token usage, which depends on the model and how much your channels post. A nano/mini-tier model keeps it low; with Ollama it is free.
 
 **Q: Can I use a local AI model?**
-A: Yes! Set `ai_provider: "ollama"` in config.yaml and install [Ollama](https://ollama.ai) on your machine.
+A: Yes. Set `ai_provider: "ollama"` in `config.yaml` and run [Ollama](https://ollama.com). From Docker, point `ollama_base_url` at `http://host.docker.internal:11434`; on Linux this also needs `extra_hosts: ["host.docker.internal:host-gateway"]` in `docker-compose.yml`.
+
+**Q: Can I customize the digest format?**
+A: The digest layout is in `src/formatter.py`; changing it means [building the image from source](#-quick-start). Per-channel `prompt_extra` and custom [prompts](#prompts) change what the AI writes without touching code.
 
 ---
 
@@ -587,9 +581,10 @@ This project is licensed under the [MIT License](LICENSE).
 - [Telethon](https://github.com/LonamiWebs/Telethon) - Telegram User API
 - [python-telegram-bot](https://github.com/python-telegram-bot/python-telegram-bot) - Bot API
 - [OpenAI API](https://openai.com) - AI Summarization (OpenAI provider)
-- [Ollama](https://ollama.ai) - Local AI Summarization
+- [Ollama](https://ollama.com) - Local AI Summarization
 - [Anthropic API](https://anthropic.com) - AI Summarization (Anthropic provider)
 - [APScheduler](https://github.com/agronholm/apscheduler) - Task Scheduling
+- [MCP Python SDK](https://github.com/modelcontextprotocol/python-sdk) - MCP server
 
 ---
 
