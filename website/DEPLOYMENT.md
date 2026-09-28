@@ -17,7 +17,7 @@
 - **Root directory (path)**: `website`
 
 **Environment variables:**
-- `NODE_VERSION`: `20`
+- `NODE_VERSION`: `24`
 
 5. Click "Save and Deploy"
 

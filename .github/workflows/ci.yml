@@ -6,6 +6,13 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   lint:
     name: Lint Code
@@ -13,50 +20,50 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
 
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v7
       with:
         python-version: '3.14'
 
     - name: Cache pre-commit hooks
-      uses: actions/cache@v3
+      uses: actions/cache@v6
       with:
         path: ~/.cache/pre-commit
         key: ${{ runner.os }}-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
         restore-keys: |
           ${{ runner.os }}-pre-commit-
 
-    - name: Install pre-commit
+    - name: Install tools
       run: |
         python -m pip install --upgrade pip
-        pip install pre-commit
+        pip install pre-commit vulture
 
     - name: Run pre-commit hooks
       run: pre-commit run --all-files --show-diff-on-failure
 
+    - name: Find unused code
+      run: vulture src vulture_whitelist.py --min-confidence 80
+
   test:
     name: Run Tests
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ['3.14']
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
 
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
+    - name: Set up Python
+      uses: actions/setup-python@v7
       with:
-        python-version: ${{ matrix.python-version }}
+        python-version: '3.14'
 
     - name: Cache pip dependencies
-      uses: actions/cache@v3
+      uses: actions/cache@v6
       with:
         path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements-dev.txt') }}
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements-dev.txt', '**/requirements.txt') }}
         restore-keys: |
           ${{ runner.os }}-pip-
 
@@ -66,16 +73,7 @@ jobs:
         pip install -r requirements-dev.txt
 
     - name: Run pytest
-      run: pytest --cov=src --cov-report=xml --cov-report=term-missing
-
-    - name: Upload coverage to Codecov
-      if: matrix.python-version == '3.14'
-      uses: codecov/codecov-action@v3
-      with:
-        file: ./coverage.xml
-        flags: unittests
-        name: codecov-umbrella
-        fail_ci_if_error: false
+      run: pytest --cov=src --cov-report=term-missing
 
   security:
     name: Security Scan
@@ -83,31 +81,31 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
 
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v7
       with:
         python-version: '3.14'
 
     - name: Cache pre-commit hooks
-      uses: actions/cache@v3
+      uses: actions/cache@v6
       with:
         path: ~/.cache/pre-commit
         key: ${{ runner.os }}-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
         restore-keys: |
           ${{ runner.os }}-pre-commit-
 
-    - name: Install dependencies
+    - name: Install tools
       run: |
         python -m pip install --upgrade pip
-        pip install pre-commit safety
+        pip install pre-commit pip-audit
 
     - name: Run Bandit via pre-commit
       run: pre-commit run bandit --all-files
 
-    - name: Run Safety (dependency security check)
-      run: safety check --json
+    - name: Audit project dependencies
+      run: pip-audit -r requirements.txt --progress-spinner off
 
   website-build:
     name: Website Build Check
@@ -115,12 +113,12 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
 
     - name: Set up Node
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@v7
       with:
-        node-version: '20'
+        node-version: '24'
         cache: 'npm'
         cache-dependency-path: website/package-lock.json
 
@@ -132,30 +130,26 @@ jobs:
       run: npm run build
       working-directory: website
 
-  build:
-    name: Build Check
+  docker:
+    name: Docker Build
     runs-on: ubuntu-latest
-    needs: [lint, test, security, website-build]
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v4
+
+    - name: Build image
+      uses: docker/build-push-action@v7
       with:
-        python-version: '3.14'
+        context: .
+        push: false
+        load: true
+        tags: telebrief:ci
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install build
-
-    - name: Build package
-      run: python -m build
-
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: dist
-        path: dist/
+    - name: Smoke test image
+      run: docker run --rm telebrief:ci python -c "import main, src.setup_wizard, src.mcp_server"
