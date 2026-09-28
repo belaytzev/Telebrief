@@ -19,9 +19,8 @@ Telebrief requires **Python 3.14+** and uses [uv](https://docs.astral.sh/uv/) fo
 git clone https://github.com/<your-username>/Telebrief.git
 cd Telebrief
 
-# Create a virtual environment and install dependencies
-uv venv
-uv pip install -r requirements.txt -r requirements-dev.txt
+# Create a virtual environment with the locked dependencies
+uv sync --frozen --extra dev
 
 # Install pre-commit hooks
 uv run pre-commit install
@@ -30,6 +29,8 @@ uv run pre-commit install
 cp config.yaml.example config.yaml
 cp .env.example .env
 ```
+
+Dependencies live in `pyproject.toml` and are pinned in `uv.lock`; the Docker image and CI install exactly the locked versions. To add or bump one, use `uv add <package>` (or `uv lock --upgrade-package <package>`) and commit both files.
 
 > **Note for macOS users:** the `markdownlint` pre-commit hook requires Ruby ≥ 3.1, while macOS ships 2.6. Skip it locally and rely on CI:
 >

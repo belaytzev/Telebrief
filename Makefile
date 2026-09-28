@@ -15,11 +15,11 @@ help:
 	@echo "  make pre-commit   - Install pre-commit hooks"
 
 install:
-	pip install -r requirements.txt
+	uv sync --frozen
 
 install-dev:
-	pip install -r requirements-dev.txt
-	pre-commit install
+	uv sync --frozen --extra dev
+	uv run pre-commit install
 
 test:
 	pytest --cov=src --cov-report=html --cov-report=term-missing -v

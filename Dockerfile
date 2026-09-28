@@ -1,6 +1,8 @@
 # Use Python 3.14 slim image — pinned for reproducibility
 FROM mirror.gcr.io/library/python:3.14.3-slim
 
+COPY --from=ghcr.io/astral-sh/uv:0.12.19 /uv /bin/uv
+
 # Set working directory
 WORKDIR /app
 
@@ -10,11 +12,11 @@ RUN apt-get update && apt-get install -y \
     g++ \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first for better caching
-COPY requirements.txt .
-
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Install exactly the versions in uv.lock; the app itself runs from source
+ENV UV_PYTHON_DOWNLOADS=never UV_LINK_MODE=copy UV_NO_CACHE=1
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-install-project
+ENV PATH="/app/.venv/bin:$PATH"
 
 # Copy application code
 COPY . .

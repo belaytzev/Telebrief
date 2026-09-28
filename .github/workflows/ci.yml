@@ -54,26 +54,17 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v7
 
-    - name: Set up Python
-      uses: actions/setup-python@v7
+    - name: Set up uv
+      uses: astral-sh/setup-uv@v10.2.0
       with:
         python-version: '3.14'
+        enable-cache: true
 
-    - name: Cache pip dependencies
-      uses: actions/cache@v6
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements-dev.txt', '**/requirements.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-
-
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements-dev.txt
+    - name: Install locked dependencies
+      run: uv sync --frozen --extra dev
 
     - name: Run pytest
-      run: pytest --cov=src --cov-report=term-missing
+      run: uv run pytest --cov=src --cov-report=term-missing
 
   security:
     name: Security Scan
@@ -96,6 +87,9 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-pre-commit-
 
+    - name: Set up uv
+      uses: astral-sh/setup-uv@v10.2.0
+
     - name: Install tools
       run: |
         python -m pip install --upgrade pip
@@ -104,8 +98,10 @@ jobs:
     - name: Run Bandit via pre-commit
       run: pre-commit run bandit --all-files
 
-    - name: Audit project dependencies
-      run: pip-audit -r requirements.txt --progress-spinner off
+    - name: Audit locked dependencies
+      run: |
+        uv export --frozen --no-emit-project --no-dev -o locked-requirements.txt
+        pip-audit -r locked-requirements.txt --disable-pip --require-hashes --progress-spinner off
 
   website-build:
     name: Website Build Check

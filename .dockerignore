@@ -92,13 +92,11 @@ backup/
 *.tmp
 
 # Development files
-requirements-dev.txt
 .pre-commit-config.yaml
 vulture_whitelist.py
 Makefile
 pytest.ini
 .flake8
-pyproject.toml
 
 # Misc
 misc/
