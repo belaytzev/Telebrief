@@ -73,7 +73,7 @@ npm run preview
    - **Root directory**: `website` ← **This is crucial!**
    - **Build command**: `npm run build`
    - **Build output directory**: `dist`
-   - **Environment variables**: `NODE_VERSION = 20`
+   - **Environment variables**: `NODE_VERSION = 24`
 3. Deploy automatically on push
 
 ⚠️ **Common mistake**: Not setting "Root directory" to `website` causes deployment to fail.
