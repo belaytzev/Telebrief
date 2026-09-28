@@ -9,6 +9,8 @@
   [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
   [![Docker: amd64 | arm64](https://img.shields.io/badge/docker-amd64%20%7C%20arm64-2496ED?logo=docker&logoColor=white)](https://github.com/belaytzev/Telebrief/pkgs/container/telebrief)
   [![Contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg)](CONTRIBUTING.md)
+  [![Telebrief MCP server – quality and maintenance score on Glama](https://glama.ai/mcp/servers/belaytzev/Telebrief/badges/score.svg)](https://glama.ai/mcp/servers/belaytzev/Telebrief)
+  [![Listed on mcpservers.org](https://mcpservers.org/badge.svg)](https://mcpservers.org/servers/belaytzev/telebrief)
 
   Telebrief collects messages from your Telegram channels (in any language), generates AI-powered summaries, and delivers a daily digest through your own Telegram bot. Group digests by channel or by **AI-detected topics**. Supports multiple AI providers: **OpenAI**, **Ollama** (local), and **Anthropic**. Digests come in English, Russian, Spanish, German or French (default: Russian).
 
