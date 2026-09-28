@@ -10,9 +10,9 @@ from typing import Any, Dict, List
 from urllib.parse import urlparse, urlunparse
 
 import aiohttp
-import httpx
 from openai import AsyncOpenAI
 from openai import BadRequestError as OpenAIBadRequestError
+from openai import Timeout as OpenAITimeout
 
 
 def _redact_url(url: str) -> str:
@@ -67,7 +67,7 @@ class OpenAIProvider(AIProvider):
     def __init__(self, api_key: str, logger: logging.Logger, timeout: int = 60):
         self.client = AsyncOpenAI(
             api_key=api_key,
-            timeout=httpx.Timeout(timeout, connect=min(10.0, float(timeout))),
+            timeout=OpenAITimeout(timeout, connect=min(10.0, float(timeout))),
         )
         self.logger = logger
 
