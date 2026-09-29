@@ -1,18 +1,18 @@
 # Contributing to Telebrief
 
-First off, thank you for considering contributing to Telebrief! Whether it's a bug report, a new feature, a documentation fix, or a question — all contributions are welcome.
+Thanks for your interest in Telebrief. Bug reports, features, documentation fixes and questions are all welcome.
 
-## Ways to Contribute
+## Ways to contribute
 
-- **Report bugs** — open a [bug report](https://github.com/belaytzev/Telebrief/issues/new?template=bug_report.yml)
-- **Suggest features** — open a [feature request](https://github.com/belaytzev/Telebrief/issues/new?template=feature_request.yml)
-- **Improve documentation** — typo fixes and clarifications are great first contributions
-- **Submit code** — bug fixes, new filters, new AI providers, new storage backends (see [Extensibility](README.md#-extensibility))
-- **Add translations** — UI strings live in `src/ui_strings.py`; adding a language is a self-contained change
+- Report a bug: open a [bug report](https://github.com/belaytzev/Telebrief/issues/new?template=bug_report.yml).
+- Suggest a feature: open a [feature request](https://github.com/belaytzev/Telebrief/issues/new?template=feature_request.yml).
+- Improve the documentation. Typo fixes and clarifications make a good first contribution.
+- Send code: bug fixes, new filters, AI providers or storage backends (see [Extensibility](README.md#extensibility)).
+- Add a translation. UI strings are in `src/ui_strings.py`, and a new language doesn't touch anything else.
 
-## Development Setup
+## Development setup
 
-Telebrief requires **Python 3.14+** and uses [uv](https://docs.astral.sh/uv/) for environment management.
+Telebrief needs **Python 3.14+** and uses [uv](https://docs.astral.sh/uv/) to manage the environment.
 
 ```bash
 # Clone your fork
@@ -30,17 +30,17 @@ cp config.yaml.example config.yaml
 cp .env.example .env
 ```
 
-Dependencies live in `pyproject.toml` and are pinned in `uv.lock`; the Docker image and CI install exactly the locked versions. To add or bump one, use `uv add <package>` (or `uv lock --upgrade-package <package>`) and commit both files.
+Dependencies are declared in `pyproject.toml` and pinned in `uv.lock`; the Docker image and CI install exactly the locked versions. To add or bump a dependency, run `uv add <package>` (or `uv lock --upgrade-package <package>`) and commit both files.
 
-> **Note for macOS users:** the `markdownlint` pre-commit hook requires Ruby ≥ 3.1, while macOS ships 2.6. Skip it locally and rely on CI:
+> **macOS:** the `markdownlint` pre-commit hook needs Ruby 3.1 or newer, and macOS ships 2.6. Skip the hook locally and let CI run it:
 >
 > ```bash
 > SKIP=markdownlint uv run pre-commit run --all-files
 > ```
 
-## Running Tests and Checks
+## Tests and checks
 
-Run the full verification suite before pushing — CI runs the same checks:
+CI runs the same checks, so run them all before you push:
 
 ```bash
 # Tests (coverage threshold must stay above the configured minimum)
@@ -57,32 +57,32 @@ uv run flake8 src/ tests/
 uv run black src/ tests/
 ```
 
-Or use the Makefile shortcuts: `make test`, `make lint`, `make format`, `make check`.
+The Makefile has shortcuts for these: `make test`, `make lint`, `make format`, `make check`.
 
 ### Testing conventions
 
-- Fixtures live in `tests/conftest.py` (`sample_config`, `mock_logger`)
-- All async tests use `@pytest.mark.asyncio`
-- New code should come with tests; bug fixes should include a regression test
+- Fixtures are in `tests/conftest.py` (`sample_config`, `mock_logger`).
+- Async tests use `@pytest.mark.asyncio`.
+- New code comes with tests, and a bug fix comes with a regression test.
 
-## Code Style
+## Code style
 
-- **black** (24.10.0, as pinned in `.pre-commit-config.yaml`) for formatting
-- **isort** for import ordering
-- **flake8** with `max-complexity=10`
-- **mypy** for type checking — new code should be fully typed
-- Protocol method stubs forced to one-liners by black need per-line flake8 suppression:
+- Formatting: black 24.10.0, the version pinned in `.pre-commit-config.yaml`.
+- Import order: isort.
+- Linting: flake8 with `max-complexity=10`.
+- Types: mypy. New code should be fully typed.
+- black turns Protocol method stubs into one-liners, which flake8 rejects, so suppress the warning on each such line:
 
   ```python
   class MyProtocol(Protocol):
       async def save(self, items: list) -> int: ...  # noqa: E704
   ```
 
-- Markdown files in `docs/` must have a blank line before and after every fenced code block (markdownlint MD031)
+- Markdown files in `docs/` need a blank line before and after every fenced code block (markdownlint MD031).
 
-## Commit Messages
+## Commit messages
 
-This project uses [Conventional Commits](https://www.conventionalcommits.org/):
+The project uses [Conventional Commits](https://www.conventionalcommits.org/):
 
 ```text
 feat(grouper): deterministic QUALITY GATE filter
@@ -90,35 +90,35 @@ fix(collector): handle empty channel history
 docs: clarify per-channel lookback configuration
 ```
 
-Common types: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`.
+The usual types are `feat`, `fix`, `docs`, `refactor`, `test` and `chore`.
 
-## Pull Request Process
+## Pull requests
 
-1. **Fork** the repository and create a branch from `main`
-2. **Make your changes** — keep PRs focused on a single concern
-3. **Run the full check suite** (tests + mypy + ruff + black + flake8) locally
-4. **Open a PR** against `main` with a clear description of what and why
-5. CI must pass before review; a maintainer will review and merge
+1. Fork the repository and branch off `main`.
+2. Make your changes. Keep each PR about one thing.
+3. Run all the checks locally: tests, mypy, ruff, black and flake8.
+4. Open a PR against `main` and describe what you changed and why.
+5. CI has to pass before review. A maintainer then reviews and merges.
 
-For larger changes (new modules, architectural shifts), please open an issue first to discuss the approach — it saves everyone time.
+For bigger changes, such as a new module or a change in architecture, please open an issue first so we can agree on the approach before you write the code.
 
-## Reporting Bugs
+## Reporting bugs
 
-A good bug report includes:
+Please include:
 
-- Telebrief version / commit hash
+- Telebrief version or commit hash
 - Python version and OS
-- AI provider in use (OpenAI / Ollama / Anthropic)
-- Relevant `config.yaml` settings (**redact API keys, phone numbers, and session data**)
-- Steps to reproduce, expected behavior, actual behavior
-- Log output if available (`logs/` directory)
+- AI provider (OpenAI, Ollama or Anthropic)
+- The relevant `config.yaml` settings, with **API keys, phone numbers and session data removed**
+- Steps to reproduce, what you expected and what happened
+- Log output, if you have it (the `logs/` directory)
 
-**Never include your Telegram session files, API credentials, or `.env` contents in issues.**
+**Never post Telegram session files, API credentials or the contents of `.env` in an issue.**
 
 ## Questions
 
-Open a [discussion or issue](https://github.com/belaytzev/Telebrief/issues) — happy to help.
+Ask in a [discussion or an issue](https://github.com/belaytzev/Telebrief/issues).
 
-## Code of Conduct
+## Code of conduct
 
-By participating in this project, you agree to abide by the [Code of Conduct](CODE_OF_CONDUCT.md).
+By taking part in this project you agree to follow the [Code of Conduct](CODE_OF_CONDUCT.md).

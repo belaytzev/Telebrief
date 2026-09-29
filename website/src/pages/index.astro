@@ -57,12 +57,12 @@ import logoImage from '../../public/logo.webp';
           <span class="accent">for Telegram</span>
         </h1>
         <p class="hero-desc">
-          Telebrief collects messages from your Telegram channels,
-          generates AI-powered summaries grouped by channel or topic,
-          and delivers a daily digest through your own Telegram bot.
+          Telebrief reads your Telegram channels, summarizes them
+          with AI, grouped by channel or by topic, and sends you
+          a daily digest through your own Telegram bot.
         </p>
         <div class="hero-actions">
-          <a href="https://github.com/belaytzev/Telebrief?tab=readme-ov-file#-quick-start" class="btn-primary" target="_blank" rel="noopener noreferrer">
+          <a href="https://github.com/belaytzev/Telebrief?tab=readme-ov-file#quick-start" class="btn-primary" target="_blank" rel="noopener noreferrer">
             Get started →
           </a>
           <a href="#how-it-works" class="btn-ghost">
@@ -99,15 +99,15 @@ import logoImage from '../../public/logo.webp';
     <section id="how-it-works" class="section" aria-labelledby="how-it-works-title">
       <div class="container">
         <p class="eyebrow">workflow</p>
-        <h2 id="how-it-works-title">How Telebrief Works</h2>
-        <p class="section-desc">Three automated phases take your channels from raw messages to a polished digest</p>
+        <h2 id="how-it-works-title">How Telebrief works</h2>
+        <p class="section-desc">Every run goes through three steps, from raw channel messages to the digest in your chat</p>
 
         <div class="phases">
           <div class="phase">
             <div class="phase-num" aria-hidden="true">1</div>
             <div class="phase-body">
-              <h3>Collect Messages</h3>
-              <p>Telebrief connects to your Telegram channels via Telethon and pulls messages from the last 24 hours (adjustable per channel), including private channels and groups you're a member of.</p>
+              <h3>Collect messages</h3>
+              <p>Telebrief logs in through Telethon and reads the last 24 hours of each channel (you can change the window per channel). Private channels and groups you belong to work too.</p>
               <div class="tag-row">
                 <span class="tag">telethon</span>
                 <span class="tag">user API</span>
@@ -120,8 +120,8 @@ import logoImage from '../../public/logo.webp';
           <div class="phase">
             <div class="phase-num" aria-hidden="true">2</div>
             <div class="phase-body">
-              <h3>AI Summarization & Classification</h3>
-              <p>Your chosen AI provider analyzes each channel's content, produces concise summaries, and can classify messages into topic groups like News, Events, or Sport — all in your configured output language.</p>
+              <h3>Summarize and sort</h3>
+              <p>The AI provider you picked writes a short summary of each channel and, if you want, sorts messages into topics such as News, Events or Sport. Everything comes out in your chosen output language.</p>
               <div class="tag-row">
                 <span class="tag tag-a">OpenAI</span>
                 <span class="tag tag-a">Anthropic</span>
@@ -135,8 +135,8 @@ import logoImage from '../../public/logo.webp';
           <div class="phase">
             <div class="phase-num" aria-hidden="true">3</div>
             <div class="phase-body">
-              <h3>Format & Deliver</h3>
-              <p>A formatted Markdown digest with links back to each channel is sent to you by your own bot, on your schedule or on demand. AI agents can fetch the same digest over MCP.</p>
+              <h3>Deliver</h3>
+              <p>Your own bot sends you the digest in Markdown, with a link to each channel, on schedule or whenever you ask. AI agents can fetch the same digest over MCP.</p>
               <div class="tag-row">
                 <span class="tag">markdown</span>
                 <span class="tag">channel links</span>
@@ -155,8 +155,8 @@ import logoImage from '../../public/logo.webp';
     <section id="example" class="section" aria-labelledby="example-title">
       <div class="container">
         <p class="eyebrow">output preview</p>
-        <h2 id="example-title">What You Receive</h2>
-        <p class="section-desc">A polished daily digest formatted for Telegram. Toggle between channel and topic grouping below.</p>
+        <h2 id="example-title">What you get</h2>
+        <p class="section-desc">A daily digest formatted for Telegram. Switch between channel and topic grouping below.</p>
 
         <div class="example-mode-toggle">
           <input type="radio" id="mode-channel" name="example-mode" class="mode-radio" aria-label="Channel mode preview" checked />
@@ -217,7 +217,7 @@ import logoImage from '../../public/logo.webp';
           </div>
         </div>
 
-        <p class="example-caption">Both modes configurable via <code>digest_mode</code> in <code>config.yaml</code>.</p>
+        <p class="example-caption">You pick the mode with <code>digest_mode</code> in <code>config.yaml</code>.</p>
       </div>
     </section>
 
@@ -227,8 +227,8 @@ import logoImage from '../../public/logo.webp';
     <section class="section" aria-labelledby="commands-title">
       <div class="container">
         <p class="eyebrow">bot interface</p>
-        <h2 id="commands-title">Available Commands</h2>
-        <p class="section-desc">Control Telebrief directly from Telegram with built-in bot commands</p>
+        <h2 id="commands-title">Bot commands</h2>
+        <p class="section-desc">You control Telebrief by messaging the bot</p>
 
         <div class="terminal" role="region" aria-label="Bot command reference">
           <div class="terminal-header" aria-hidden="true">
@@ -246,7 +246,7 @@ import logoImage from '../../public/logo.webp';
             <div class="cmd-line">
               <span class="cmd-prompt" aria-hidden="true">$</span>
               <span class="cmd-name">/digest</span>
-              <span class="cmd-desc">— Generate digest using configured mode (channel or topic)</span>
+              <span class="cmd-desc">— Build a digest now, in the configured mode (channel or topic)</span>
             </div>
             <div class="cmd-line">
               <span class="cmd-prompt" aria-hidden="true">$</span>
@@ -261,7 +261,7 @@ import logoImage from '../../public/logo.webp';
             <div class="cmd-line">
               <span class="cmd-prompt" aria-hidden="true">$</span>
               <span class="cmd-name">/help</span>
-              <span class="cmd-desc">— Show all commands and usage guide</span>
+              <span class="cmd-desc">— List all commands and how to use them</span>
             </div>
           </div>
         </div>
@@ -274,14 +274,14 @@ import logoImage from '../../public/logo.webp';
     <section id="features" class="section" aria-labelledby="features-title">
       <div class="container">
         <p class="eyebrow">capabilities</p>
-        <h2 id="features-title">Powerful Features</h2>
-        <p class="section-desc">Everything you need to stay informed without information overload</p>
+        <h2 id="features-title">Features</h2>
+        <p class="section-desc">Read one message a day instead of every channel</p>
 
         <div class="bento-grid">
           <div class="bento-card bento-wide">
             <div class="feat-label">modes</div>
-            <h3>Digest Modes</h3>
-            <p>Group your digest by channel (default) or by AI-detected topics. Define custom topic groups like News, Events, or Sport — the AI classifies each message automatically.</p>
+            <h3>Digest modes</h3>
+            <p>Group the digest by channel (default) or by topic. You name the topics, such as News, Events or Sport, and the AI puts each message under one of them.</p>
             <div class="mode-pills" aria-hidden="true">
               <span class="mode-pill mode-active">Channel Mode</span>
               <span class="mode-pill">Topic Mode</span>
@@ -289,63 +289,63 @@ import logoImage from '../../public/logo.webp';
           </div>
           <div class="bento-card">
             <div class="feat-label">multi-provider</div>
-            <h3>AI-Powered Summaries</h3>
-            <p>Choose from OpenAI, Anthropic, or local Ollama to generate concise intelligent summaries. Switch providers with a single config change.</p>
+            <h3>Your choice of AI</h3>
+            <p>Summaries come from OpenAI, Anthropic or a local Ollama model. Switching providers is one line in the config.</p>
           </div>
           <div class="bento-card">
             <div class="feat-label">i18n</div>
-            <h3>Multi-Language Support</h3>
-            <p>Collect messages in any language — English, Russian, Ukrainian, Chinese, and more. Get the digest in English, Russian, Spanish, German, or French.</p>
+            <h3>Any input language</h3>
+            <p>Channels can be in any language: English, Russian, Ukrainian, Chinese and so on. The digest comes in English, Russian, Spanish, German or French.</p>
           </div>
           <div class="bento-card">
             <div class="feat-label">automation</div>
-            <h3>Scheduled Delivery</h3>
-            <p>Set a preferred delivery time and receive daily digests automatically. On-demand generation available via bot commands.</p>
+            <h3>Scheduled delivery</h3>
+            <p>Pick a time and the digest arrives every day. Ask the bot for one whenever you want it sooner.</p>
           </div>
           <div class="bento-card">
             <div class="feat-label">access</div>
-            <h3>Private Channels</h3>
-            <p>Reads through the Telethon user API as you, so any public or private channel or group you're a member of works.</p>
+            <h3>Private channels</h3>
+            <p>Telebrief reads through the Telethon user API as you, so any public or private channel or group you're in works.</p>
           </div>
           <div class="bento-card">
             <div class="feat-label">granular control</div>
-            <h3>Per-Channel Config</h3>
-            <p>Override lookback window or append AI instructions per channel. Tighter window for high-volume feeds, broader for weekly newsletters, custom prompt focus per source.</p>
+            <h3>Per-channel settings</h3>
+            <p>Give each channel its own time window and extra AI instructions: a short window for a busy feed, a week for a newsletter.</p>
           </div>
           <div class="bento-card">
             <div class="feat-label">delivery</div>
-            <h3>Smart Message Splitting</h3>
-            <p>Digests over Telegram's 4096-character limit auto-split into sequential messages — never truncated, never lost.</p>
+            <h3>Long digests split</h3>
+            <p>A digest longer than Telegram's 4096-character limit is sent as several messages instead of being cut off.</p>
           </div>
           <div class="bento-card">
             <div class="feat-label">devops</div>
-            <h3>Setup Wizard</h3>
+            <h3>Setup wizard</h3>
             <p><code class="bento-code">main.py init</code> logs in to Telegram, checks your bot and lets you pick channels, then writes the config and <code class="bento-code">docker-compose.yml</code>. No clone, no local Python.</p>
           </div>
           <div class="bento-card bento-wide">
             <div class="feat-label">cost</div>
-            <h3>Affordable</h3>
-            <p>Run completely free with local Ollama, or pay only your cloud provider's token usage. Self-hosted, no subscription fees, no vendor lock-in.</p>
+            <h3>Cheap to run</h3>
+            <p>With a local Ollama model it costs nothing; with a cloud provider you pay only for tokens. It runs on your own server, with no subscription.</p>
           </div>
           <div class="bento-card">
             <div class="feat-label">registry</div>
-            <h3>Pre-built Docker Images</h3>
-            <p>Pull from GitHub Container Registry for amd64 and arm64. Tagged <code class="bento-code">latest</code>, <code class="bento-code">X.Y</code>, <code class="bento-code">X.Y.Z</code>. Zero build step — pull and run.</p>
+            <h3>Docker images</h3>
+            <p>Images for amd64 and arm64 are on GitHub Container Registry, tagged <code class="bento-code">latest</code>, <code class="bento-code">X.Y</code> and <code class="bento-code">X.Y.Z</code>. You pull and run them, nothing to build.</p>
           </div>
           <div class="bento-card">
             <div class="feat-label">maintenance</div>
-            <h3>Auto-Cleanup</h3>
-            <p>The previous digest is removed from the chat when a new one arrives. No clutter buildup, no manual housekeeping.</p>
+            <h3>Auto-cleanup</h3>
+            <p>When a new digest arrives, the bot deletes the previous one from the chat.</p>
           </div>
           <div class="bento-card">
             <div class="feat-label">agents</div>
-            <h3>MCP Server</h3>
-            <p>Let AI agents pull a fresh or cached digest, or the raw messages of one channel, over HTTP or stdio instead of reading Telegram.</p>
+            <h3>MCP server</h3>
+            <p>AI agents can fetch a fresh or cached digest, or the raw messages of one channel, over HTTP or stdio instead of reading Telegram.</p>
           </div>
           <div class="bento-card">
             <div class="feat-label">open source</div>
-            <h3>MIT Licensed</h3>
-            <p>Fully open source. Inspect the code, fork it, extend it. No black boxes. Your data stays on your own infrastructure.</p>
+            <h3>MIT license</h3>
+            <p>The code is open: read it, fork it, extend it. Your data stays on your own machine.</p>
           </div>
         </div>
       </div>
@@ -357,14 +357,14 @@ import logoImage from '../../public/logo.webp';
     <section id="extend" class="section" aria-labelledby="extend-title">
       <div class="container">
         <p class="eyebrow">extend telebrief</p>
-        <h2 id="extend-title">Storage &amp; Extensibility</h2>
-        <p class="section-desc">Persist every collected message and bend Telebrief to your workflow — all via config, no core changes required.</p>
+        <h2 id="extend-title">Storage and extensibility</h2>
+        <p class="section-desc">Keep every collected message and adapt Telebrief to your setup from the config file, without changing its code.</p>
 
         <!-- Storage sub-section -->
         <div class="extend-block">
           <div class="extend-head">
-            <h3 class="extend-h3">Persistent Storage</h3>
-            <p class="extend-lede">Save every collected message to a database for historical access, search, or external LLM workflows. Off by default — opt in when you need it.</p>
+            <h3 class="extend-h3">Persistent storage</h3>
+            <p class="extend-lede">Save every collected message to a database, to look back, search, or feed other LLM tools. It is off by default; turn it on when you need it.</p>
           </div>
 
           <div class="storage-toggle">
@@ -378,7 +378,7 @@ import logoImage from '../../public/logo.webp';
 
             <div class="store-panels">
               <div class="store-panel store-panel-sqlite" role="tabpanel">
-                <p class="store-blurb">Zero setup. File-based. Persists across Docker restarts via mounted volume.</p>
+                <p class="store-blurb">A single file that needs no setup and survives Docker restarts on a mounted volume.</p>
                 <pre class="code-block"><code><span class="cb-key">storage</span>:
   <span class="cb-key">enabled</span>: <span class="cb-val">true</span>
   <span class="cb-key">backend</span>: <span class="cb-val">sqlite</span>
@@ -390,7 +390,7 @@ import logoImage from '../../public/logo.webp';
                 </div>
               </div>
               <div class="store-panel store-panel-postgres" role="tabpanel">
-                <p class="store-blurb">Multi-host deployments. Concurrent reads. <code class="bento-code">asyncpg</code> already bundled.</p>
+                <p class="store-blurb">For several hosts or concurrent readers. <code class="bento-code">asyncpg</code> is already included.</p>
                 <pre class="code-block"><code><span class="cb-key">storage</span>:
   <span class="cb-key">enabled</span>: <span class="cb-val">true</span>
   <span class="cb-key">backend</span>: <span class="cb-val">postgres</span>
@@ -421,8 +421,8 @@ import logoImage from '../../public/logo.webp';
             </div>
           </div>
 
-          <a href="https://github.com/belaytzev/Telebrief?tab=readme-ov-file#%EF%B8%8F-persistent-storage" class="extend-link" target="_blank" rel="noopener noreferrer">
-            Read full storage docs →
+          <a href="https://github.com/belaytzev/Telebrief?tab=readme-ov-file#persistent-storage" class="extend-link" target="_blank" rel="noopener noreferrer">
+            Storage docs →
           </a>
         </div>
 
@@ -431,39 +431,39 @@ import logoImage from '../../public/logo.webp';
         <!-- Extensibility sub-section -->
         <div class="extend-block">
           <div class="extend-head">
-            <h3 class="extend-h3">Hook Surfaces</h3>
-            <p class="extend-lede">Four extension points to bend Telebrief without touching core. Drop in custom filters, prompts, and group bindings via config — or query the storage layer from your own tooling.</p>
+            <h3 class="extend-h3">Extension points</h3>
+            <p class="extend-lede">Filters, prompts and group bindings are set in the config, and your own scripts can query the stored messages. None of it needs changes to Telebrief's code.</p>
           </div>
 
           <div class="hooks-grid">
             <div class="hook-cell">
               <span class="hook-num">hook 01</span>
               <h4 class="hook-name">Filters</h4>
-              <p class="hook-desc">Drop noise before AI sees it. Keyword, regex, length filters built-in. Per-channel overrides supported.</p>
+              <p class="hook-desc">Drop noise before the AI sees it. Keyword, regex and length filters are built in, and each channel can have its own set.</p>
               <code class="hook-sig">MessageFilter Protocol</code>
             </div>
             <div class="hook-cell">
               <span class="hook-num">hook 02</span>
               <h4 class="hook-name">Prompts</h4>
-              <p class="hook-desc">Swap base template or plug in a custom composer. Steer tone and focus per channel.</p>
+              <p class="hook-desc">Replace the base template or plug in your own composer to set tone and focus per channel.</p>
               <code class="hook-sig">PromptComposer Protocol</code>
             </div>
             <div class="hook-cell">
               <span class="hook-num">hook 03</span>
-              <h4 class="hook-name">Group Binding</h4>
-              <p class="hook-desc">Bind channels to digest groups. Group-level <code class="bento-code">prompt_extra</code> stacks before channel overrides.</p>
+              <h4 class="hook-name">Group binding</h4>
+              <p class="hook-desc">Bind channels to a digest group. The group's <code class="bento-code">prompt_extra</code> goes into the prompt before the channel's own.</p>
               <code class="hook-sig">digest_groups[].prompt_extra</code>
             </div>
             <div class="hook-cell">
               <span class="hook-num">hook 04</span>
-              <h4 class="hook-name">Storage Queries</h4>
-              <p class="hook-desc">Query stored messages from your own scripts. Filter by channel, time range, limit.</p>
+              <h4 class="hook-name">Storage queries</h4>
+              <p class="hook-desc">Read stored messages from your own scripts, by channel and time range, with a limit.</p>
               <code class="hook-sig">await backend.query_messages(...)</code>
             </div>
           </div>
 
           <div class="hooks-example">
-            <p class="hooks-example-caption">One config block. All four hooks. No code changes.</p>
+            <p class="hooks-example-caption">Filters, a group prompt, a template and a channel binding in one config block:</p>
             <pre class="code-block"><code><span class="cb-key">settings</span>:
   <span class="cb-key">filters</span>:
     - <span class="cb-key">class_path</span>: <span class="cb-val">src.extensions.filters.KeywordFilter</span>
@@ -482,8 +482,8 @@ import logoImage from '../../public/logo.webp';
     <span class="cb-key">prompt_extra</span>: <span class="cb-val">"Senior+ only."</span></code></pre>
           </div>
 
-          <a href="https://github.com/belaytzev/Telebrief?tab=readme-ov-file#-extensibility" class="extend-link" target="_blank" rel="noopener noreferrer">
-            Full extensibility guide →
+          <a href="https://github.com/belaytzev/Telebrief?tab=readme-ov-file#extensibility" class="extend-link" target="_blank" rel="noopener noreferrer">
+            Extensibility docs →
           </a>
         </div>
       </div>
@@ -494,8 +494,8 @@ import logoImage from '../../public/logo.webp';
     <!-- CTA -->
     <section class="section cta-section" aria-labelledby="cta-title">
       <div class="container">
-        <h2 id="cta-title">Ready to get started?</h2>
-        <p class="section-desc cta-desc">Deploy Telebrief in minutes and start receiving intelligent daily digests</p>
+        <h2 id="cta-title">Try it</h2>
+        <p class="section-desc cta-desc">The setup wizard asks for your Telegram login, bot token and channels, then writes the config for Docker Compose</p>
         <div class="cta-actions">
           <a href="https://github.com/belaytzev/Telebrief" class="btn-primary" target="_blank" rel="noopener noreferrer">
             <svg width="17" height="17" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -503,7 +503,7 @@ import logoImage from '../../public/logo.webp';
             </svg>
             View on GitHub
           </a>
-          <a href="https://github.com/belaytzev/Telebrief?tab=readme-ov-file#-quick-start" class="btn-ghost" target="_blank" rel="noopener noreferrer">
+          <a href="https://github.com/belaytzev/Telebrief?tab=readme-ov-file#quick-start" class="btn-ghost" target="_blank" rel="noopener noreferrer">
             Quick start guide →
           </a>
         </div>
