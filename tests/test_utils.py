@@ -128,6 +128,19 @@ def test_setup_logging_debug_level(tmp_path):
 
 
 @pytest.mark.unit
+def test_setup_logging_silences_httpx_request_log(tmp_path, monkeypatch):
+    """httpx request lines expose the bot token, so INFO must not pass even in DEBUG."""
+    monkeypatch.chdir(tmp_path)
+    httpx_logger = logging.getLogger("httpx")
+    monkeypatch.setattr(httpx_logger, "level", logging.NOTSET)
+    monkeypatch.setattr(logging.getLogger(), "level", logging.DEBUG)
+
+    setup_logging("DEBUG")
+
+    assert not httpx_logger.isEnabledFor(logging.INFO)
+
+
+@pytest.mark.unit
 def test_save_and_get_digest_message_ids(tmp_path, monkeypatch):
     """Test saving and retrieving message IDs."""
     # Use temp directory for storage

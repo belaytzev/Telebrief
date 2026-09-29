@@ -69,6 +69,9 @@ def setup_logging(log_level: str = "INFO") -> logging.Logger:
     # Remove existing handlers
     logger.handlers.clear()
 
+    # httpx logs every request URL at INFO, and Bot API URLs carry the bot token
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+
     # Console handler
     console_handler = logging.StreamHandler()
     console_handler.setLevel(getattr(logging, log_level.upper()))
