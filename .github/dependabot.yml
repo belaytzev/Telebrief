@@ -12,6 +12,9 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    # must match the black rev in .pre-commit-config.yaml, which dependabot doesn't update
+    ignore:
+      - dependency-name: black
     groups:
       python-minor-patch:
         update-types: [minor, patch]
