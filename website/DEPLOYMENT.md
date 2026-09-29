@@ -1,36 +1,38 @@
-# Deployment Guide for Telebrief Landing Page
+# Deploying the Telebrief landing page
 
-## Cloudflare Pages Deployment
+## Cloudflare Pages
 
-### Configuration in Cloudflare Dashboard
+### Dashboard settings
 
-1. Go to your Cloudflare Dashboard → Pages
-2. Click "Create a project" → "Connect to Git"
-3. Select your repository
-4. Configure the build settings:
+1. In the Cloudflare dashboard, open **Pages**.
+2. Click **Create a project**, then **Connect to Git**.
+3. Pick your repository.
+4. Set the build settings:
 
 **Framework preset**: `Astro`
 
 **Build settings:**
+
 - **Build command**: `npm run build`
 - **Build output directory**: `dist`
 - **Root directory (path)**: `website`
 
 **Environment variables:**
+
 - `NODE_VERSION`: `24`
 
-5. Click "Save and Deploy"
+5. Click **Save and Deploy**.
 
-### Important Notes
+### What to check
 
-- ✅ **Root directory must be set to `website`** - This is crucial!
-- ✅ The build command will run inside the `website/` directory
-- ✅ Output goes to `website/dist/`
-- ✅ Cloudflare will automatically detect Astro and optimize deployment
+- **Root directory** must be `website`. Nothing else works without it.
+- The build command runs inside `website/`.
+- The output ends up in `website/dist/`.
+- Cloudflare detects Astro on its own and tunes the deployment for it.
 
-### Manual Deployment via Wrangler CLI
+### Deploying with the Wrangler CLI
 
-If you prefer to deploy via CLI:
+To deploy from the command line instead:
 
 ```bash
 cd website
@@ -42,31 +44,21 @@ npx wrangler pages deploy dist --project-name=telebrief
 
 #### Error: "Expected output file at workers-site/index.js"
 
-This means Cloudflare is trying to deploy as a Worker instead of Pages. Fix:
-- Make sure you're using **Cloudflare Pages**, not Workers
-- Set **Root directory** to `website` in dashboard
-- Remove or ignore `wrangler.toml` (Pages uses different config)
+Cloudflare is deploying the site as a Worker instead of Pages. To fix it:
 
-#### Build succeeds but site doesn't update
+- make sure the project is in **Cloudflare Pages**, not Workers;
+- set **Root directory** to `website` in the dashboard;
+- remove the Wrangler config file or make Cloudflare ignore it, since Pages is configured differently.
 
-- Check the deployment logs in Cloudflare dashboard
-- Verify the build output directory is set to `dist`
-- Make sure Git branch is correct (usually `website` or `main`)
+#### The build succeeds but the site doesn't change
 
-## GitHub Pages Deployment
+- Check the deployment logs in the Cloudflare dashboard.
+- Make sure the build output directory is `dist`.
+- Make sure the production branch is the right one (usually `website` or `main`).
 
-GitHub Pages deployment is automated via GitHub Actions.
+## Testing locally
 
-1. Go to repository Settings → Pages
-2. Source: **GitHub Actions**
-3. Push to `website` branch
-4. Workflow will automatically build and deploy
-
-The workflow file is at `.github/workflows/deploy.yml`
-
-## Local Testing
-
-Before deploying, test locally:
+Before you deploy, build and preview the site:
 
 ```bash
 cd website
@@ -75,11 +67,11 @@ npm run build
 npm run preview
 ```
 
-Visit http://localhost:4321 to preview the production build.
+The production build is then at http://localhost:4321.
 
-## Build Verification
+## Checking the build
 
-Verify your build locally first:
+To see what the build produced:
 
 ```bash
 cd website
@@ -87,24 +79,24 @@ npm run build
 ls -la dist/
 ```
 
-You should see:
-- `dist/index.html` - Main page
-- `dist/assets/` - CSS and other assets
-- `dist/logo.png` - Logo file
+`dist/` should contain:
 
-## Deployment Checklist
+- `dist/index.html`: the page itself
+- `dist/assets/`: CSS and other assets
+- `dist/logo.webp`: the logo
 
-- [ ] Build succeeds locally
-- [ ] Preview looks correct
-- [ ] Logo displays properly
+## Checklist
+
+- [ ] The build succeeds locally
+- [ ] The preview looks right
+- [ ] The logo shows up
 - [ ] All links work
-- [ ] Responsive design works on mobile
-- [ ] Root directory is set to `website` in Cloudflare
+- [ ] The layout works on mobile
+- [ ] Root directory in Cloudflare is `website`
 - [ ] Build command is `npm run build`
 - [ ] Output directory is `dist`
 
-## Support
+## Further reading
 
-For issues:
-- Check Cloudflare Pages docs: https://developers.cloudflare.com/pages/
-- Check Astro deployment docs: https://docs.astro.build/en/guides/deploy/
+- Cloudflare Pages docs: https://developers.cloudflare.com/pages/
+- Astro deployment docs: https://docs.astro.build/en/guides/deploy/

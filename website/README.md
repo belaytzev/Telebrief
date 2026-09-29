@@ -1,22 +1,21 @@
-# Telebrief Landing Page
+# Telebrief landing page
 
-Modern landing page for Telebrief with Skeuomorphic 2.0 design, built with Astro for optimal performance and easy static hosting.
+The Telebrief landing page: a static site built with Astro, in a skeuomorphic style with real depth, shadows and textures.
 
-## Design Features
+## Design
 
-- **Skeuomorphic 2.0 Style**: Realistic depth, shadows, and textures with a modern twist
-- **Color Palette**: Based on Telebrief logo colors
-  - Background: Deep Navy (#07101a / #0b1825)
-  - Accent: Cerulean Blue (#1b8ec9) — badges, links, interactive elements
-  - Warm: Amber (#f5a623) — hero Claude badge
-- **Fully Responsive**: Mobile-first design that works on all devices
-- **Static Generation**: Blazing fast load times with pre-rendered HTML
+- Colors come from the Telebrief logo:
+  - background: deep navy (#07101a / #0b1825)
+  - accent: cerulean blue (#1b8ec9) for badges, links and interactive elements
+  - warm: amber (#f5a623) for the Claude badge in the hero
+- The layout is mobile-first and works on any screen size.
+- Pages are pre-rendered to static HTML.
 
-## Tech Stack
+## Stack
 
-- **Astro 4.0**: Modern static site generator
-- **Pure CSS**: No dependencies, just vanilla CSS with advanced features
-- **Optimized Assets**: Minimal bundle size for fast loading
+- Astro 7 as the static site generator
+- Plain CSS, no CSS libraries
+- Small asset bundle
 
 ## Development
 
@@ -31,7 +30,7 @@ cd website
 npm install
 ```
 
-### Development Server
+### Development server
 
 ```bash
 npm run dev
@@ -45,9 +44,9 @@ Open http://localhost:4321 in your browser.
 npm run build
 ```
 
-Output will be in `dist/` directory.
+The output goes to `dist/`.
 
-### Preview Production Build
+### Preview the production build
 
 ```bash
 npm run preview
@@ -55,32 +54,24 @@ npm run preview
 
 ## Deployment
 
-### GitHub Pages
-
-1. Push to the `website` branch
-2. GitHub Actions will automatically build and deploy
-3. Enable GitHub Pages in repository settings (source: GitHub Actions)
-
-**Auto-deployment is configured via `.github/workflows/deploy.yml`**
-
 ### Cloudflare Pages
 
-#### Option 1: Automatic (via Git) - RECOMMENDED
+#### Option 1: from Git (recommended)
 
-1. Connect your GitHub repository to Cloudflare Pages
-2. **IMPORTANT**: Configure these exact settings:
+1. Connect your GitHub repository to Cloudflare Pages.
+2. Use exactly these settings:
    - **Framework preset**: `Astro`
-   - **Root directory**: `website` ← **This is crucial!**
+   - **Root directory**: `website`
    - **Build command**: `npm run build`
    - **Build output directory**: `dist`
    - **Environment variables**: `NODE_VERSION = 24`
-3. Deploy automatically on push
+3. Every push then deploys automatically.
 
-⚠️ **Common mistake**: Not setting "Root directory" to `website` causes deployment to fail.
+⚠️ If **Root directory** isn't set to `website`, the deployment fails. This is the most common mistake.
 
-See `DEPLOYMENT.md` for detailed troubleshooting.
+`DEPLOYMENT.md` has more troubleshooting.
 
-#### Option 2: Manual (via Wrangler CLI)
+#### Option 2: by hand with the Wrangler CLI
 
 ```bash
 # Install Wrangler
@@ -95,20 +86,23 @@ npm run build
 wrangler pages deploy dist --project-name=telebrief
 ```
 
-### Other Static Hosts
+### Other static hosts
 
-The `dist/` directory can be deployed to:
+`dist/` is plain static files, so it also works on:
+
 - Vercel
 - Netlify
 - AWS S3 + CloudFront
-- Any static file hosting service
+- any other static file host
 
-## Project Structure
+## Project structure
 
 ```
 website/
 ├── public/                  # Static assets
-│   └── logo.png            # Telebrief logo
+│   ├── favicon.svg
+│   ├── llms.txt             # Summary for LLM crawlers
+│   └── logo.webp            # Telebrief logo
 ├── src/
 │   ├── layouts/
 │   │   └── Layout.astro    # Base HTML layout
@@ -116,12 +110,9 @@ website/
 │   │   └── index.astro     # Landing page
 │   └── styles/
 │       └── global.css      # Global styles & design system
-├── .github/
-│   └── workflows/
-│       └── deploy.yml      # GitHub Pages CI/CD
 ├── astro.config.mjs        # Astro configuration
 ├── package.json            # Dependencies
-├── wrangler.toml           # Cloudflare Pages config
+├── wrangler.jsonc          # Cloudflare config
 └── README.md               # This file
 ```
 
@@ -129,7 +120,7 @@ website/
 
 ### Colors
 
-Edit color variables in `src/styles/global.css`:
+The color variables are in `src/styles/global.css`:
 
 ```css
 :root {
@@ -144,25 +135,26 @@ Edit color variables in `src/styles/global.css`:
 
 ### Content
 
-Edit sections in `src/pages/index.astro`:
-- Hero section
-- Features
-- How It Works
-- CTA
-- Footer (includes `.claude-credit` badge — pill-shaped, accent blue, uses `--accent`/`--accent-border`/`--accent-dim` variables)
+All sections are in `src/pages/index.astro`:
+
+- hero
+- features
+- how it works
+- call to action
+- footer, including the `.claude-credit` badge (a blue pill that uses the `--accent`, `--accent-border` and `--accent-dim` variables)
 
 ### Logo
 
-Replace `public/logo.png` with your own logo (recommended: 256x256px PNG).
+Replace `public/logo.webp` with your own logo (256×256 px works well).
 
 ## Performance
 
-- **Lighthouse Score**: 100/100 (Performance, Accessibility, Best Practices, SEO)
-- **Bundle Size**: < 50KB (gzipped)
-- **First Contentful Paint**: < 0.5s
-- **Time to Interactive**: < 1s
+- Lighthouse: 100/100 for Performance, Accessibility, Best Practices and SEO
+- Bundle size: under 50 KB gzipped
+- First Contentful Paint: under 0.5 s
+- Time to Interactive: under 1 s
 
-## Browser Support
+## Browser support
 
 - Chrome/Edge 90+
 - Firefox 88+
@@ -171,4 +163,4 @@ Replace `public/logo.png` with your own logo (recommended: 256x256px PNG).
 
 ## License
 
-Same as parent project - see LICENSE file in repository root.
+Same as the main project; see LICENSE in the repository root.
