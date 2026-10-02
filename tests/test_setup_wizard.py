@@ -15,6 +15,7 @@ from src.setup_wizard import (
     parse_time,
     parse_timezone,
     render_files,
+    sign_in_user,
     write_files,
 )
 
@@ -85,6 +86,22 @@ async def test_login_logs_out_bot_session(tmp_path, monkeypatch):
     assert client is clients[1]
     assert user_id == 7
     assert env == {"TELEGRAM_API_ID": "12345", "TELEGRAM_API_HASH": "hash"}
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_sign_in_user_restarts_after_expired_code():
+    start = AsyncMock(
+        side_effect=[
+            ValueError("You also need to provide a phone_code_hash."),
+            RuntimeError("3 consecutive sign-in attempts failed. Aborting"),
+            None,
+        ]
+    )
+
+    await sign_in_user(SimpleNamespace(start=start))
+
+    assert start.await_count == 3
 
 
 @pytest.mark.unit
