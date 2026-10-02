@@ -314,16 +314,18 @@ async def main():
         python -m src.collector
     """
     from src.config_loader import load_config
+    from src.setup_wizard import sign_in_user
     from src.utils import setup_logging
 
     config = load_config()
     logger = setup_logging(config.log_level)
 
-    # Interactive auth: call start() which prompts for phone + code
     client = TelegramClient("sessions/user", config.telegram_api_id, config.telegram_api_hash)
     print("Authenticating with Telegram User API...")
     print("You will be prompted for your phone number and a login code.")
-    await client.start()
+    await sign_in_user(client)
+    # the collector below opens its own client on the same session file
+    await client.disconnect()
     print("Authenticated! Session saved to sessions/user.session")
 
     # Quick test: fetch 1 hour of messages
@@ -338,7 +340,6 @@ async def main():
                 print(f"  - {msg.sender}: {msg.text[:50]}...")
     finally:
         await collector.disconnect()
-        await client.disconnect()
 
 
 if __name__ == "__main__":

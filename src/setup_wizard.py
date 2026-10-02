@@ -121,6 +121,17 @@ def ask_credentials() -> tuple[int, str]:
     return ask_until("api_id", parse_api_id), ask_until("api_hash", parse_non_empty)
 
 
+async def sign_in_user(client: TelegramClient) -> None:
+    while True:
+        try:
+            # Telethon's default prompt also accepts a bot token and silently logs in as the bot.
+            await client.start(phone=ask_phone)
+            return
+        # start() gives up for good once a code expires (ValueError) or is wrong three times
+        except (ValueError, RuntimeError):
+            print("  ✗ The login code expired or was wrong, requesting a new one")
+
+
 async def login(session_path: Path) -> tuple[TelegramClient, dict[str, str], int]:
     print("\n1) Telegram API credentials — create an app at https://my.telegram.org/apps")
     print("   If it shows ERROR, see the troubleshooting notes in README.md\n")
@@ -128,8 +139,7 @@ async def login(session_path: Path) -> tuple[TelegramClient, dict[str, str], int
     while True:
         client = TelegramClient(str(session_path), api_id, api_hash)
         try:
-            # Telethon's default prompt also accepts a bot token and silently logs in as the bot.
-            await client.start(phone=ask_phone)
+            await sign_in_user(client)
         except ApiIdInvalidError:
             await client.disconnect()
             print("  ✗ Telegram rejected this api_id/api_hash pair, try again")
