@@ -6,10 +6,13 @@ from datetime import datetime, timedelta, timezone
 import pytest
 
 from src.utils import (
+    MAX_DIGEST_DELETE_ATTEMPTS,
     clear_digest_message_ids,
     get_digest_message_ids,
     get_lookback_time,
     markdown_to_telegram_html,
+    merge_digest_message_ids,
+    record_digest_delete_failures,
     save_digest_message_ids,
     setup_logging,
     split_message,
@@ -273,3 +276,35 @@ def test_save_digest_message_ids_multiple_users(tmp_path, monkeypatch):
 )
 def test_markdown_to_telegram_html(md, expected):
     assert markdown_to_telegram_html(md) == expected
+
+
+@pytest.mark.unit
+def test_merge_digest_message_ids_preserves_pending_ids(tmp_path, monkeypatch):
+    """Newly sent IDs are merged with IDs still awaiting cleanup."""
+    storage_file = tmp_path / "digest_messages.json"
+    monkeypatch.setattr("src.utils.MESSAGE_STORAGE_FILE", str(storage_file))
+
+    user_id = 123456
+    save_digest_message_ids([102], user_id)
+
+    merge_digest_message_ids([201, 202, 102], user_id)
+
+    assert get_digest_message_ids(user_id) == [102, 201, 202]
+
+
+@pytest.mark.unit
+def test_record_digest_delete_failures_retries_then_drops(tmp_path, monkeypatch):
+    """Failed IDs are retried until the attempt budget is exhausted."""
+    storage_file = tmp_path / "digest_messages.json"
+    monkeypatch.setattr("src.utils.MESSAGE_STORAGE_FILE", str(storage_file))
+
+    user_id = 123456
+    save_digest_message_ids([500], user_id)
+
+    for _ in range(MAX_DIGEST_DELETE_ATTEMPTS - 1):
+        assert record_digest_delete_failures([500], user_id) == [500]
+        assert get_digest_message_ids(user_id) == [500]
+
+    # The attempt that reaches the budget drops the ID for good.
+    assert record_digest_delete_failures([500], user_id) == []
+    assert get_digest_message_ids(user_id) == []

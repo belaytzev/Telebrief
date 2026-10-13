@@ -152,38 +152,127 @@ def split_message(text: str, max_length: int = 4000) -> list[str]:
 # Message ID storage for cleanup functionality
 MESSAGE_STORAGE_FILE = "data/digest_messages.json"
 
+# How many times a single message may fail to delete before it is considered
+# permanently undeletable and dropped from the retry set.
+MAX_DIGEST_DELETE_ATTEMPTS = 3
+
+
+def _load_digest_storage() -> dict:
+    """Load the raw digest-message storage, tolerating a missing or corrupt file."""
+    storage_path = Path(MESSAGE_STORAGE_FILE)
+    if not storage_path.exists():
+        return {}
+    try:
+        with open(storage_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except (json.JSONDecodeError, IOError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def _write_digest_storage(data: dict) -> None:
+    """Persist the raw digest-message storage, creating the parent directory if needed."""
+    storage_path = Path(MESSAGE_STORAGE_FILE)
+    storage_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(storage_path, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+
+
+def _get_user_entry(data: dict, user_id: int) -> dict:
+    """Return a user's storage entry, normalized to a dict with the expected keys."""
+    entry = data.get(str(user_id))
+    if not isinstance(entry, dict):
+        entry = {}
+    if not isinstance(entry.get("message_ids"), list):
+        entry["message_ids"] = []
+    if not isinstance(entry.get("delete_attempts"), dict):
+        entry["delete_attempts"] = {}
+    return entry
+
 
 def save_digest_message_ids(message_ids: List[int], user_id: int) -> None:
     """
-    Save message IDs of sent digest messages for later cleanup.
+    Replace the stored message IDs of sent digest messages for later cleanup.
+
+    The tracked messages are replaced wholesale, so delete-attempt counters
+    from previous cleanup runs are reset.
 
     Args:
         message_ids: List of Telegram message IDs
         user_id: Target user ID
     """
-    # Create data directory if it doesn't exist
-    storage_path = Path(MESSAGE_STORAGE_FILE)
-    storage_path.parent.mkdir(parents=True, exist_ok=True)
-
-    # Load existing data
-    data = {}
-    if storage_path.exists():
-        try:
-            with open(storage_path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-        except (json.JSONDecodeError, IOError):
-            data = {}
-
-    # Store message IDs with timestamp
-    user_key = str(user_id)
-    data[user_key] = {
-        "message_ids": message_ids,
+    data = _load_digest_storage()
+    data[str(user_id)] = {
+        "message_ids": list(message_ids),
         "timestamp": datetime.now(timezone.utc).isoformat(),
+        "delete_attempts": {},
     }
+    _write_digest_storage(data)
 
-    # Save to file
-    with open(storage_path, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
+
+def merge_digest_message_ids(message_ids: List[int], user_id: int) -> None:
+    """
+    Add newly sent message IDs without discarding IDs still awaiting cleanup.
+
+    When a cleanup run leaves some messages undeleted, those IDs stay in
+    storage. Saving the next digest must merge with them (rather than replace)
+    so the leftover IDs are still retried by a later cleanup.
+
+    Args:
+        message_ids: Message IDs of the digest just sent
+        user_id: Target user ID
+    """
+    data = _load_digest_storage()
+    entry = _get_user_entry(data, user_id)
+    merged = list(entry["message_ids"])
+    for message_id in message_ids:
+        if message_id not in merged:
+            merged.append(message_id)
+    entry["message_ids"] = merged
+    entry["timestamp"] = datetime.now(timezone.utc).isoformat()
+    data[str(user_id)] = entry
+    _write_digest_storage(data)
+
+
+def record_digest_delete_failures(failed_ids: List[int], user_id: int) -> List[int]:
+    """
+    Keep the message IDs whose deletion failed so they are retried later.
+
+    Each failure bumps a per-message attempt counter. Messages that reach
+    ``MAX_DIGEST_DELETE_ATTEMPTS`` failures are treated as permanently
+    undeletable: they are dropped from storage and not returned for retry.
+
+    Args:
+        failed_ids: Message IDs that could not be deleted in this run
+        user_id: Target user ID
+
+    Returns:
+        The subset of ``failed_ids`` that is still worth retrying.
+    """
+    data = _load_digest_storage()
+    entry = _get_user_entry(data, user_id)
+    attempts = entry["delete_attempts"]
+
+    retryable: List[int] = []
+    for message_id in failed_ids:
+        key = str(message_id)
+        attempts[key] = attempts.get(key, 0) + 1
+        if attempts[key] < MAX_DIGEST_DELETE_ATTEMPTS:
+            retryable.append(message_id)
+        else:
+            del attempts[key]
+
+    if retryable:
+        entry["message_ids"] = retryable
+        entry["timestamp"] = datetime.now(timezone.utc).isoformat()
+        data[str(user_id)] = entry
+        _write_digest_storage(data)
+    else:
+        # Nothing left worth retrying - drop the user's entry entirely.
+        data.pop(str(user_id), None)
+        _write_digest_storage(data)
+
+    return retryable
 
 
 def get_digest_message_ids(user_id: int) -> List[int]:
@@ -196,24 +285,7 @@ def get_digest_message_ids(user_id: int) -> List[int]:
     Returns:
         List of message IDs
     """
-    storage_path = Path(MESSAGE_STORAGE_FILE)
-
-    if not storage_path.exists():
-        return []
-
-    try:
-        with open(storage_path, "r", encoding="utf-8") as f:
-            data = json.load(f)
-
-        user_key = str(user_id)
-        if user_key in data:
-            message_ids: List[int] = data[user_key].get("message_ids", [])
-            return message_ids
-
-    except (json.JSONDecodeError, IOError, KeyError):
-        pass
-
-    return []
+    return list(_get_user_entry(_load_digest_storage(), user_id)["message_ids"])
 
 
 def clear_digest_message_ids(user_id: int) -> None:
@@ -223,22 +295,8 @@ def clear_digest_message_ids(user_id: int) -> None:
     Args:
         user_id: Target user ID
     """
-    storage_path = Path(MESSAGE_STORAGE_FILE)
-
-    if not storage_path.exists():
+    data = _load_digest_storage()
+    if str(user_id) not in data:
         return
-
-    try:
-        with open(storage_path, "r", encoding="utf-8") as f:
-            data = json.load(f)
-
-        user_key = str(user_id)
-        if user_key in data:
-            del data[user_key]
-
-        # Save updated data
-        with open(storage_path, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=2, ensure_ascii=False)
-
-    except (json.JSONDecodeError, IOError, KeyError):
-        pass
+    del data[str(user_id)]
+    _write_digest_storage(data)

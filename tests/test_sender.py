@@ -192,6 +192,39 @@ async def test_cleanup_old_digests_success(sample_config, mock_logger, tmp_path,
 
 @pytest.mark.unit
 @pytest.mark.asyncio
+async def test_cleanup_old_digests_keeps_ids_that_failed(
+    sample_config, mock_logger, tmp_path, monkeypatch
+):
+    """Transient deletion failures must keep the affected IDs for a later retry."""
+    from telegram.error import TelegramError
+
+    from src.utils import get_digest_message_ids, save_digest_message_ids
+
+    storage_file = tmp_path / "digest_messages.json"
+    monkeypatch.setattr("src.utils.MESSAGE_STORAGE_FILE", str(storage_file))
+
+    user_id = 123456789
+    save_digest_message_ids([101, 102, 103], user_id)
+
+    async def delete_message(**kwargs):
+        if kwargs["message_id"] == 102:
+            raise TelegramError("Timed out")
+
+    with patch("src.sender.Bot") as mock_bot_class:
+        mock_bot = MagicMock()
+        mock_bot.delete_message = AsyncMock(side_effect=delete_message)
+        mock_bot_class.return_value = mock_bot
+
+        sender = DigestSender(sample_config, mock_logger)
+        result = await sender.cleanup_old_digests(user_id)
+
+    assert result is False
+    assert mock_bot.delete_message.call_count == 3
+    assert get_digest_message_ids(user_id) == [102]
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
 async def test_cleanup_old_digests_no_messages(sample_config, mock_logger, tmp_path, monkeypatch):
     """Test cleanup when no messages exist."""
     storage_file = tmp_path / "nonexistent.json"
@@ -430,3 +463,71 @@ async def test_summary_sent_before_channel_messages(
 
     third_call_kwargs = mock_bot.send_message.call_args_list[2][1]
     assert third_call_kwargs.get("text") == "Message 2"
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_cleanup_old_digests_retries_pending_ids(
+    sample_config, mock_logger, tmp_path, monkeypatch
+):
+    """An ID kept after a transient failure is retried by the next cleanup."""
+    from telegram.error import TelegramError
+
+    from src.utils import get_digest_message_ids, save_digest_message_ids
+
+    storage_file = tmp_path / "digest_messages.json"
+    monkeypatch.setattr("src.utils.MESSAGE_STORAGE_FILE", str(storage_file))
+
+    user_id = 123456789
+    save_digest_message_ids([101, 102], user_id)
+
+    with patch("src.sender.Bot") as mock_bot_class:
+        mock_bot = MagicMock()
+        mock_bot.delete_message = AsyncMock(side_effect=TelegramError("Timed out"))
+        mock_bot_class.return_value = mock_bot
+
+        sender = DigestSender(sample_config, mock_logger)
+        first = await sender.cleanup_old_digests(user_id)
+
+        mock_bot.delete_message = AsyncMock()
+        second = await sender.cleanup_old_digests(user_id)
+
+    assert first is False
+    assert second is True
+    assert get_digest_message_ids(user_id) == []
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_cleanup_old_digests_drops_permanently_undeletable(
+    sample_config, mock_logger, tmp_path, monkeypatch
+):
+    """A message that never deletes is dropped once the retry budget is spent."""
+    from telegram.error import TelegramError
+
+    from src.utils import (
+        MAX_DIGEST_DELETE_ATTEMPTS,
+        get_digest_message_ids,
+        save_digest_message_ids,
+    )
+
+    storage_file = tmp_path / "digest_messages.json"
+    monkeypatch.setattr("src.utils.MESSAGE_STORAGE_FILE", str(storage_file))
+
+    user_id = 123456789
+    save_digest_message_ids([500], user_id)
+
+    error = TelegramError("message can't be deleted")
+
+    with patch("src.sender.Bot") as mock_bot_class:
+        mock_bot = MagicMock()
+        mock_bot.delete_message = AsyncMock(side_effect=error)
+        mock_bot_class.return_value = mock_bot
+
+        sender = DigestSender(sample_config, mock_logger)
+        results = [
+            await sender.cleanup_old_digests(user_id) for _ in range(MAX_DIGEST_DELETE_ATTEMPTS)
+        ]
+
+    assert results == [False] * MAX_DIGEST_DELETE_ATTEMPTS
+    assert get_digest_message_ids(user_id) == []

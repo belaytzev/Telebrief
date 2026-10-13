@@ -4,7 +4,7 @@ Telegram bot sender for delivering digests.
 
 import asyncio
 import logging
-from typing import Optional
+from typing import List, Optional
 
 from telegram import Bot
 from telegram import Message as TelegramMessage
@@ -14,10 +14,12 @@ from telegram.error import TelegramError
 from src.config_loader import Config
 from src.formatter import DigestFormatter
 from src.utils import (
+    MAX_DIGEST_DELETE_ATTEMPTS,
     clear_digest_message_ids,
     get_digest_message_ids,
     markdown_to_telegram_html,
-    save_digest_message_ids,
+    merge_digest_message_ids,
+    record_digest_delete_failures,
     split_message,
 )
 
@@ -204,11 +206,17 @@ class DigestSender:
         """
         Delete previous digest messages.
 
+        Message IDs whose deletion fails transiently stay in storage so a
+        later cleanup (or the next digest run) can retry them. Once a message
+        has failed ``MAX_DIGEST_DELETE_ATTEMPTS`` times it is treated as
+        permanently undeletable and dropped.
+
         Args:
             user_id: Target user ID (defaults to configured user)
 
         Returns:
-            True if cleanup successful, False otherwise
+            True only if every tracked message was deleted; False if any
+            deletion failed (successfully deleted messages are still removed).
         """
         if user_id is None:
             user_id = self.target_user_id
@@ -228,7 +236,7 @@ class DigestSender:
         self.logger.info(f"Cleaning up {len(message_ids)} previous digest messages")
 
         deleted_count = 0
-        failed_count = 0
+        failed_ids: List[int] = []
 
         for message_id in message_ids:
             try:
@@ -241,19 +249,27 @@ class DigestSender:
                     deleted_count += 1
                 else:
                     self.logger.warning(f"Failed to delete message {message_id}: {e}")
-                    failed_count += 1
+                    failed_ids.append(message_id)
 
-        # Clear stored message IDs
-        clear_digest_message_ids(user_id)
-
-        if failed_count == 0:
+        if not failed_ids:
+            # Everything was deleted, so nothing needs to stay tracked.
+            clear_digest_message_ids(user_id)
             self.logger.info(f"✅ Cleaned up {deleted_count} messages successfully")
             return True
-        else:
+
+        # Keep the failures for a later retry, dropping any that have already
+        # exceeded the retry budget.
+        retryable_ids = record_digest_delete_failures(failed_ids, user_id)
+        dropped_count = len(failed_ids) - len(retryable_ids)
+        if dropped_count:
             self.logger.warning(
-                f"⚠️ Cleaned up {deleted_count} messages, {failed_count} failed to delete"
+                f"⚠️ Gave up on {dropped_count} message(s) after "
+                f"{MAX_DIGEST_DELETE_ATTEMPTS} failed delete attempts"
             )
-            return deleted_count > 0
+        self.logger.warning(
+            f"⚠️ Cleaned up {deleted_count} messages, {len(failed_ids)} failed to delete"
+        )
+        return False
 
     async def _send_message_with_tracking(
         self, user_id: int, message_text: str, channel_name: str
@@ -408,7 +424,7 @@ class DigestSender:
         # Save all message IDs for future cleanup (summary first for correct order)
         all_ids = ([summary_id] if summary_id else []) + sent_message_ids
         if all_ids:
-            save_digest_message_ids(all_ids, user_id)
+            merge_digest_message_ids(all_ids, user_id)
             self.logger.info(f"Saved {len(all_ids)} message IDs for cleanup")
 
         return self._log_and_return_result(success_count, len(channel_messages), failed_channels)
