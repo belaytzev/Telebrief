@@ -9,12 +9,11 @@ from typing import List, Optional
 from telegram import Bot
 from telegram import Message as TelegramMessage
 from telegram.constants import ParseMode
-from telegram.error import TelegramError
+from telegram.error import NetworkError, RetryAfter, TelegramError, TimedOut
 
 from src.config_loader import Config
 from src.formatter import DigestFormatter
 from src.utils import (
-    MAX_DIGEST_DELETE_ATTEMPTS,
     clear_digest_message_ids,
     get_digest_message_ids,
     markdown_to_telegram_html,
@@ -22,6 +21,10 @@ from src.utils import (
     record_digest_delete_failures,
     split_message,
 )
+
+# A delete that fails with one of these is worth retrying: the message almost
+# certainly still exists and it was the journey to and from Telegram that failed.
+_TRANSIENT_DELETE_ERRORS = (TimedOut, NetworkError, RetryAfter)
 
 
 class DigestSender:
@@ -206,10 +209,11 @@ class DigestSender:
         """
         Delete previous digest messages.
 
-        Message IDs whose deletion fails transiently stay in storage so a
-        later cleanup (or the next digest run) can retry them. Once a message
-        has failed ``MAX_DIGEST_DELETE_ATTEMPTS`` times it is treated as
-        permanently undeletable and dropped.
+        Message IDs whose deletion fails stay in storage so a later cleanup
+        (or the next digest run) can retry them. A permanently undeletable
+        message is dropped after ``MAX_DIGEST_DELETE_ATTEMPTS`` failures, while a
+        transient failure (timeout, network error or rate limit) is retained
+        without counting against that budget.
 
         Args:
             user_id: Target user ID (defaults to configured user)
@@ -237,19 +241,16 @@ class DigestSender:
 
         deleted_count = 0
         failed_ids: List[int] = []
+        transient_ids: List[int] = []
 
         for message_id in message_ids:
-            try:
-                await self.bot.delete_message(chat_id=user_id, message_id=message_id)
+            outcome = await self._delete_message(user_id, message_id)
+            if outcome is True:
                 deleted_count += 1
-            except TelegramError as e:
-                # Message might already be deleted or not found
-                if "message to delete not found" in str(e).lower():
-                    self.logger.debug(f"Message {message_id} already deleted")
-                    deleted_count += 1
-                else:
-                    self.logger.warning(f"Failed to delete message {message_id}: {e}")
-                    failed_ids.append(message_id)
+            else:
+                failed_ids.append(message_id)
+                if outcome is None:
+                    transient_ids.append(message_id)
 
         if not failed_ids:
             # Everything was deleted, so nothing needs to stay tracked.
@@ -257,19 +258,40 @@ class DigestSender:
             self.logger.info(f"✅ Cleaned up {deleted_count} messages successfully")
             return True
 
-        # Keep the failures for a later retry, dropping any that have already
-        # exceeded the retry budget.
-        retryable_ids = record_digest_delete_failures(failed_ids, user_id)
+        # Keep the failures for a later retry, dropping only messages that have
+        # definitively failed one time too many.
+        retryable_ids = record_digest_delete_failures(failed_ids, user_id, transient_ids)
         dropped_count = len(failed_ids) - len(retryable_ids)
         if dropped_count:
             self.logger.warning(
-                f"⚠️ Gave up on {dropped_count} message(s) after "
-                f"{MAX_DIGEST_DELETE_ATTEMPTS} failed delete attempts"
+                f"⚠️ Gave up on {dropped_count} message(s) that could not be deleted"
             )
         self.logger.warning(
             f"⚠️ Cleaned up {deleted_count} messages, {len(failed_ids)} failed to delete"
         )
         return False
+
+    async def _delete_message(self, user_id: int, message_id: int) -> Optional[bool]:
+        """
+        Delete one tracked message, classifying any failure.
+
+        Returns True if the message is gone (deleted, or already not found),
+        None if the delete failed transiently (worth retrying), or False if it
+        failed permanently.
+        """
+        try:
+            await self.bot.delete_message(chat_id=user_id, message_id=message_id)
+            return True
+        except _TRANSIENT_DELETE_ERRORS as e:
+            self.logger.warning(f"Could not delete message {message_id} yet: {e}")
+            return None
+        except TelegramError as e:
+            # Message might already be deleted or not found
+            if "message to delete not found" in str(e).lower():
+                self.logger.debug(f"Message {message_id} already deleted")
+                return True
+            self.logger.warning(f"Failed to delete message {message_id}: {e}")
+            return False
 
     async def _send_message_with_tracking(
         self, user_id: int, message_text: str, channel_name: str

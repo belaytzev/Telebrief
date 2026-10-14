@@ -9,7 +9,7 @@ import os
 import re
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import List
+from typing import Iterable, List, Optional
 
 # Link text may hold one level of nested brackets, e.g. a channel named "Acme [beta]".
 _INLINE_MD = re.compile(
@@ -156,6 +156,12 @@ MESSAGE_STORAGE_FILE = "data/digest_messages.json"
 # permanently undeletable and dropped from the retry set.
 MAX_DIGEST_DELETE_ATTEMPTS = 3
 
+# A delete that fails transiently (a timeout, a dropped connection, a Telegram
+# rate limit) is not counted against MAX_DIGEST_DELETE_ATTEMPTS. Instead its ID
+# is retained and retried for this long, so a short outage never discards a
+# message that could still be cleaned up once connectivity returns.
+TRANSIENT_DELETE_RETENTION = timedelta(days=7)
+
 
 def _load_digest_storage() -> dict:
     """Load the raw digest-message storage, tolerating a missing or corrupt file."""
@@ -187,6 +193,8 @@ def _get_user_entry(data: dict, user_id: int) -> dict:
         entry["message_ids"] = []
     if not isinstance(entry.get("delete_attempts"), dict):
         entry["delete_attempts"] = {}
+    if not isinstance(entry.get("transient_first_seen"), dict):
+        entry["transient_first_seen"] = {}
     return entry
 
 
@@ -234,37 +242,60 @@ def merge_digest_message_ids(message_ids: List[int], user_id: int) -> None:
     _write_digest_storage(data)
 
 
-def record_digest_delete_failures(failed_ids: List[int], user_id: int) -> List[int]:
+def record_digest_delete_failures(
+    failed_ids: List[int], user_id: int, transient_ids: Optional[Iterable[int]] = None
+) -> List[int]:
     """
     Keep the message IDs whose deletion failed so they are retried later.
 
-    Each failure bumps a per-message attempt counter. Messages that reach
-    ``MAX_DIGEST_DELETE_ATTEMPTS`` failures are treated as permanently
-    undeletable: they are dropped from storage and not returned for retry.
+    A permanent failure (the message is gone, the bot lacks the right, and so
+    on) bumps a per-message attempt counter, and a message reaching
+    ``MAX_DIGEST_DELETE_ATTEMPTS`` such failures is dropped as undeletable. A
+    transient failure is instead retained for ``TRANSIENT_DELETE_RETENTION``, so
+    an outage never counts against that budget and the ID survives to be retried
+    once connectivity returns.
 
     Args:
         failed_ids: Message IDs that could not be deleted in this run
         user_id: Target user ID
+        transient_ids: The subset of ``failed_ids`` that failed transiently
 
     Returns:
         The subset of ``failed_ids`` that is still worth retrying.
     """
+    transient = set(transient_ids or ())
     data = _load_digest_storage()
     entry = _get_user_entry(data, user_id)
     attempts = entry["delete_attempts"]
+    transient_seen = entry["transient_first_seen"]
+    now = datetime.now(timezone.utc)
 
     retryable: List[int] = []
     for message_id in failed_ids:
         key = str(message_id)
-        attempts[key] = attempts.get(key, 0) + 1
-        if attempts[key] < MAX_DIGEST_DELETE_ATTEMPTS:
-            retryable.append(message_id)
+        if message_id in transient:
+            first_seen = transient_seen.get(key)
+            if first_seen is None:
+                transient_seen[key] = now.isoformat()
+                retryable.append(message_id)
+            elif now - datetime.fromisoformat(first_seen) < TRANSIENT_DELETE_RETENTION:
+                retryable.append(message_id)
+            else:
+                del transient_seen[key]
         else:
-            del attempts[key]
+            attempts[key] = attempts.get(key, 0) + 1
+            if attempts[key] < MAX_DIGEST_DELETE_ATTEMPTS:
+                retryable.append(message_id)
+            else:
+                del attempts[key]
+
+    entry["transient_first_seen"] = {
+        key: seen for key, seen in transient_seen.items() if int(key) in retryable
+    }
 
     if retryable:
         entry["message_ids"] = retryable
-        entry["timestamp"] = datetime.now(timezone.utc).isoformat()
+        entry["timestamp"] = now.isoformat()
         data[str(user_id)] = entry
         _write_digest_storage(data)
     else:

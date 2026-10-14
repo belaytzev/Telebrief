@@ -1,5 +1,6 @@
 """Tests for utils module."""
 
+import json
 import logging
 from datetime import datetime, timedelta, timezone
 
@@ -7,6 +8,7 @@ import pytest
 
 from src.utils import (
     MAX_DIGEST_DELETE_ATTEMPTS,
+    TRANSIENT_DELETE_RETENTION,
     clear_digest_message_ids,
     get_digest_message_ids,
     get_lookback_time,
@@ -307,4 +309,39 @@ def test_record_digest_delete_failures_retries_then_drops(tmp_path, monkeypatch)
 
     # The attempt that reaches the budget drops the ID for good.
     assert record_digest_delete_failures([500], user_id) == []
+    assert get_digest_message_ids(user_id) == []
+
+
+@pytest.mark.unit
+def test_record_digest_delete_failures_keeps_transient_ids_past_budget(tmp_path, monkeypatch):
+    """Transient failures are retained well past the permanent attempt budget."""
+    storage_file = tmp_path / "digest_messages.json"
+    monkeypatch.setattr("src.utils.MESSAGE_STORAGE_FILE", str(storage_file))
+
+    user_id = 123456
+    save_digest_message_ids([500], user_id)
+
+    for _ in range(MAX_DIGEST_DELETE_ATTEMPTS + 2):
+        assert record_digest_delete_failures([500], user_id, transient_ids=[500]) == [500]
+        assert get_digest_message_ids(user_id) == [500]
+
+
+@pytest.mark.unit
+def test_record_digest_delete_failures_drops_transient_ids_after_retention(tmp_path, monkeypatch):
+    """A transient failure older than the retention window is finally dropped."""
+
+    storage_file = tmp_path / "digest_messages.json"
+    monkeypatch.setattr("src.utils.MESSAGE_STORAGE_FILE", str(storage_file))
+
+    user_id = 123456
+    save_digest_message_ids([500], user_id)
+
+    with open(storage_file, encoding="utf-8") as f:
+        data = json.load(f)
+    stale = datetime.now(timezone.utc) - TRANSIENT_DELETE_RETENTION - timedelta(hours=1)
+    data[str(user_id)]["transient_first_seen"] = {"500": stale.isoformat()}
+    with open(storage_file, "w", encoding="utf-8") as f:
+        json.dump(data, f)
+
+    assert record_digest_delete_failures([500], user_id, transient_ids=[500]) == []
     assert get_digest_message_ids(user_id) == []

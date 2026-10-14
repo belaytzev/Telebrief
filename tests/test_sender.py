@@ -531,3 +531,39 @@ async def test_cleanup_old_digests_drops_permanently_undeletable(
 
     assert results == [False] * MAX_DIGEST_DELETE_ATTEMPTS
     assert get_digest_message_ids(user_id) == []
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_cleanup_old_digests_keeps_ids_after_repeated_timeouts(
+    sample_config, mock_logger, tmp_path, monkeypatch
+):
+    """Repeated timeouts must never drop an ID, which a later success then deletes."""
+    from telegram.error import TimedOut
+
+    from src.utils import (
+        MAX_DIGEST_DELETE_ATTEMPTS,
+        get_digest_message_ids,
+        save_digest_message_ids,
+    )
+
+    storage_file = tmp_path / "digest_messages.json"
+    monkeypatch.setattr("src.utils.MESSAGE_STORAGE_FILE", str(storage_file))
+
+    user_id = 123456789
+    save_digest_message_ids([101], user_id)
+
+    with patch("src.sender.Bot") as mock_bot_class:
+        mock_bot = MagicMock()
+        mock_bot.delete_message = AsyncMock(side_effect=TimedOut("Timed out"))
+        mock_bot_class.return_value = mock_bot
+
+        sender = DigestSender(sample_config, mock_logger)
+        for _ in range(MAX_DIGEST_DELETE_ATTEMPTS):
+            assert await sender.cleanup_old_digests(user_id) is False
+            assert get_digest_message_ids(user_id) == [101]
+
+        mock_bot.delete_message = AsyncMock()
+        assert await sender.cleanup_old_digests(user_id) is True
+
+    assert get_digest_message_ids(user_id) == []
