@@ -3,6 +3,7 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from telegram.error import BadRequest, Forbidden, TelegramError, TimedOut
 
 from src.sender import DigestSender
 
@@ -215,6 +216,94 @@ async def test_cleanup_old_digests_unauthorized(sample_config, mock_logger):
     result = await sender.cleanup_old_digests(999999999)
 
     assert result is False
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "error, expected_ids, expected_result",
+    [
+        (TimedOut(), [102], False),
+        (TelegramError("Timed out"), [102], False),
+        (BadRequest("Message can't be deleted for everyone"), [], True),
+        (Forbidden("Forbidden: bot was blocked by the user"), [], True),
+    ],
+)
+async def test_cleanup_old_digests_keeps_only_retryable_ids(
+    sample_config, mock_logger, tmp_path, monkeypatch, error, expected_ids, expected_result
+):
+    from src.utils import get_digest_message_ids, save_digest_message_ids
+
+    monkeypatch.setattr("src.utils.MESSAGE_STORAGE_FILE", str(tmp_path / "digest_messages.json"))
+    user_id = 123456789
+    save_digest_message_ids([101, 102, 103], user_id)
+
+    with patch("src.sender.Bot") as mock_bot_class:
+        mock_bot = MagicMock()
+        mock_bot.delete_message = AsyncMock(side_effect=[None, error, None])
+        mock_bot_class.return_value = mock_bot
+
+        sender = DigestSender(sample_config, mock_logger)
+        result = await sender.cleanup_old_digests(user_id)
+
+    assert result is expected_result
+    assert mock_bot.delete_message.call_count == 3
+    assert get_digest_message_ids(user_id) == expected_ids
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_cleanup_old_digests_not_found_counts_as_deleted(
+    sample_config, mock_logger, tmp_path, monkeypatch
+):
+    from src.utils import get_digest_message_ids, save_digest_message_ids
+
+    monkeypatch.setattr("src.utils.MESSAGE_STORAGE_FILE", str(tmp_path / "digest_messages.json"))
+    user_id = 123456789
+    save_digest_message_ids([101, 102], user_id)
+
+    with patch("src.sender.Bot") as mock_bot_class:
+        mock_bot = MagicMock()
+        mock_bot.delete_message = AsyncMock(
+            side_effect=[None, BadRequest("Message to delete not found")]
+        )
+        mock_bot_class.return_value = mock_bot
+
+        sender = DigestSender(sample_config, mock_logger)
+        result = await sender.cleanup_old_digests(user_id)
+
+    assert result is True
+    assert get_digest_message_ids(user_id) == []
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "auto_cleanup, expected_ids", [(True, [102, 201, 202]), (False, [201, 202])]
+)
+async def test_send_with_tracking_keeps_pending_retry_ids(
+    sample_config, mock_logger, tmp_path, monkeypatch, auto_cleanup, expected_ids
+):
+    from src.utils import get_digest_message_ids, save_digest_message_ids
+
+    monkeypatch.setattr("src.utils.MESSAGE_STORAGE_FILE", str(tmp_path / "digest_messages.json"))
+    sample_config.settings.auto_cleanup_old_digests = auto_cleanup
+    user_id = 123456789
+    save_digest_message_ids([102], user_id)
+
+    with patch("src.sender.Bot") as mock_bot_class:
+        mock_bot = MagicMock()
+        mock_bot.send_message = AsyncMock(
+            side_effect=[MagicMock(message_id=201), MagicMock(message_id=202)]
+        )
+        mock_bot_class.return_value = mock_bot
+
+        sender = DigestSender(sample_config, mock_logger)
+        await sender.send_channel_messages_with_tracking(
+            [("Channel 1", "Message 1")], summary_message="Summary", user_id=user_id
+        )
+
+    assert get_digest_message_ids(user_id) == expected_ids
 
 
 @pytest.mark.unit

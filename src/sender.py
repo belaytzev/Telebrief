@@ -4,12 +4,12 @@ Telegram bot sender for delivering digests.
 
 import asyncio
 import logging
-from typing import Optional
+from typing import Literal, Optional
 
 from telegram import Bot
 from telegram import Message as TelegramMessage
 from telegram.constants import ParseMode
-from telegram.error import TelegramError
+from telegram.error import BadRequest, Forbidden, TelegramError
 
 from src.config_loader import Config
 from src.formatter import DigestFormatter
@@ -204,11 +204,15 @@ class DigestSender:
         """
         Delete previous digest messages.
 
+        IDs that failed with a transient error stay stored for the next cleanup;
+        IDs Telegram refuses to delete (BadRequest, Forbidden) are dropped: a retry
+        cannot change the outcome, so they do not count as a failure.
+
         Args:
             user_id: Target user ID (defaults to configured user)
 
         Returns:
-            True if cleanup successful, False otherwise
+            True if nothing is left to retry, False if some IDs are kept for retry
         """
         if user_id is None:
             user_id = self.target_user_id
@@ -227,33 +231,39 @@ class DigestSender:
 
         self.logger.info(f"Cleaning up {len(message_ids)} previous digest messages")
 
-        deleted_count = 0
-        failed_count = 0
+        outcomes = {mid: await self._delete_message(user_id, mid) for mid in message_ids}
+        retry_ids = [mid for mid, outcome in outcomes.items() if outcome == "retry"]
+        dropped_count = sum(outcome == "dropped" for outcome in outcomes.values())
+        deleted_count = len(outcomes) - len(retry_ids) - dropped_count
 
-        for message_id in message_ids:
-            try:
-                await self.bot.delete_message(chat_id=user_id, message_id=message_id)
-                deleted_count += 1
-            except TelegramError as e:
-                # Message might already be deleted or not found
-                if "message to delete not found" in str(e).lower():
-                    self.logger.debug(f"Message {message_id} already deleted")
-                    deleted_count += 1
-                else:
-                    self.logger.warning(f"Failed to delete message {message_id}: {e}")
-                    failed_count += 1
-
-        # Clear stored message IDs
-        clear_digest_message_ids(user_id)
-
-        if failed_count == 0:
-            self.logger.info(f"✅ Cleaned up {deleted_count} messages successfully")
-            return True
-        else:
+        if retry_ids:
+            save_digest_message_ids(retry_ids, user_id)
             self.logger.warning(
-                f"⚠️ Cleaned up {deleted_count} messages, {failed_count} failed to delete"
+                f"⚠️ Cleaned up {deleted_count} messages, {dropped_count} dropped, "
+                f"{len(retry_ids)} kept for retry"
             )
-            return deleted_count > 0
+            return False
+
+        clear_digest_message_ids(user_id)
+        self.logger.info(f"✅ Cleaned up {deleted_count} messages, {dropped_count} dropped")
+        return True
+
+    async def _delete_message(
+        self, user_id: int, message_id: int
+    ) -> Literal["deleted", "retry", "dropped"]:
+        """Delete one message and report what happened to it."""
+        try:
+            await self.bot.delete_message(chat_id=user_id, message_id=message_id)
+            return "deleted"
+        except (BadRequest, Forbidden) as e:
+            if "message to delete not found" in str(e).lower():
+                self.logger.debug(f"Message {message_id} already deleted")
+                return "deleted"
+            self.logger.warning(f"Cannot delete message {message_id}, dropping it: {e}")
+            return "dropped"
+        except TelegramError as e:
+            self.logger.warning(f"Failed to delete message {message_id}, will retry: {e}")
+            return "retry"
 
     async def _send_message_with_tracking(
         self, user_id: int, message_text: str, channel_name: str
@@ -407,6 +417,9 @@ class DigestSender:
 
         # Save all message IDs for future cleanup (summary first for correct order)
         all_ids = ([summary_id] if summary_id else []) + sent_message_ids
+        if all_ids and self.config.settings.auto_cleanup_old_digests:
+            # ponytail: merge only with auto-cleanup, keep retry IDs under their own key if /cleanup leftovers must survive with it off
+            all_ids = get_digest_message_ids(user_id) + all_ids
         if all_ids:
             save_digest_message_ids(all_ids, user_id)
             self.logger.info(f"Saved {len(all_ids)} message IDs for cleanup")
