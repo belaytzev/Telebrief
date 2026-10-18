@@ -1059,6 +1059,75 @@ async def test_anthropic_provider_error(mock_logger):
             )
 
 
+def _anthropic_400(message: str):
+    resp = MagicMock()
+    resp.status = 400
+    resp.text = AsyncMock(
+        return_value=(
+            '{"type":"error","error":{"type":"invalid_request_error","message":"' + message + '"}}'
+        )
+    )
+    return resp
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_anthropic_provider_drops_temperature_rejected_by_model(mock_logger):
+    """Newer Claude models reject temperature; retry once without it."""
+    provider = AnthropicProvider(api_key="sk-ant-test", logger=mock_logger)
+
+    ok = MagicMock()
+    ok.status = 200
+    ok.json = AsyncMock(return_value={"content": [{"type": "text", "text": "haiku summary"}]})
+
+    mock_session = MagicMock()
+    mock_session.post = MagicMock(
+        side_effect=[
+            AsyncContextManager(_anthropic_400("`temperature` is deprecated for this model.")),
+            AsyncContextManager(ok),
+        ]
+    )
+
+    with patch("src.ai_providers.aiohttp.ClientSession") as mock_cs:
+        mock_cs.return_value = AsyncContextManager(mock_session)
+        result = await provider.chat_completion(
+            messages=[{"role": "user", "content": "Hello"}],
+            model="claude-haiku-5-5",
+            temperature=0.1,
+            max_tokens=500,
+        )
+
+    assert result == "haiku summary"
+    first, retry = (c.kwargs["json"] for c in mock_session.post.call_args_list)
+    assert first["temperature"] == 0.1
+    assert "temperature" not in retry
+    assert retry["max_tokens"] == 500
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_anthropic_provider_unrelated_400_not_retried(mock_logger):
+    """A 400 that doesn't name temperature is a real error: no retry."""
+    provider = AnthropicProvider(api_key="sk-ant-test", logger=mock_logger)
+
+    mock_session = MagicMock()
+    mock_session.post = MagicMock(
+        return_value=AsyncContextManager(_anthropic_400("max_tokens: field required"))
+    )
+
+    with patch("src.ai_providers.aiohttp.ClientSession") as mock_cs:
+        mock_cs.return_value = AsyncContextManager(mock_session)
+        with pytest.raises(RuntimeError, match="Anthropic API error 400"):
+            await provider.chat_completion(
+                messages=[{"role": "user", "content": "Hello"}],
+                model="claude-haiku-5-5",
+                temperature=0.7,
+                max_tokens=500,
+            )
+
+    assert mock_session.post.call_count == 1
+
+
 @pytest.mark.unit
 @pytest.mark.asyncio
 async def test_anthropic_provider_empty_content_array_raises(mock_logger):

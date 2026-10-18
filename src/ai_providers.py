@@ -270,12 +270,6 @@ class AnthropicProvider(AIProvider):
             else:
                 api_messages.append(msg)
 
-        url = "https://api.anthropic.com/v1/messages"
-        headers = {
-            "x-api-key": self._api_key,
-            "anthropic-version": "2023-06-01",
-            "content-type": "application/json",
-        }
         payload: Dict[str, Any] = {
             "model": model,
             "max_tokens": max_tokens,
@@ -285,12 +279,7 @@ class AnthropicProvider(AIProvider):
             payload["system"] = system_text
         payload["temperature"] = temperature
 
-        async with aiohttp.ClientSession(timeout=self.timeout) as session:
-            async with session.post(url, json=payload, headers=headers) as resp:
-                if resp.status != 200:
-                    body = await resp.text()
-                    raise RuntimeError(f"Anthropic API error {resp.status}: {body[:200]}")
-                data = await resp.json(content_type=None)
+        data = await self._post_messages(payload)
 
         stop_reason = data.get("stop_reason")
         usage = data.get("usage") or {}
@@ -325,6 +314,32 @@ class AnthropicProvider(AIProvider):
                 "Consider increasing max_tokens_per_summary in config.yaml."
             )
         return text
+
+    # ponytail: extra 400 round trip per call, cache rejected params per model if latency matters
+    async def _post_messages(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+        """POST to the Messages API, retrying once without temperature if the model rejects it."""
+        url = "https://api.anthropic.com/v1/messages"
+        headers = {
+            "x-api-key": self._api_key,
+            "anthropic-version": "2023-06-01",
+            "content-type": "application/json",
+        }
+        async with aiohttp.ClientSession(timeout=self.timeout) as session:
+            async with session.post(url, json=payload, headers=headers) as resp:
+                if resp.status == 200:
+                    data: Dict[str, Any] = await resp.json(content_type=None)
+                    return data
+                status = resp.status
+                body = await resp.text()
+
+        if status == 400 and "temperature" in payload and "temperature" in body:
+            retry_payload = dict(payload)
+            value = retry_payload.pop("temperature")
+            self.logger.debug(
+                "temperature=%r rejected by model, retrying without it: %s", value, body[:200]
+            )
+            return await self._post_messages(retry_payload)
+        raise RuntimeError(f"Anthropic API error {status}: {body[:200]}")
 
 
 def create_provider(
