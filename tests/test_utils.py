@@ -96,6 +96,7 @@ def test_setup_logging_info_level(tmp_path):
         assert logger.name == "telebrief"
         assert logger.level == logging.INFO
         assert len(logger.handlers) == 2  # Console and file handlers
+        assert logger.propagate is False
 
         # Check log file was created
         log_file = tmp_path / "logs" / "telebrief.log"
@@ -103,6 +104,32 @@ def test_setup_logging_info_level(tmp_path):
 
     finally:
         # Restore original directory
+        os.chdir(original_dir)
+
+
+@pytest.mark.unit
+def test_setup_logging_does_not_propagate_to_root(tmp_path):
+    """Test that logger returned by setup_logging does not propagate to root."""
+    import os
+
+    original_dir = os.getcwd()
+    os.chdir(tmp_path)
+
+    root_handler = logging.Handler()
+    root_records: list[logging.LogRecord] = []
+    root_handler.emit = lambda record: root_records.append(record)
+
+    root_logger = logging.getLogger()
+    root_logger.addHandler(root_handler)
+
+    try:
+        logger = setup_logging("INFO")
+        assert logger.propagate is False
+
+        logger.info("Test message for root propagation check")
+        assert len(root_records) == 0
+    finally:
+        root_logger.removeHandler(root_handler)
         os.chdir(original_dir)
 
 
