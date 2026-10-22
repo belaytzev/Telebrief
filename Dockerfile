@@ -1,5 +1,5 @@
 # Use Python 3.14 slim image — pinned for reproducibility
-FROM mirror.gcr.io/library/python:3.14.9-slim
+FROM mirror.gcr.io/library/python:3.15-slim
 
 COPY --from=ghcr.io/astral-sh/uv:0.13.5 /uv /bin/uv
 
