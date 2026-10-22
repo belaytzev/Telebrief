@@ -1,7 +1,7 @@
 # Use Python 3.14 slim image — pinned for reproducibility
-FROM mirror.gcr.io/library/python:3.14.7-slim
+FROM mirror.gcr.io/library/python:3.14.9-slim
 
-COPY --from=ghcr.io/astral-sh/uv:0.12.19 /uv /bin/uv
+COPY --from=ghcr.io/astral-sh/uv:0.13.5 /uv /bin/uv
 
 # Set working directory
 WORKDIR /app
