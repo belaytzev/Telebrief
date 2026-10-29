@@ -29,7 +29,7 @@ jobs:
           last=$(git describe --tags --abbrev=0 --match 'v[0-9]*')
           subjects=$(git log --format=%s "$last..HEAD")
           IFS=. read -r major minor patch <<< "${last#v}"
-          if grep -qE '^[a-z]+(\(.+\))?!:' <<< "$subjects" || git log --format=%b "$last..HEAD" | grep -q '^BREAKING CHANGE'; then
+          if grep -qE '^[a-z]+(\(.+\))?!:' <<< "$subjects" || git log --format=%b "$last..HEAD" | grep -qE '^BREAKING[ -]CHANGE: '; then
             if [ "$major" = 0 ]; then minor=$((minor + 1)); else major=$((major + 1)); minor=0; fi
             patch=0
           elif grep -qE '^feat(\(.+\))?:' <<< "$subjects"; then
