@@ -1,0 +1,46 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Tag & Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Tag, release and publish image
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          last=$(git describe --tags --abbrev=0 --match 'v[0-9]*')
+          subjects=$(git log --format=%s "$last..HEAD")
+          IFS=. read -r major minor patch <<< "${last#v}"
+          if grep -qE '^[a-z]+(\(.+\))?!:' <<< "$subjects" || git log --format=%b "$last..HEAD" | grep -q '^BREAKING CHANGE'; then
+            if [ "$major" = 0 ]; then minor=$((minor + 1)); else major=$((major + 1)); minor=0; fi
+            patch=0
+          elif grep -qE '^feat(\(.+\))?:' <<< "$subjects"; then
+            minor=$((minor + 1)); patch=0
+          elif grep -qE '^(fix|perf)(\(.+\))?:' <<< "$subjects"; then
+            patch=$((patch + 1))
+          else
+            echo "No feat/fix/perf commits since $last, nothing to release"
+            exit 0
+          fi
+          version="$major.$minor.$patch"
+          gh release create "v$version" --target "$GITHUB_SHA" --title "Version $version" --generate-notes
+          # a tag created with GITHUB_TOKEN does not fire push:tags, dispatch is the allowed exception
+          gh workflow run docker-publish.yml --ref "v$version"
