@@ -1,15 +1,10 @@
 # Telebrief landing page
 
-The Telebrief landing page: a static site built with Astro, in a skeuomorphic style with real depth, shadows and textures.
+The Telebrief landing page: a static site built with Astro and plain CSS.
 
 ## Design
 
-- Colors come from the Telebrief logo:
-  - background: deep navy (#07101a / #0b1825)
-  - accent: cerulean blue (#1b8ec9) for badges, links and interactive elements
-  - warm: amber (#f5a623) for the Claude badge in the hero
-- The layout is mobile-first and works on any screen size.
-- Pages are pre-rendered to static HTML.
+[`DESIGN.md`](DESIGN.md) is the source of truth: principles, color and type tokens, components, layout, motion and the checks to run before merging. The tokens live in `src/styles/global.css`.
 
 ## Stack
 
@@ -99,18 +94,24 @@ wrangler pages deploy dist --project-name=telebrief
 
 ```
 website/
+├── og/
+│   └── og-image.html        # Source of public/og.png
 ├── public/                  # Static assets
 │   ├── favicon.svg
 │   ├── llms.txt             # Summary for LLM crawlers
-│   └── logo.webp            # Telebrief logo
+│   ├── logo.webp            # Telebrief logo
+│   └── og.png               # Link preview image
 ├── src/
+│   ├── components/
+│   │   └── GitHubIcon.astro
 │   ├── layouts/
 │   │   └── Layout.astro    # Base HTML layout
 │   ├── pages/
 │   │   └── index.astro     # Landing page
 │   └── styles/
-│       └── global.css      # Global styles & design system
+│       └── global.css      # Tokens and shared components
 ├── astro.config.mjs        # Astro configuration
+├── DESIGN.md               # Design system
 ├── package.json            # Dependencies
 ├── wrangler.jsonc          # Cloudflare config
 └── README.md               # This file
@@ -118,34 +119,25 @@ website/
 
 ## Customization
 
-### Colors
+### Colors and type
 
-The color variables are in `src/styles/global.css`:
-
-```css
-:root {
-  --accent: #1b8ec9;         /* cerulean blue — badges, links, interactive elements */
-  --accent-light: #7bbde0;   /* hover state */
-  --accent-dim: rgba(27, 142, 201, 0.09);    /* subtle background fill */
-  --accent-border: rgba(27, 142, 201, 0.28); /* bordered components */
-  --warm: #f5a623;           /* amber — hero Claude badge */
-  /* ... */
-}
-```
+Change tokens in `src/styles/global.css` and the matching table in `DESIGN.md` in the same commit.
 
 ### Content
 
-All sections are in `src/pages/index.astro`:
-
-- hero
-- features
-- how it works
-- call to action
-- footer, including the `.claude-credit` badge (a blue pill that uses the `--accent`, `--accent-border` and `--accent-dim` variables)
+All sections are in `src/pages/index.astro`: the hero with the example digest, how it works, bot commands, features, storage and extensibility, the call to action and the footer. Steps, commands, features and extension points are arrays in the page frontmatter.
 
 ### Logo
 
 Replace `public/logo.webp` with your own logo (256×256 px works well).
+
+### Link preview image
+
+`public/og.png` (1200×630) is rendered from `og/og-image.html`, which uses the site tokens. After changing either, regenerate it from `website/`:
+
+```bash
+npx playwright screenshot --channel chrome --viewport-size 1200,630 --wait-for-timeout 2000 "file://$PWD/og/og-image.html" public/og.png
+```
 
 ## Performance
 
@@ -156,10 +148,7 @@ Replace `public/logo.webp` with your own logo (256×256 px works well).
 
 ## Browser support
 
-- Chrome/Edge 90+
-- Firefox 88+
-- Safari 14+
-- Mobile browsers (iOS Safari 14+, Chrome Android 90+)
+Chrome and Edge 105+, Safari 15.4+, Firefox 121+: the switches need `:has()`. Older browsers show the default panel of each switch.
 
 ## License
 
