@@ -1,10 +1,15 @@
 ---
+import '../styles/global.css';
+
 interface Props {
   title: string;
   description?: string;
 }
 
-const { title, description = "Automated Telegram Digest Generator powered by AI" } = Astro.props;
+const {
+  title,
+  description = "Self-hosted bot that reads your Telegram channels, summarizes them with AI and sends you one digest a day.",
+} = Astro.props;
 ---
 
 <!DOCTYPE html>
@@ -14,41 +19,32 @@ const { title, description = "Automated Telegram Digest Generator powered by AI"
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content={description}>
   <meta name="generator" content={Astro.generator}>
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#141310">
 
-  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@10..48,700;10..48,800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400..800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
-  <!-- Preconnect to external domains -->
-  <link rel="preconnect" href="https://github.com" crossorigin>
-
-  <!-- DNS prefetch for external resources -->
-  <link rel="dns-prefetch" href="https://github.com">
-
-  <!-- Open Graph / Facebook -->
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://telebrief.ti1orn.com">
   <meta property="og:title" content={title}>
   <meta property="og:description" content={description}>
   <meta property="og:image" content="https://telebrief.ti1orn.com/logo.webp">
 
-  <!-- Twitter -->
-  <meta property="twitter:card" content="summary">
-  <meta property="twitter:url" content="https://telebrief.ti1orn.com">
-  <meta property="twitter:title" content={title}>
-  <meta property="twitter:description" content={description}>
-  <meta property="twitter:image" content="https://telebrief.ti1orn.com/logo.webp">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content={title}>
+  <meta name="twitter:description" content={description}>
+  <meta name="twitter:image" content="https://telebrief.ti1orn.com/logo.webp">
 
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="icon" type="image/webp" href="/logo.webp">
   <link rel="apple-touch-icon" href="/logo.webp">
+  <link rel="canonical" href="https://telebrief.ti1orn.com/">
   <title>{title}</title>
 </head>
 <body>
+  <a class="skip-link" href="#main">Skip to content</a>
   <slot />
-  <style is:global>
-    @import '../styles/global.css';
-  </style>
 </body>
 </html>
