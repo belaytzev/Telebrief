@@ -416,7 +416,7 @@ const hooks = [
     align-items: center;
     gap: var(--space-3);
     font-weight: 800;
-    font-size: 1.0625rem;
+    font-size: var(--fs-lg);
     letter-spacing: -0.02em;
     color: var(--text);
   }
@@ -436,7 +436,7 @@ const hooks = [
     transition: color var(--dur-hover) ease;
   }
 
-  .nav-github { min-height: 36px; padding: 0 var(--space-4); }
+  .nav-github { padding: 0 var(--space-4); }
 
   .nav-mobile { display: none; }
 
@@ -459,7 +459,6 @@ const hooks = [
     display: block;
     width: 20px;
     height: 2px;
-    border-radius: 1px;
     background: var(--text);
   }
   .burger { position: relative; }
@@ -660,9 +659,9 @@ const hooks = [
   .extend-block .text-link { margin-top: var(--space-3); }
 
   .store .segmented { margin-bottom: var(--space-4); }
-  .store-panel { display: none; }
-  .store:has(#store-sqlite:checked) .store-sqlite,
+  .store-postgres { display: none; }
   .store:has(#store-postgres:checked) .store-postgres { display: block; }
+  .store:has(#store-postgres:checked) .store-sqlite { display: none; }
   .store-note { margin-top: var(--space-3); font-size: var(--fs-sm); }
 
   .hooks {

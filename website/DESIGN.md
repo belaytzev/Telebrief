@@ -26,7 +26,8 @@ Warm charcoal with the cerulean of the logo. One accent, used for actions, links
 | Token | Value | Use |
 | --- | --- | --- |
 | `--ink` | `#141310` | Page background |
-| `--surface` | `#1a1916` | Chat panel body, nav, footer |
+| `--surface` | `#1a1916` | Chat panel body, mobile menu, footer |
+| `--nav-bg` | `--ink` at 88% | Sticky nav behind a blur |
 | `--raised` | `#21201c` | Chat header, chips, segmented track |
 | `--sunken` | `#0e0d0b` | Code blocks, text on accent |
 | `--line` | `#3d3a36` | Hairlines, panel borders |
@@ -57,10 +58,11 @@ Scale, ratio about 1.25 from a 16px base:
 
 | Token | Size | Use |
 | --- | --- | --- |
-| `--fs-xs` | 0.8125rem (13px) | Captions, chips, timestamps, footer |
-| `--fs-sm` | 0.9375rem (15px) | Card and step body, digest text, code |
+| `--fs-xs` | 0.8125rem (13px) | Captions, chips, timestamps, footer, code blocks |
+| `--fs-sm` | 0.9375rem (15px) | Feature and step body, digest text, buttons |
 | `--fs-base` | 1rem (16px) | Body |
-| `--fs-lg` | 1.1875rem (19px) | Lede under headings, h3 |
+| `--fs-lg` | 1.1875rem (19px) | Lede under headings, h3, wordmark |
+| `--fs-code` | 0.875em | Inline code, relative to its line |
 | `--fs-xl` | clamp(1.5rem, 3vw, 1.875rem) | Sub-section titles inside a section |
 | `--fs-2xl` | clamp(2rem, 4.5vw, 2.875rem) | Section titles (h2) |
 | `--fs-3xl` | clamp(2.5rem, 6.5vw, 4.25rem) | Page title (h1) |
@@ -119,7 +121,7 @@ Container 1120px, gutters 1.25rem on phones and 2rem from 769px.
 └ footer ────────────────────────────────────────────────────────────────────────┘
 ```
 
-Below 900px the hero stacks: copy first, then the digest. Below 769px the nav collapses into a disclosure menu.
+Below 961px the hero and the two-column sections stack: copy first, then the digest. Below 769px the nav collapses into a disclosure menu.
 
 ## Motion
 
@@ -136,7 +138,7 @@ Tokens: `--ease-out: cubic-bezier(0.23, 1, 0.32, 1)`, `--dur-press: 120ms`, `--d
 Rules:
 
 - Name every transitioned property. `transition: all` is not allowed.
-- Animate only `transform` and `opacity`.
+- Anything that moves or scales uses `transform` and `opacity` only. Hover may also transition color, background and border.
 - Under `prefers-reduced-motion: reduce` the hero entrance becomes a fade with no movement, press scaling is off, and smooth scrolling is off.
 
 ## Accessibility and mobile
@@ -152,6 +154,20 @@ Rules:
 
 The site is static Astro with one dependency. Tabs, menu and code blocks are built from native elements and plain CSS, so no UI library is added. Revisit if the site grows an interactive docs section.
 
+`:has()` drives the switches, so the floor is Chrome and Edge 105, Safari 15.4 and Firefox 121. Older browsers show the default panel of each switch.
+
+## Where the rules come from
+
+The design was set with these skills. Use them again for the next change of the same kind.
+
+- `frontend-design`: the digest as the hero, one bold element, no eyebrows, no numbered markers outside a real sequence, no arrows on buttons, no accent on a single headline word, sentence case, left alignment.
+- `emil-design-eng`: easing and duration tokens, press feedback with `scale(0.97)`, named transition properties.
+- `remove-animations`: particles, background wash, blinking badge dot, blinking cursor and hover lifts removed; segment switches swap instantly because tab switches fail its frequency gate.
+- `find-animation-opportunities`: the hero digest entrance as the single first-visit moment.
+- `mobile-native`: hover gated to fine pointers, tap highlight off, `touch-action: manipulation`, 44px targets, `theme-color`.
+- `break-ui`: layouts checked at 320px and with long code lines, which scroll inside their blocks.
+- `pick-ui-library`: no library, see above.
+
 ## Checks
 
 Run from `website/` before merging a design change:
@@ -159,8 +175,9 @@ Run from `website/` before merging a design change:
 ```sh
 rg -n '#[0-9a-fA-F]{3,8}\b|rgba?\(' src --glob '!src/styles/global.css' | rg -v theme-color
 rg -n 'transition:\s*all' src
+rg -n 'font-size:\s*[0-9]|border-radius:\s*[0-9]+(px|rem)' src
 rg -n ':hover' src
 npm run build
 ```
 
-The first two must print nothing. Every `:hover` the third prints must sit inside the hover media query. Then check 1440px, 390px and 320px widths with fonts loaded.
+The first three must print nothing. Every `:hover` the third prints must sit inside the hover media query. Then check 1440px, 390px and 320px widths with fonts loaded.

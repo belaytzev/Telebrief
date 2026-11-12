@@ -30,6 +30,7 @@
   --fs-xl:   clamp(1.5rem, 3vw, 1.875rem);
   --fs-2xl:  clamp(2rem, 4.5vw, 2.875rem);
   --fs-3xl:  clamp(2.5rem, 6.5vw, 4.25rem);
+  --fs-code: 0.875em;
 
   --space-1: 0.25rem;
   --space-2: 0.5rem;
@@ -103,7 +104,7 @@ img, svg { display: block; }
 code, pre { font-family: var(--font-mono); }
 
 :not(pre) > code {
-  font-size: 0.875em;
+  font-size: var(--fs-code);
   color: var(--accent);
   background: var(--accent-soft);
   padding: 0.1em 0.35em;
@@ -188,7 +189,7 @@ code, pre { font-family: var(--font-mono); }
   font-family: var(--font-mono);
   font-size: var(--fs-xs);
   line-height: 1.4;
-  padding: 0.2rem 0.55rem;
+  padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-s);
   border: 1px solid var(--line);
   background: var(--raised);
@@ -206,7 +207,7 @@ code, pre { font-family: var(--font-mono); }
   border-radius: var(--radius-m);
   padding: var(--space-4) var(--space-5);
   overflow-x: auto;
-  font-size: 0.8125rem;
+  font-size: var(--fs-xs);
   line-height: 1.75;
   color: var(--text);
 }

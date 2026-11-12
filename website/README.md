@@ -137,10 +137,7 @@ Replace `public/logo.webp` with your own logo (256×256 px works well).
 
 ## Browser support
 
-- Chrome/Edge 90+
-- Firefox 88+
-- Safari 14+
-- Mobile browsers (iOS Safari 14+, Chrome Android 90+)
+Chrome and Edge 105+, Safari 15.4+, Firefox 121+: the switches need `:has()`. Older browsers show the default panel of each switch.
 
 ## License
 
