@@ -65,6 +65,7 @@ def setup_logging(log_level: str = "INFO") -> logging.Logger:
     # Create logger
     logger = logging.getLogger("telebrief")
     logger.setLevel(getattr(logging, log_level.upper()))
+    logger.propagate = False
 
     # Remove existing handlers
     logger.handlers.clear()
