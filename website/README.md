@@ -94,10 +94,13 @@ wrangler pages deploy dist --project-name=telebrief
 
 ```
 website/
+├── og/
+│   └── og-image.html        # Source of public/og.png
 ├── public/                  # Static assets
 │   ├── favicon.svg
 │   ├── llms.txt             # Summary for LLM crawlers
-│   └── logo.webp            # Telebrief logo
+│   ├── logo.webp            # Telebrief logo
+│   └── og.png               # Link preview image
 ├── src/
 │   ├── components/
 │   │   └── GitHubIcon.astro
@@ -127,6 +130,14 @@ All sections are in `src/pages/index.astro`: the hero with the example digest, h
 ### Logo
 
 Replace `public/logo.webp` with your own logo (256×256 px works well).
+
+### Link preview image
+
+`public/og.png` (1200×630) is rendered from `og/og-image.html`, which uses the site tokens. After changing either, regenerate it from `website/`:
+
+```bash
+npx playwright screenshot --channel chrome --viewport-size 1200,630 --wait-for-timeout 2000 "file://$PWD/og/og-image.html" public/og.png
+```
 
 ## Performance
 

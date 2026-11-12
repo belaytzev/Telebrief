@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400..800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../src/styles/global.css">
+  <style>
+    html, body { width: 1200px; height: 630px; overflow: hidden; }
+    .card {
+      width: 1200px;
+      height: 630px;
+      display: grid;
+      grid-template-columns: 1fr 520px;
+      gap: var(--space-8);
+      padding: 72px 72px 0;
+      background: var(--ink);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      font-weight: 800;
+      font-size: 28px;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+    .brand img { width: 44px; height: 44px; border-radius: var(--radius-m); }
+    h1 { font-size: 76px; margin-top: 56px; }
+    .lede { font-size: 26px; line-height: 1.45; margin-top: var(--space-5); max-width: 520px; }
+    .note { font-size: 20px; color: var(--text-subtle); margin-top: var(--space-6); }
+    .chat {
+      align-self: start;
+      border-top-color: var(--accent-line);
+      box-shadow: var(--shadow-panel);
+      font-size: 17px;
+      line-height: 1.55;
+    }
+    .chat-body { padding-bottom: var(--space-6); }
+    .chat-name { font-size: 18px; }
+    .chat-meta { font-size: 14px; }
+    .chat-avatar { width: 38px; height: 38px; }
+    .chat-body > * + * { margin-top: var(--space-2); }
+    .t { color: var(--text); font-weight: 700; font-size: 20px; }
+    .h { color: var(--text); font-weight: 600; margin-top: var(--space-4) !important; }
+    .a { color: var(--accent); }
+    ul { list-style: none; }
+    li + li { margin-top: var(--space-1); }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div>
+      <div class="brand"><img src="../public/logo.webp" alt="">telebrief</div>
+      <h1>AI digest bot for Telegram</h1>
+      <p class="lede">Reads your Telegram channels and sends you one AI digest a day through your own bot.</p>
+      <p class="note">Self-hosted and MIT-licensed. Runs on OpenAI, Anthropic or a local Ollama model.</p>
+    </div>
+    <div class="chat">
+      <div class="chat-head">
+        <img class="chat-avatar" src="../public/logo.webp" alt="">
+        <div>
+          <p class="chat-name">Telebrief Bot</p>
+          <p class="chat-meta">12:00</p>
+        </div>
+      </div>
+      <div class="chat-body">
+        <p class="t">📊 Daily Digest - 02 May 2026</p>
+        <p class="h">🎯 Brief Overview</p>
+        <p>A busy day in tech: a major framework release and a security patch worth applying.</p>
+        <p class="h">💻 Tech News · <span class="a">Open channel →</span></p>
+        <ul>
+          <li>🚀 <strong>Framework 2.0 released</strong> — faster builds</li>
+          <li>🔐 <strong>Security advisory</strong> — web server patch</li>
+        </ul>
+        <p class="h">💰 Markets · <span class="a">Open channel →</span></p>
+        <ul>
+          <li>📈 <strong>Stocks close higher</strong> — tech leads</li>
+          <li>🏦 <strong>Rate decision</strong> — holds steady</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
